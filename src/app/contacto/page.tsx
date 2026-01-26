@@ -1,0 +1,104 @@
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+
+export default function Contacto() {
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <main className="flex-grow">
+        <section className="py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid lg:grid-cols-2 gap-16 items-start">
+              <div className="space-y-8">
+                <h1 className="font-display text-5xl md:text-6xl font-medium">
+                  Iniciemos este{" "}
+                  <span className="text-primary italic">viaje juntos</span>.
+                </h1>
+                <p className="text-lg text-text-subtle leading-relaxed">
+                  ¿Tienes alguna duda o quieres reservar una sesión? Completa el
+                  formulario y me pondré en contacto contigo lo antes posible.
+                </p>
+                <div className="space-y-6 pt-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                      <span className="material-symbols-outlined">mail</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold uppercase tracking-wider text-text-subtle">
+                        Email
+                      </p>
+                      <p className="text-lg">hola@anareiki.com</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                      <span className="material-symbols-outlined">call</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold uppercase tracking-wider text-text-subtle">
+                        WhatsApp
+                      </p>
+                      <p className="text-lg">+1 (555) 123-4567</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-background-alt/50">
+                <form className="space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-text-main ml-1">
+                        Nombre
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-5 py-4 rounded-2xl bg-background-light border-none focus:ring-2 focus:ring-primary/20 transition-all"
+                        placeholder="Tu nombre"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-text-main ml-1">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        className="w-full px-5 py-4 rounded-2xl bg-background-light border-none focus:ring-2 focus:ring-primary/20 transition-all"
+                        placeholder="tu@email.com"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-text-main ml-1">
+                      Servicio de interés
+                    </label>
+                    <select className="w-full px-5 py-4 rounded-2xl bg-background-light border-none focus:ring-2 focus:ring-primary/20 transition-all">
+                      <option>Selecciona una opción</option>
+                      <option>Bioenergía</option>
+                      <option>Registros Akáshicos</option>
+                      <option>Yoga Consciente</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-text-main ml-1">
+                      Mensaje
+                    </label>
+                    <textarea
+                      rows={4}
+                      className="w-full px-5 py-4 rounded-2xl bg-background-light border-none focus:ring-2 focus:ring-primary/20 transition-all"
+                      placeholder="¿En qué puedo ayudarte?"
+                    ></textarea>
+                  </div>
+                  <button className="w-full bg-primary hover:bg-primary/90 text-white py-5 rounded-2xl font-display font-bold text-xl transition-all shadow-xl shadow-primary/25 transform hover:-translate-y-1">
+                    Enviar Mensaje
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </div>
+  );
+}
