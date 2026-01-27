@@ -12,24 +12,29 @@ export default function Footer() {
               </span>
               <h3 className="font-display text-xl font-bold">Ana Reiki</h3>
             </div>
-            <p className="text-text-subtle text-sm leading-relaxed max-w-sm">
+            <p className="text-terracotta text-sm leading-relaxed max-w-sm">
               Dedicado a traer equilibrio y sanación a tu vida a través de
               sabiduría ancestral y prácticas modernas. Reconecta con tu
               verdadero ser.
             </p>
           </div>
           <div>
-            <h4 className="font-display font-bold text-lg mb-4">Secciones</h4>
-            <ul className="space-y-3 text-sm text-text-subtle">
+            <h4 className="font-display font-bold text-lg mb-4 text-text-main">
+              Secciones
+            </h4>
+            <ul className="space-y-3 text-sm text-terracotta">
               <li>
-                <Link href="/" className="hover:text-primary transition-colors">
+                <Link
+                  href="/"
+                  className="hover:text-primary-dark transition-colors"
+                >
                   Inicio
                 </Link>
               </li>
               <li>
                 <Link
                   href="/servicios"
-                  className="hover:text-primary transition-colors"
+                  className="hover:text-primary-dark transition-colors"
                 >
                   Servicios
                 </Link>
@@ -37,7 +42,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/filosofia"
-                  className="hover:text-primary transition-colors"
+                  className="hover:text-primary-dark transition-colors"
                 >
                   Filosofía
                 </Link>
@@ -45,7 +50,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/contacto"
-                  className="hover:text-primary transition-colors"
+                  className="hover:text-primary-dark transition-colors"
                 >
                   Contacto
                 </Link>
@@ -53,8 +58,10 @@ export default function Footer() {
             </ul>
           </div>
           <div>
-            <h4 className="font-display font-bold text-lg mb-4">Contacto</h4>
-            <ul className="space-y-3 text-sm text-text-subtle">
+            <h4 className="font-display font-bold text-lg mb-4 text-text-main">
+              Contacto
+            </h4>
+            <ul className="space-y-3 text-sm text-terracotta">
               <li className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-base">
                   mail
@@ -76,15 +83,21 @@ export default function Footer() {
             </ul>
           </div>
         </div>
-        <div className="border-t border-background-alt pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-text-subtle">
+        <div className="border-t border-primary/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-terracotta">
           <p>
             © 2024 Ana Reiki Bienestar Holístico. Todos los derechos reservados.
           </p>
           <div className="flex gap-6">
-            <Link href="#" className="hover:text-primary transition-colors">
+            <Link
+              href="#"
+              className="hover:text-primary-dark transition-colors"
+            >
               Privacidad
             </Link>
-            <Link href="#" className="hover:text-primary transition-colors">
+            <Link
+              href="#"
+              className="hover:text-primary-dark transition-colors"
+            >
               Términos
             </Link>
           </div>

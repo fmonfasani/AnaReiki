@@ -27,6 +27,7 @@ export default function Navbar() {
   const toggleMenu = () => setIsOpen(!isOpen);
 
   const navLinks = [
+    { name: "Inicio", href: "/" },
     { name: "Servicios", href: "/servicios" },
     { name: "Filosofía", href: "/filosofia" },
     { name: "Contacto", href: "/contacto" },
@@ -66,15 +67,21 @@ export default function Navbar() {
               Reservar Sesión
             </Link>
 
-            {/* Mobile Menu Button */}
+            {/* Mobile Menu Button - Structured Hamburger */}
             <button
               onClick={toggleMenu}
-              className="md:hidden text-text-main p-2 z-50 focus:outline-none"
+              className="md:hidden flex flex-col justify-center items-center w-10 h-10 z-[70] relative focus:outline-none"
               aria-label="Toggle menu"
             >
-              <span className="material-symbols-outlined text-3xl">
-                {isOpen ? "close" : "menu"}
-              </span>
+              <span
+                className={`block w-6 h-0.5 bg-text-main transition-all duration-300 ease-out ${isOpen ? "rotate-45 translate-y-2" : "-translate-y-1"}`}
+              />
+              <span
+                className={`block w-6 h-0.5 bg-text-main my-1 transition-all duration-300 ease-out ${isOpen ? "opacity-0" : "opacity-100"}`}
+              />
+              <span
+                className={`block w-6 h-0.5 bg-text-main transition-all duration-300 ease-out ${isOpen ? "-rotate-45 -translate-y-1" : "translate-y-1"}`}
+              />
             </button>
           </div>
         </div>
@@ -84,55 +91,63 @@ export default function Navbar() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, x: "100%" }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-0 z-40 bg-background-light/95 backdrop-blur-xl md:hidden flex flex-col items-center justify-center gap-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-background-light md:hidden flex flex-col"
           >
-            <nav className="flex flex-col items-center gap-8">
-              {navLinks.map((link, i) => (
+            <div className="flex flex-col items-center justify-center flex-grow gap-10 px-8">
+              <nav className="flex flex-col items-center gap-8 w-full">
+                {navLinks.map((link, i) => (
+                  <motion.div
+                    key={link.name}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className="w-full text-center"
+                  >
+                    <Link
+                      href={link.href}
+                      onClick={() => setIsOpen(false)}
+                      className="font-display text-4xl font-medium text-text-main block py-2 hover:text-terracotta transition-colors"
+                    >
+                      {link.name}
+                    </Link>
+                  </motion.div>
+                ))}
+
                 <motion.div
-                  key={link.name}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
+                  transition={{ delay: 0.5 }}
+                  className="pt-8 w-full max-w-xs"
                 >
                   <Link
-                    href={link.href}
+                    href="/contacto"
                     onClick={() => setIsOpen(false)}
-                    className="font-display text-4xl font-medium text-text-main active:text-primary-dark"
+                    className="bg-primary text-text-main px-8 py-5 rounded-full font-display font-bold text-xl shadow-xl shadow-primary/20 block text-center transform active:scale-95 transition-transform"
                   >
-                    {link.name}
+                    Reservar Sesión
                   </Link>
                 </motion.div>
-              ))}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="pt-4"
-              >
-                <Link
-                  href="/contacto"
-                  onClick={() => setIsOpen(false)}
-                  className="bg-primary text-text-main px-10 py-4 rounded-full font-display font-bold text-xl shadow-xl shadow-primary/20"
-                >
-                  Reservar Sesión
-                </Link>
-              </motion.div>
-            </nav>
+              </nav>
+            </div>
 
-            <div className="absolute bottom-12 flex flex-col items-center gap-4 text-text-light">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              className="pb-12 flex flex-col items-center gap-4 text-text-light"
+            >
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary-dark">
                   spa
                 </span>
-                <span className="font-display font-bold tracking-widest text-xs uppercase">
+                <span className="font-display font-bold tracking-widest text-xs uppercase text-terracotta">
                   Ana Reiki
                 </span>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
