@@ -4,39 +4,68 @@ import Footer from "@/components/Footer";
 
 const services = [
   {
-    title: "Sanación Bioenergética",
-    img: "/images/bioenergy.png",
-    description:
-      "La bioenergía es un proceso de sanación que trabaja sobre el campo energético humano. A través de un toque suave y la intención enfocada, ayudamos a liberar bloqueos emocionales y físicos, permitiendo que tu vitalidad natural fluya libremente.",
-    benefits: [
-      "Reducción del estrés y la ansiedad",
-      "Mejora del sueño",
-      "Claridad mental y emocional",
-      "Fortalecimiento del sistema inmunológico",
-    ],
-  },
-  {
     title: "Registros Akáshicos",
+    subtitle: "Accedé a la guía de tu alma",
     img: "/images/akashic.png",
     description:
-      "Accede a la 'biblioteca del alma'. Los Registros Akáshicos contienen la información de tu viaje espiritual, tus talentos, desafíos y propósito. Una lectura te brinda perspectiva y guía para situaciones actuales de tu vida.",
+      "Los Registros Akáshicos son una herramienta de acceso a la información del alma. A través de su apertura, se obtiene guía, claridad y comprensión sobre situaciones de la vida presente, vínculos, bloqueos emocionales y procesos personales, facilitando la toma de conciencia y la sanación.",
     benefits: [
-      "Comprensión profunda de patrones de vida",
-      "Guía para la toma de decisiones",
-      "Sanación de memorias pasadas",
-      "Conexión con tu propósito superior",
+      "Claridad en vínculos",
+      "Sanación de bloqueos",
+      "Comprensión del alma",
+      "Guía espiritual",
     ],
   },
   {
-    title: "Yoga Consciente",
-    img: "/images/yoga.png",
+    title: "Biodecodificación",
+    subtitle: "Comprendé el origen emocional",
+    img: "/images/bioenergy.png",
     description:
-      "Una práctica que va más allá de lo físico. Combinamos asanas restaurativas con técnicas de respiración (pranayama) y meditación guiada para crear un refugio de paz interior y equilibrio corporal.",
+      "La Biodecodificación acompaña a reconocer el origen emocional de síntomas físicos, enfermedades o conflictos recurrentes. Mediante la observación consciente, se genera comprensión y transformación, favoreciendo el equilibrio entre cuerpo, mente y emoción.",
     benefits: [
-      "Flexibilidad y fuerza física",
-      "Equilibrio del sistema nervioso",
-      "Paz interior duradera",
-      "Conexión cuerpo-mente",
+      "Origen de síntomas",
+      "Equilibrio emocional",
+      "Observación consciente",
+      "Transformación personal",
+    ],
+  },
+  {
+    title: "Reiki",
+    subtitle: "Armonizá cuerpo, mente y energía",
+    img: "/images/hero.png",
+    description:
+      "El Reiki es una terapia energética que canaliza energía vital universal para armonizar cuerpo, mente y espíritu. Durante la sesión se promueve la relajación profunda, la liberación de tensiones y el restablecimiento del bienestar integral.",
+    benefits: [
+      "Armonización energética",
+      "Relajación profunda",
+      "Liberación de tensiones",
+      "Bienestar integral",
+    ],
+  },
+  {
+    title: "Armonización de Chakras con Péndulo",
+    subtitle: "Equilibrá tu energía vital",
+    img: "/images/pendulum.png",
+    description:
+      "La armonización de chakras con péndulo trabaja sobre los centros energéticos del cuerpo, detectando y liberando bloqueos. Este proceso ayuda a restaurar el flujo natural de la energía, aportando equilibrio, claridad y vitalidad.",
+    benefits: [
+      "Equilibrio de chakras",
+      "Detección de bloqueos",
+      "Vitalidad renovada",
+      "Claridad energética",
+    ],
+  },
+  {
+    title: "Tapping (EFT)",
+    subtitle: "Liberá emociones y tensiones",
+    img: "/images/tapping.png",
+    description:
+      "El Tapping o EFT (Emotional Freedom Techniques) es una técnica de liberación emocional que combina estimulación suave de puntos energéticos con enfoque consciente en emociones, pensamientos o situaciones que generan malestar. Ayuda a reducir el estrés, la ansiedad y bloqueos emocionales.",
+    benefits: [
+      "Reducción de estrés",
+      "Liberación emocional",
+      "Calma mental",
+      "Bienestar inmediato",
     ],
   },
 ];
@@ -52,10 +81,9 @@ export default function Servicios() {
               <h1 className="font-display text-5xl md:text-6xl font-medium mb-6">
                 Nuestros Servicios
               </h1>
-              <p className="text-text-subtle text-lg font-light leading-relaxed">
-                Cada sesión está diseñada con un enfoque holístico para atender
-                tus necesidades únicas, buscando siempre el retorno a tu centro
-                y bienestar natural.
+              <p className="text-text-light text-lg font-light leading-relaxed">
+                Terapias holísticas diseñadas para acompañarte en tu proceso de
+                sanación, autodescubrimiento y equilibrio integral.
               </p>
             </div>
 
@@ -65,7 +93,7 @@ export default function Servicios() {
                   key={i}
                   className={`flex flex-col ${i % 2 === 0 ? "lg:flex-row" : "lg:flex-row-reverse"} gap-12 lg:gap-20 items-center`}
                 >
-                  <div className="flex-1 w-full relative h-[400px] rounded-3xl overflow-hidden shadow-2xl">
+                  <div className="flex-1 w-full relative h-[450px] rounded-[3rem] overflow-hidden shadow-2xl">
                     <Image
                       src={service.img}
                       alt={service.title}
@@ -74,19 +102,24 @@ export default function Servicios() {
                     />
                   </div>
                   <div className="flex-1 space-y-6">
+                    <span className="text-primary-dark font-bold text-sm tracking-widest uppercase">
+                      {service.subtitle}
+                    </span>
                     <h2 className="font-display text-4xl font-medium text-text-main">
                       {service.title}
                     </h2>
-                    <p className="text-text-subtle text-lg leading-relaxed">
+                    <p className="text-text-light text-lg leading-relaxed">
                       {service.description}
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
                       {service.benefits.map((benefit, j) => (
                         <div key={j} className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-primary text-sm">
+                          <span className="material-symbols-outlined text-primary text-sm font-bold">
                             check_circle
                           </span>
-                          <span className="text-sm font-medium">{benefit}</span>
+                          <span className="text-sm font-medium text-text-main">
+                            {benefit}
+                          </span>
                         </div>
                       ))}
                     </div>
