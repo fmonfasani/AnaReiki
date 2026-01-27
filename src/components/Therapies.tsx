@@ -44,7 +44,7 @@ export default function Therapies() {
   const [expanded, setExpanded] = useState<number | null>(null);
 
   return (
-    <section id="terapias" className="py-24 bg-background-light">
+    <section id="terapias" className="py-16 md:py-24 bg-background-light">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h2 className="font-display text-4xl md:text-5xl font-medium mb-16 text-text-main">
           Terapias Holísticas

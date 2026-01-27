@@ -33,7 +33,7 @@ const encounters = [
 
 export default function Encounters() {
   return (
-    <section id="encuentros" className="py-24 bg-background-alt/30">
+    <section id="encuentros" className="py-16 md:py-24 bg-background-alt/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="font-display text-4xl md:text-5xl font-medium text-text-main mb-4">

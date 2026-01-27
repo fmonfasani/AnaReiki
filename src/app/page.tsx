@@ -25,17 +25,17 @@ export default function Home() {
                     Restaura tu Equilibrio
                   </span>
                 </div>
-                <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-medium leading-[1.1] text-text-main">
+                <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-medium leading-[1.2] lg:leading-[1.1] text-text-main">
                   Reconectá con tu{" "}
                   <span className="text-primary-dark italic">
                     armonía interior
                   </span>
                 </h1>
-                <p className="text-lg sm:text-xl text-text-light font-body font-light leading-relaxed max-w-xl mx-auto lg:mx-0">
+                <p className="text-base sm:text-lg text-text-light font-body font-light leading-relaxed max-w-xl mx-auto lg:mx-0 px-4 sm:px-0">
                   Propuestas terapéuticas y encuentros conscientes para alinear
                   tu energía, comprender tus emociones y honrar tu camino.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4 px-6 sm:px-0">
                   <Link
                     href="/contacto"
                     className="bg-primary hover:bg-primary-dark text-text-main px-8 py-4 rounded-full font-display font-bold text-lg transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2 group transform hover:-translate-y-1"
