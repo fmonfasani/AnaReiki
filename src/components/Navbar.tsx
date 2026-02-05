@@ -42,7 +42,7 @@ export default function Navbar() {
               spa
             </span>
             <h2 className="font-display text-xl md:text-2xl font-medium tracking-tight text-text-main">
-              Ana Reiki
+              ANA MUR REIKI
             </h2>
           </Link>
 
@@ -64,7 +64,7 @@ export default function Navbar() {
               href="/contacto"
               className="hidden md:flex bg-primary hover:bg-primary-dark text-text-main px-6 py-2.5 rounded-full font-display font-bold transition-all transform hover:scale-105 shadow-md shadow-primary/20"
             >
-              Reservar Sesión
+              Agendar Sesión
             </Link>
 
             {/* Mobile Menu Button - Structured Hamburger */}
@@ -127,7 +127,7 @@ export default function Navbar() {
                     onClick={() => setIsOpen(false)}
                     className="bg-primary text-text-main px-8 py-5 rounded-full font-display font-bold text-xl shadow-xl shadow-primary/20 block text-center transform active:scale-95 transition-transform"
                   >
-                    Reservar Sesión
+                    Agendar Sesión
                   </Link>
                 </motion.div>
               </nav>
@@ -144,7 +144,7 @@ export default function Navbar() {
                   spa
                 </span>
                 <span className="font-display font-bold tracking-widest text-xs uppercase text-terracotta">
-                  Ana Reiki
+                  ANA MUR REIKI
                 </span>
               </div>
             </motion.div>

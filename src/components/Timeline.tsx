@@ -2,32 +2,36 @@ export default function Timeline() {
   const steps = [
     {
       id: "01",
-      title: "Consulta",
-      desc: "Comenzamos con una conversación profunda para comprender tu energía actual, desafíos e intenciones.",
+      title: "Escucha Atenta",
+      desc: "Comenzamos con una escucha atenta para comprender el estado actual que estás atravesando, tus emociones, los desafíos que estás transitando y la intención del encuentro.",
       icon: "psychology",
     },
     {
       id: "02",
-      title: "Inmersión",
-      desc: "Una sesión personalizada que combina la terapia elegida y el movimiento intuitivo adaptado a vos.",
+      title: "Sesión Personalizada",
+      desc: "Una sesión personalizada es un espacio de pausa y de diferentes abordajes holísticos para acompañar procesos conscientes y recuperar el equilibrio.",
       icon: "spa",
     },
     {
       id: "03",
       title: "Integración",
-      desc: "Proporcionamos herramientas y prácticas para ayudarte a mantener tu alineación en la vida diaria.",
+      desc: "Durante el proceso te comparto herramientas simples que acompañan la integración de lo trabajado, favoreciendo la autoobservación y el cuidado personal.",
       icon: "all_inclusive",
     },
   ];
 
   return (
     <section id="proceso" className="py-24 bg-white overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="mb-20">
           <h2 className="font-display text-4xl md:text-5xl font-medium text-text-main">
-            El Camino al Bienestar
+            Acompañamiento Terapéutico Integral:
+            <br />
+            <span className="italic text-primary-dark">
+              “Un Encuentro con tu Interior”
+            </span>
           </h2>
-          <div className="h-1 w-20 bg-primary/30 mx-auto mt-4 rounded-full"></div>
+          <div className="h-1 w-20 bg-primary/30 mx-auto mt-6 rounded-full"></div>
         </div>
 
         <div className="relative">

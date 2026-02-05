@@ -12,16 +12,20 @@ export default function Filosofia() {
             <div className="flex flex-col lg:flex-row gap-16 items-center">
               <div className="flex-1 space-y-8">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
-                  Nuestra Esencia
+                  ESENCIA
                 </div>
                 <h1 className="font-display text-5xl md:text-6xl font-medium leading-tight">
-                  Sabiduría ancestral para la vida{" "}
-                  <span className="text-primary italic">moderna</span>.
+                  Filosofía humana y{" "}
+                  <span className="text-primary italic">consciente</span>.
                 </h1>
                 <p className="text-lg text-text-subtle leading-relaxed">
-                  Creemos que el verdadero bienestar no es solo la ausencia de
-                  malestar, sino la presencia vibrante de energía vital en todos
-                  los niveles del ser.
+                  Entiendo al cuerpo como un campo sensible que guarda memoria
+                  emocional y energética. Mi trabajo se orienta a facilitar
+                  espacios de conciencia donde esa información pueda ser
+                  reconocida e integrada, permitiendo que la energía vuelva a
+                  fluir de manera armónica. Creo en el poder del cuerpo como
+                  guía y en la importancia de escuchar sus mensajes para
+                  recuperar el equilibrio y el bienestar.
                 </p>
                 <div className="space-y-6">
                   <div className="flex items-start gap-4 p-6 bg-white rounded-2xl shadow-sm border border-background-alt/50">
@@ -33,8 +37,7 @@ export default function Filosofia() {
                         Presencia
                       </h3>
                       <p className="text-sm text-text-subtle">
-                        El aquí y ahora como único espacio de sanación
-                        verdadera.
+                        Acompaño desde una mirada amorosa, profunda y guiada.
                       </p>
                     </div>
                   </div>
@@ -44,10 +47,11 @@ export default function Filosofia() {
                     </span>
                     <div>
                       <h3 className="font-display text-xl font-bold mb-1">
-                        Compasión
+                        Sanación
                       </h3>
                       <p className="text-sm text-text-subtle">
-                        Hacia uno mismo y hacia el camino de cada alma.
+                        Acompaño procesos de sanación desde una mirada integral,
+                        respetuosa y consciente.
                       </p>
                     </div>
                   </div>
@@ -67,9 +71,7 @@ export default function Filosofia() {
 
         <section className="py-20 bg-background-alt/30">
           <div className="max-w-4xl mx-auto px-4 text-center space-y-8">
-            <h2 className="font-display text-4xl font-medium">
-              Nuestro Compromiso
-            </h2>
+            <h2 className="font-display text-4xl font-medium">Compromiso</h2>
             <p className="text-xl text-text-subtle italic leading-relaxed">
               "Mi misión es facilitar un espacio seguro de contención y
               equilibrio, donde cada persona pueda recordar su propia capacidad

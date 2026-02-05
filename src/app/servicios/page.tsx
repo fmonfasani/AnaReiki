@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 
 const services = [
   {
-    title: "Registros Akáshicos",
+    title: "Lectura de Registros Akáshicos",
     subtitle: "Accedé a la guía de tu alma",
     img: "/images/akashic.png",
     description:
@@ -17,7 +17,7 @@ const services = [
     ],
   },
   {
-    title: "Biodecodificación",
+    title: "Sesión Biodecodificación",
     subtitle: "Comprendé el origen emocional",
     img: "/images/bioenergy.png",
     description:
@@ -30,7 +30,7 @@ const services = [
     ],
   },
   {
-    title: "Reiki",
+    title: "Sesión Reiki",
     subtitle: "Armonizá cuerpo, mente y energía",
     img: "/images/hero.png",
     description:
@@ -43,7 +43,7 @@ const services = [
     ],
   },
   {
-    title: "Armonización de Chakras con Péndulo",
+    title: "Armonización de chakras con péndulo",
     subtitle: "Equilibrá tu energía vital",
     img: "/images/pendulum.png",
     description:
@@ -56,7 +56,7 @@ const services = [
     ],
   },
   {
-    title: "Tapping (EFT)",
+    title: "Ejercicios de Tapping",
     subtitle: "Liberá emociones y tensiones",
     img: "/images/tapping.png",
     description:
@@ -66,6 +66,58 @@ const services = [
       "Liberación emocional",
       "Calma mental",
       "Bienestar inmediato",
+    ],
+  },
+  {
+    title: "Consultas por encuentros",
+    subtitle: "Espacios de consulta personalizada",
+    img: "/images/hero.png",
+    description:
+      "Espacios individuales diseñados para profundizar en temas específicos a través de un abordaje holístico, brindando herramientas concretas para el proceso personal.",
+    benefits: [
+      "Atención personalizada",
+      "Herramientas prácticas",
+      "Enfoque integral",
+      "Seguimiento consciente",
+    ],
+  },
+  {
+    title: "Clases de yoga para niños",
+    subtitle: "Movimiento, juego y calma",
+    img: "/images/hero.png",
+    description:
+      "Clases adaptadas a la infancia que promueven el juego, la conciencia corporal, la respiración y la gestión emocional, respetando los tiempos y necesidades de cada niño.",
+    benefits: [
+      "Conciencia corporal",
+      "Gestión emocional",
+      "Juego consciente",
+      "Calma y atención",
+    ],
+  },
+  {
+    title: "Rito y sanación de útero y linaje femenino",
+    subtitle: "Honrá tu linaje femenino",
+    img: "/images/hero.png",
+    description:
+      "Ceremonias de encuentro y sanación que invitan a honrar el cuerpo, la energía femenina y el linaje ancestral, generando espacios de contención, liberación y transformación.",
+    benefits: [
+      "Sanación ancestral",
+      "Energía femenina",
+      "Contención grupal",
+      "Transformación",
+    ],
+  },
+  {
+    title: "Celebraciones Holísticas",
+    subtitle: "Celebrar con presencia",
+    img: "/images/hero.png",
+    description:
+      "Propuestas de encuentros conscientes para celebrar momentos importantes de la vida desde una mirada integral, espiritual y amorosa (cumpleaños, bautismos, bendición del camino por el niño/a por nacer).",
+    benefits: [
+      "Celebración consciente",
+      "Vínculos sagrados",
+      "Mirada integral",
+      "Entorno amoroso",
     ],
   },
 ];
@@ -79,12 +131,18 @@ export default function Servicios() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto mb-20">
               <h1 className="font-display text-5xl md:text-6xl font-medium mb-6">
-                Nuestros Servicios
+                Servicios
               </h1>
-              <p className="text-text-light text-lg font-light leading-relaxed">
+              <p className="text-text-light text-lg font-light leading-relaxed mb-4">
                 Terapias holísticas diseñadas para acompañarte en tu proceso de
                 sanación, autodescubrimiento y equilibrio integral.
               </p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 text-text-main font-medium text-sm">
+                <span className="material-symbols-outlined text-sm">
+                  check_circle
+                </span>
+                Modalidad Online / Presencial
+              </div>
             </div>
 
             <div className="space-y-24">

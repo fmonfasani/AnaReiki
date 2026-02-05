@@ -10,12 +10,13 @@ export default function Footer() {
               <span className="material-symbols-outlined text-primary text-2xl">
                 spa
               </span>
-              <h3 className="font-display text-xl font-bold">Ana Reiki</h3>
+              <h3 className="font-display text-xl font-bold uppercase tracking-tight">
+                ANA MUR REIKI
+              </h3>
             </div>
-            <p className="text-terracotta text-sm leading-relaxed max-w-sm">
-              Dedicado a traer equilibrio y sanación a tu vida a través de
-              sabiduría ancestral y prácticas modernas. Reconecta con tu
-              verdadero ser.
+            <p className="text-terracotta text-sm leading-relaxed max-w-sm italic">
+              "Acompaño a mujeres a sanar desde la raíz, activar su energía
+              femenina y vivir en sincronicidad con su ser."
             </p>
           </div>
           <div>
@@ -66,19 +67,25 @@ export default function Footer() {
                 <span className="material-symbols-outlined text-base">
                   mail
                 </span>
-                anareiki@bienestar.com
+                murat.anaj@gmail.com
               </li>
               <li className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-base">
                   call
                 </span>
-                +1 (555) 123-4567
+                +54 3584376502
               </li>
               <li className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-base">
                   location_on
                 </span>
-                Sedona, AZ
+                Río Cuarto, Córdoba. Argentina
+              </li>
+              <li className="flex items-center gap-2 pt-2 border-t border-primary/10">
+                <span className="material-symbols-outlined text-base">
+                  person
+                </span>
+                @anamur.reiki
               </li>
             </ul>
           </div>

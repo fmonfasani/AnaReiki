@@ -32,8 +32,9 @@ export default function Home() {
                   </span>
                 </h1>
                 <p className="text-base sm:text-lg text-text-light font-body font-light leading-relaxed max-w-xl mx-auto lg:mx-0 px-4 sm:px-0">
-                  Propuestas terapéuticas y encuentros conscientes para alinear
-                  tu energía, comprender tus emociones y honrar tu camino.
+                  Mi propósito es acompañar procesos terapéuticos desde una
+                  mirada integral, respetando los tiempos de cada persona y
+                  reconociendo al cuerpo como una guía sabia.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4 px-6 sm:px-0">
                   <Link
@@ -123,19 +124,23 @@ export default function Home() {
         <section className="py-24 bg-primary/10 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
           <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-            <h2 className="font-display text-5xl md:text-6xl font-medium text-text-main mb-8 italic">
-              ¿Lista para transformar tu energía?
+            <h2 className="font-display text-4xl md:text-5xl font-medium text-text-main mb-8">
+              ¿Sentís el llamado a escucharte?
+              <br />
+              <span className="italic text-primary-dark">
+                ¿Te regalás un espacio para vos?
+              </span>
             </h2>
             <p className="text-xl text-text-light mb-12 max-w-2xl mx-auto leading-relaxed">
-              Tu viaje hacia la claridad espiritual y el equilibrio emocional
-              comienza con una sola decisión. Reservá tu espacio hoy.
+              La claridad y el equilibrio emocional se construyen a partir de
+              una decisión. Reservá tu espacio hoy.
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
               <Link
                 href="/contacto"
                 className="bg-primary hover:bg-primary-dark text-text-main px-12 py-5 rounded-full font-display font-bold text-xl transition-all shadow-xl shadow-primary/30 transform hover:-translate-y-1"
               >
-                Reservar Sesión
+                Agendar Sesión
               </Link>
               <Link
                 href="/contacto"

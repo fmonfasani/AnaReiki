@@ -31,6 +31,20 @@ Este documento detalla la evolución, decisiones técnicas y cambios realizados 
 - **Optimización**: Eliminación de placeholders y reemplazo por contenido real según el prompt.
 - **Plan de Deploy**: Documentación de pasos para Vercel.
 
+## 📅 Hito 4: Actualización Integral de Contenido y UX (2026-02-04)
+
+- **Evolución de Marca**:
+  - Cambio de marca a **ANA MUR REIKI** en toda la plataforma.
+  - Implementación de CTA reflexivos ("¿Sentís el llamado a escucharte?") y botones de acción "Agendar Sesión".
+- **Expansión de Servicios**:
+  - Se completó la oferta de servicios a **9 ítems oficiales**, unificando la Home y la página de `/servicios`.
+  - Inclusión de distintivo "Modalidad Online / Presencial".
+- **Refactorización de Secciones**:
+  - `Timeline.tsx` evolucionó a **Acompañamiento Terapéutico Integral**, detallando las fases de Escucha, Sesión Presencial e Integración.
+  - `Encounters.tsx` rediseñado para asegurar legibilidad 100% de descripciones mediante un sistema de expansión ("Saber más").
+- **Filosofía**: Actualización de la misión y propósito hacia una mirada más humana, consciente e integral del cuerpo.
+- **Footer**: Actualización completa de datos de contacto reales y redes sociales (@anamur.reiki).
+
 ## 🏗️ Arquitectura Técnica
 
 - **SSR (Server-Side Rendering)**: Todas las páginas principales se sirven desde el servidor para maximizar el SEO.
