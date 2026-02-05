@@ -99,10 +99,10 @@ export default function Home() {
             <span className="material-symbols-outlined text-5xl text-primary/30 mb-6">
               format_quote
             </span>
-            <h2 className="font-display text-3xl md:text-4xl font-medium leading-relaxed text-text-main mb-8">
-              "Mi propósito es facilitarte el espacio para que recuerdes tu
-              propia capacidad de sanación y redescubras la paz que ya habita en
-              vos."
+            <h2 className="font-display text-2xl md:text-3xl font-medium leading-relaxed text-text-main mb-8">
+              "Mi propósito es acompañar procesos terapéuticos desde una mirada
+              integral, respetando los tiempos de cada persona y reconociendo al
+              cuerpo como una guía sabia."
             </h2>
             <Link
               href="/filosofia"

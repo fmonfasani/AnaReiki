@@ -42,8 +42,8 @@ export default function Navbar() {
               spa
             </span>
             <h2 className="font-display text-xl md:text-2xl font-medium tracking-tight">
-              <span className="text-primary-dark">ANA MURAT</span>{" "}
-              <span className="text-text-main">REIKI</span>
+              <span className="text-primary-dark">ANA</span>{" "}
+              <span className="text-text-main">MURAT</span>
             </h2>
           </Link>
 
@@ -149,8 +149,8 @@ export default function Navbar() {
                   spa
                 </span>
                 <span className="font-display font-medium tracking-widest text-xs uppercase">
-                  <span className="text-primary-dark">ANA MURAT</span>{" "}
-                  <span className="text-terracotta">REIKI</span>
+                  <span className="text-primary-dark">ANA</span>{" "}
+                  <span className="text-terracotta">MURAT</span>
                 </span>
               </div>
             </motion.div>
