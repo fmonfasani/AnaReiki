@@ -62,7 +62,7 @@ export default function Navbar() {
 
           <div className="flex items-center gap-4">
             <Link
-              href="https://calendly.com/fmonfasani"
+              href="https://calendly.com/murat-anaj"
               target="_blank"
               rel="noopener noreferrer"
               className="hidden md:flex bg-primary hover:bg-primary-dark text-text-main px-6 py-2.5 rounded-full font-display font-bold transition-all transform hover:scale-105 shadow-md shadow-primary/20"
@@ -126,7 +126,7 @@ export default function Navbar() {
                   className="pt-8 w-full max-w-xs"
                 >
                   <Link
-                    href="https://calendly.com/fmonfasani"
+                    href="https://calendly.com/murat-anaj"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setIsOpen(false)}
