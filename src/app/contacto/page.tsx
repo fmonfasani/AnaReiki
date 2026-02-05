@@ -27,7 +27,12 @@ export default function Contacto() {
                       <p className="text-sm font-bold uppercase tracking-wider text-text-subtle">
                         Email
                       </p>
-                      <p className="text-lg">hola@anareiki.com</p>
+                      <a
+                        href="mailto:murat.anaj@gmail.com"
+                        className="text-lg hover:text-primary transition-colors"
+                      >
+                        murat.anaj@gmail.com
+                      </a>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -38,7 +43,14 @@ export default function Contacto() {
                       <p className="text-sm font-bold uppercase tracking-wider text-text-subtle">
                         WhatsApp
                       </p>
-                      <p className="text-lg">+1 (555) 123-4567</p>
+                      <a
+                        href="https://wa.me/543584376502"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-lg hover:text-primary transition-colors flex items-center gap-2"
+                      >
+                        +54 3584376502
+                      </a>
                     </div>
                   </div>
                 </div>
