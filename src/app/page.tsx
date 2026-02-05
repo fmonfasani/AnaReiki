@@ -38,10 +38,12 @@ export default function Home() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4 px-6 sm:px-0">
                   <Link
-                    href="/contacto"
+                    href="https://calendly.com/fmonfasani"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="bg-primary hover:bg-primary-dark text-text-main px-8 py-4 rounded-full font-display font-bold text-lg transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2 group transform hover:-translate-y-1"
                   >
-                    Reservar Sesión
+                    Agendar Sesión
                     <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">
                       arrow_forward
                     </span>
@@ -137,7 +139,9 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
               <Link
-                href="/contacto"
+                href="https://calendly.com/fmonfasani"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-primary hover:bg-primary-dark text-text-main px-12 py-5 rounded-full font-display font-bold text-xl transition-all shadow-xl shadow-primary/30 transform hover:-translate-y-1"
               >
                 Agendar Sesión

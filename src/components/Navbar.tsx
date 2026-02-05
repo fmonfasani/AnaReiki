@@ -62,7 +62,9 @@ export default function Navbar() {
 
           <div className="flex items-center gap-4">
             <Link
-              href="/contacto"
+              href="https://calendly.com/fmonfasani"
+              target="_blank"
+              rel="noopener noreferrer"
               className="hidden md:flex bg-primary hover:bg-primary-dark text-text-main px-6 py-2.5 rounded-full font-display font-bold transition-all transform hover:scale-105 shadow-md shadow-primary/20"
             >
               Agendar Sesión
@@ -124,7 +126,9 @@ export default function Navbar() {
                   className="pt-8 w-full max-w-xs"
                 >
                   <Link
-                    href="/contacto"
+                    href="https://calendly.com/fmonfasani"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     onClick={() => setIsOpen(false)}
                     className="bg-primary text-text-main px-8 py-5 rounded-full font-display font-bold text-xl shadow-xl shadow-primary/20 block text-center transform active:scale-95 transition-transform"
                   >
