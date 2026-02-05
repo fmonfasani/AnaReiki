@@ -11,7 +11,8 @@ export default function Footer() {
                 spa
               </span>
               <h3 className="font-display text-xl font-bold uppercase tracking-tight">
-                ANA MUR REIKI
+                <span className="text-primary-dark">ANA MURAT</span>{" "}
+                <span className="text-text-main">REIKI</span>
               </h3>
             </div>
             <p className="text-terracotta text-sm leading-relaxed max-w-sm italic">

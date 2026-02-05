@@ -41,28 +41,28 @@ const therapies = [
   {
     title: "Consultas por encuentros",
     subtitle: "Espacios de consulta personalizada",
-    image: "/images/hero.png",
+    image: "/images/consultation.png",
     description:
       "Espacios individuales diseñados para profundizar en temas específicos a través de un abordaje holístico, brindando herramientas concretas para el proceso personal.",
   },
   {
     title: "Clases de yoga para niños",
     subtitle: "Movimiento, juego y calma",
-    image: "/images/hero.png",
+    image: "/images/kids_yoga.png",
     description:
       "Clases adaptadas a la infancia que promueven el juego, la conciencia corporal, la respiración y la gestión emocional, respetando los tiempos y necesidades de cada niño.",
   },
   {
     title: "Rito y sanación de útero y linaje femenino",
     subtitle: "Honrá tu linaje femenino",
-    image: "/images/hero.png",
+    image: "/images/womb_healing.png",
     description:
       "Ceremonias de encuentro y sanación que invitan a honrar el cuerpo, la energía femenina y el linaje ancestral, generando espacios de contención, liberación y transformación.",
   },
   {
     title: "Celebraciones Holísticas",
     subtitle: "Celebrar con presencia",
-    image: "/images/hero.png",
+    image: "/images/holistic_celebration.png",
     description:
       "Propuestas de encuentros conscientes para celebrar momentos importantes de la vida desde una mirada integral, espiritual y amorosa (cumpleaños, bautismos, bendición del camino por el niño/a por nacer).",
   },

@@ -41,8 +41,9 @@ export default function Navbar() {
             <span className="material-symbols-outlined text-primary-dark text-2xl md:text-3xl group-hover:rotate-180 transition-transform duration-700">
               spa
             </span>
-            <h2 className="font-display text-xl md:text-2xl font-medium tracking-tight text-text-main">
-              ANA MUR REIKI
+            <h2 className="font-display text-xl md:text-2xl font-medium tracking-tight">
+              <span className="text-primary-dark">ANA MURAT</span>{" "}
+              <span className="text-text-main">REIKI</span>
             </h2>
           </Link>
 
@@ -143,8 +144,9 @@ export default function Navbar() {
                 <span className="material-symbols-outlined text-primary-dark">
                   spa
                 </span>
-                <span className="font-display font-bold tracking-widest text-xs uppercase text-terracotta">
-                  ANA MUR REIKI
+                <span className="font-display font-medium tracking-widest text-xs uppercase">
+                  <span className="text-primary-dark">ANA MURAT</span>{" "}
+                  <span className="text-terracotta">REIKI</span>
                 </span>
               </div>
             </motion.div>
