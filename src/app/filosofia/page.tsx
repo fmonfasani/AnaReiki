@@ -7,18 +7,18 @@ export default function Filosofia() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-grow">
-        <section className="py-24 relative overflow-hidden">
+        <section className="py-24 relative overflow-hidden bg-[#1b1214] text-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col lg:flex-row gap-16 items-center">
               <div className="flex-1 space-y-8">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 text-primary-dark text-xs font-bold uppercase tracking-wider">
                   ESENCIA
                 </div>
-                <h1 className="font-display text-5xl md:text-6xl font-medium leading-tight">
+                <h1 className="font-display text-5xl md:text-6xl font-medium leading-tight text-white">
                   Filosofía humana y{" "}
-                  <span className="text-primary italic">consciente</span>.
+                  <span className="text-primary-dark italic">consciente</span>.
                 </h1>
-                <p className="text-lg md:text-xl text-text-subtle leading-relaxed font-light">
+                <p className="text-lg md:text-xl text-white/90 leading-relaxed font-light">
                   Entiendo al cuerpo como un campo sensible que guarda memoria
                   emocional y energética. Mi trabajo se orienta a facilitar
                   espacios de conciencia donde esa información pueda ser
@@ -28,28 +28,28 @@ export default function Filosofia() {
                   recuperar el equilibrio y el bienestar.
                 </p>
                 <div className="grid gap-6 pt-4">
-                  <div className="flex items-start gap-4 p-8 bg-white dark:bg-background-alt/10 rounded-3xl shadow-sm border border-background-alt/50 transition-all hover:shadow-md">
+                  <div className="flex items-start gap-4 p-8 bg-white/5 rounded-3xl shadow-sm border border-white/10 transition-all hover:shadow-md hover:bg-white/10">
                     <span className="material-symbols-outlined text-primary-dark text-4xl">
                       self_improvement
                     </span>
                     <div className="space-y-1">
-                      <h3 className="font-display text-xl font-bold text-text-main dark:text-text-main">
+                      <h3 className="font-display text-xl font-bold text-white">
                         Presencia
                       </h3>
-                      <p className="text-sm text-text-light">
+                      <p className="text-sm text-white/70">
                         Acompaño desde una mirada amorosa, profunda y guiada.
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-4 p-8 bg-white dark:bg-background-alt/10 rounded-3xl shadow-sm border border-background-alt/50 transition-all hover:shadow-md">
-                    <span className="material-symbols-outlined text-primary-dark text-4xl">
+                  <div className="flex items-start gap-4 p-8 bg-white/5 rounded-3xl shadow-sm border border-white/10 transition-all hover:shadow-md hover:bg-white/10">
+                    <span className="material-symbols-outlined text-primary text-4xl">
                       favorite
                     </span>
                     <div className="space-y-1">
-                      <h3 className="font-display text-xl font-bold text-text-main dark:text-text-main">
+                      <h3 className="font-display text-xl font-bold text-white">
                         Sanación
                       </h3>
-                      <p className="text-sm text-text-light">
+                      <p className="text-sm text-white/70">
                         Acompaño procesos de sanación desde una mirada integral,
                         respetuosa y consciente.
                       </p>

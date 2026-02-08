@@ -2,13 +2,14 @@
 
 @theme {
   --color-primary: #f4d4dd;
-  --color-primary-dark: #e8b8c8;
+  --color-primary-dark: #d48498;
   --color-secondary: #ffffff;
   --color-background-light: #fdfaf8;
   --color-background-alt: #f9f3f1;
   --color-text-main: #4a3b3e;
   --color-text-light: #8b7a7d;
   --color-terracotta: #c36b53;
+  --color-whatsapp: #25d366;
 
   --font-display: var(--font-newsreader), serif;
   --font-body: var(--font-noto-sans), sans-serif;

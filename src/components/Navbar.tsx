@@ -62,12 +62,13 @@ export default function Navbar() {
 
           <div className="flex items-center gap-4">
             <Link
-              href="https://calendly.com/murat-anaj"
+              href="https://wa.me/543584376502"
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden md:flex bg-primary hover:bg-primary-dark text-text-main px-6 py-2.5 rounded-full font-display font-bold transition-all transform hover:scale-105 shadow-md shadow-primary/20"
+              className="hidden md:flex bg-whatsapp hover:bg-whatsapp/90 text-white px-6 py-2.5 rounded-full font-display font-bold transition-all transform hover:scale-105 shadow-md shadow-whatsapp/20 items-center gap-2"
             >
-              Agendar Sesión
+              Contactame
+              <span className="material-symbols-outlined text-sm">chat</span>
             </Link>
 
             {/* Mobile Menu Button - Structured Hamburger */}
@@ -126,13 +127,13 @@ export default function Navbar() {
                   className="pt-8 w-full max-w-xs"
                 >
                   <Link
-                    href="https://calendly.com/murat-anaj"
+                    href="https://wa.me/543584376502"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setIsOpen(false)}
-                    className="bg-primary text-text-main px-8 py-5 rounded-full font-display font-bold text-xl shadow-xl shadow-primary/20 block text-center transform active:scale-95 transition-transform"
+                    className="bg-whatsapp text-white px-8 py-5 rounded-full font-display font-bold text-xl shadow-xl shadow-whatsapp/20 block text-center transform active:scale-95 transition-transform"
                   >
-                    Agendar Sesión
+                    Contactame
                   </Link>
                 </motion.div>
               </nav>

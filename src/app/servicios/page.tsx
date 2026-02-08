@@ -126,18 +126,18 @@ export default function Servicios() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-grow">
-        <section className="py-20 bg-background-alt/30">
+      <main className="flex-grow bg-[#1b1214]">
+        <section className="py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto mb-20">
-              <h1 className="font-display text-5xl md:text-6xl font-medium mb-6">
+              <h1 className="font-display text-5xl md:text-6xl font-medium mb-6 text-white">
                 Servicios
               </h1>
-              <p className="text-text-light text-lg font-light leading-relaxed mb-4">
+              <p className="text-white/80 text-lg font-light leading-relaxed mb-4">
                 Terapias holísticas diseñadas para acompañarte en tu proceso de
                 sanación, autodescubrimiento y equilibrio integral.
               </p>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 text-text-main font-medium text-sm">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 text-white font-medium text-sm border border-white/10">
                 <span className="material-symbols-outlined text-sm">
                   check_circle
                 </span>
@@ -151,7 +151,7 @@ export default function Servicios() {
                   key={i}
                   className={`flex flex-col ${i % 2 === 0 ? "lg:flex-row" : "lg:flex-row-reverse"} gap-12 lg:gap-20 items-center`}
                 >
-                  <div className="flex-1 w-full relative h-[450px] rounded-[3rem] overflow-hidden shadow-2xl">
+                  <div className="flex-1 w-full relative h-[450px] rounded-[3rem] overflow-hidden shadow-2xl border-4 border-white/5">
                     <Image
                       src={service.img}
                       alt={service.title}
@@ -163,19 +163,19 @@ export default function Servicios() {
                     <span className="text-primary-dark font-bold text-sm tracking-widest uppercase">
                       {service.subtitle}
                     </span>
-                    <h2 className="font-display text-4xl font-medium text-text-main">
+                    <h2 className="font-display text-4xl font-medium text-white">
                       {service.title}
                     </h2>
-                    <p className="text-text-light text-lg leading-relaxed">
+                    <p className="text-white/70 text-lg leading-relaxed">
                       {service.description}
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
                       {service.benefits.map((benefit, j) => (
                         <div key={j} className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-primary text-sm font-bold">
+                          <span className="material-symbols-outlined text-primary-dark text-sm font-bold">
                             check_circle
                           </span>
-                          <span className="text-sm font-medium text-text-main">
+                          <span className="text-sm font-medium text-white/90">
                             {benefit}
                           </span>
                         </div>
