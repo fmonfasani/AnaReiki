@@ -105,7 +105,8 @@ export default function Footer() {
         </div>
         <div className="border-t border-primary/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-terracotta">
           <p>
-            © 2024 Ana Reiki Bienestar Holístico. Todos los derechos reservados.
+            @2026 AnaMurat Reiki bienestar Holistico . Todos los derechos
+            reservados
           </p>
           <div className="flex gap-6">
             <Link
