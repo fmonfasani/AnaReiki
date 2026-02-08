@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ContactForm from "./ContactForm";
 
 export default function Contacto() {
   return (
@@ -56,57 +57,7 @@ export default function Contacto() {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-background-alt/5 p-6 sm:p-10 rounded-[2.5rem] shadow-2xl border border-background-alt/50 transition-all">
-                <form className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-text-main dark:text-text-main ml-1 uppercase tracking-wider">
-                        Nombre
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-6 py-5 rounded-2xl bg-background-light dark:bg-white text-text-main border-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-text-light/50"
-                        placeholder="Tu nombre"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-text-main dark:text-text-main ml-1 uppercase tracking-wider">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        className="w-full px-6 py-5 rounded-2xl bg-background-light dark:bg-white text-text-main border-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-text-light/50"
-                        placeholder="tu@email.com"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-text-main dark:text-text-main ml-1 uppercase tracking-wider">
-                      Servicio de interés
-                    </label>
-                    <select className="w-full px-6 py-5 rounded-2xl bg-background-light dark:bg-white text-text-main border-none focus:ring-2 focus:ring-primary/40 transition-all appearance-none cursor-pointer">
-                      <option>Selecciona una opción</option>
-                      <option>Bioenergía</option>
-                      <option>Registros Akáshicos</option>
-                      <option>Yoga Consciente</option>
-                      <option>Acompañamiento Terapéutico</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-text-main dark:text-text-main ml-1 uppercase tracking-wider">
-                      Mensaje
-                    </label>
-                    <textarea
-                      rows={4}
-                      className="w-full px-6 py-5 rounded-2xl bg-background-light dark:bg-white text-text-main border-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-text-light/50"
-                      placeholder="¿En qué puedo ayudarte?"
-                    ></textarea>
-                  </div>
-                  <button className="w-full bg-terracotta hover:bg-terracotta/90 text-white py-5 rounded-2xl font-display font-bold text-xl transition-all shadow-xl shadow-terracotta/20 transform hover:-translate-y-1 active:scale-[0.98]">
-                    Enviar Mensaje
-                  </button>
-                </form>
-              </div>
+              <ContactForm />
             </div>
           </div>
         </section>
