@@ -4,7 +4,7 @@ export default function Footer() {
   return (
     <footer className="bg-background-light pt-16 pb-8 border-t border-background-alt">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid md:grid-cols-4 gap-12 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-16 md:gap-12 mb-16">
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
               <span className="material-symbols-outlined text-primary text-2xl">
@@ -63,30 +63,42 @@ export default function Footer() {
             <h4 className="font-display font-bold text-lg mb-4 text-text-main">
               Contacto
             </h4>
-            <ul className="space-y-3 text-sm text-terracotta">
-              <li className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-base">
+            <ul className="space-y-4 text-sm text-terracotta/90">
+              <li className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-base text-primary-dark">
                   mail
                 </span>
-                murat.anaj@gmail.com
+                <a
+                  href="mailto:murat.anaj@gmail.com"
+                  className="hover:text-primary-dark transition-colors"
+                >
+                  murat.anaj@gmail.com
+                </a>
               </li>
-              <li className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-base">
+              <li className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-base text-primary-dark">
                   call
                 </span>
-                +54 3584376502
+                <a
+                  href="https://wa.me/543584376502"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-primary-dark transition-colors"
+                >
+                  +54 3584376502
+                </a>
               </li>
-              <li className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-base">
+              <li className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-base text-primary-dark">
                   location_on
                 </span>
                 Río Cuarto, Córdoba. Argentina
               </li>
-              <li className="flex items-center gap-2 pt-2 border-t border-primary/10">
-                <span className="material-symbols-outlined text-base">
+              <li className="flex items-center gap-3 pt-4 border-t border-primary/10">
+                <span className="material-symbols-outlined text-base text-primary-dark">
                   person
                 </span>
-                @anamur.reiki
+                <span className="font-medium">@anamur.reiki</span>
               </li>
             </ul>
           </div>

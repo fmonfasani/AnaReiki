@@ -58,7 +58,7 @@ export default function Encounters() {
           {encounters.map((item, i) => (
             <div
               key={i}
-              className="group relative h-[500px] overflow-hidden rounded-[2.5rem] shadow-xl transition-all duration-500 hover:shadow-2xl cursor-pointer"
+              className="group relative h-[450px] md:h-[500px] overflow-hidden rounded-[2.5rem] shadow-xl transition-all duration-500 hover:shadow-2xl active:scale-[0.98] cursor-pointer"
               onClick={() => setActive(active === i ? null : i)}
             >
               <Image
@@ -88,7 +88,7 @@ export default function Encounters() {
                 <div
                   className={`overflow-hidden transition-all duration-700 ease-in-out ${active === i ? "max-h-60 opacity-100 mb-6" : "max-h-0 opacity-0"}`}
                 >
-                  <p className="text-sm text-gray-200 leading-relaxed font-light">
+                  <p className="text-sm text-white/90 leading-relaxed font-light">
                     {item.description}
                   </p>
                 </div>

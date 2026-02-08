@@ -81,7 +81,7 @@ export default function Therapies() {
           {therapies.map((item, i) => (
             <div
               key={i}
-              className="group bg-white rounded-[2rem] overflow-hidden shadow-lg shadow-primary/5 border border-primary/10 transition-all hover:-translate-y-2 cursor-pointer flex flex-col h-full"
+              className="group bg-white dark:bg-background-alt/5 rounded-[2rem] overflow-hidden shadow-lg shadow-primary/5 border border-primary/10 transition-all hover:-translate-y-2 active:scale-[0.98] cursor-pointer flex flex-col h-full"
               onClick={() => setExpanded(expanded === i ? null : i)}
             >
               <div className="aspect-square relative overflow-hidden shrink-0">
@@ -104,7 +104,7 @@ export default function Therapies() {
                   <div
                     className={`overflow-hidden transition-all duration-500 ${expanded === i ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}
                   >
-                    <p className="text-text-light text-sm leading-relaxed text-left">
+                    <p className="text-text-light dark:text-text-main text-sm leading-relaxed text-left">
                       {item.description}
                     </p>
                   </div>

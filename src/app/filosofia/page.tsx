@@ -18,7 +18,7 @@ export default function Filosofia() {
                   Filosofía humana y{" "}
                   <span className="text-primary italic">consciente</span>.
                 </h1>
-                <p className="text-lg text-text-subtle leading-relaxed">
+                <p className="text-lg md:text-xl text-text-subtle leading-relaxed font-light">
                   Entiendo al cuerpo como un campo sensible que guarda memoria
                   emocional y energética. Mi trabajo se orienta a facilitar
                   espacios de conciencia donde esa información pueda ser
@@ -27,29 +27,29 @@ export default function Filosofia() {
                   guía y en la importancia de escuchar sus mensajes para
                   recuperar el equilibrio y el bienestar.
                 </p>
-                <div className="space-y-6">
-                  <div className="flex items-start gap-4 p-6 bg-white rounded-2xl shadow-sm border border-background-alt/50">
-                    <span className="material-symbols-outlined text-primary text-3xl">
+                <div className="grid gap-6 pt-4">
+                  <div className="flex items-start gap-4 p-8 bg-white dark:bg-background-alt/10 rounded-3xl shadow-sm border border-background-alt/50 transition-all hover:shadow-md">
+                    <span className="material-symbols-outlined text-primary-dark text-4xl">
                       self_improvement
                     </span>
-                    <div>
-                      <h3 className="font-display text-xl font-bold mb-1">
+                    <div className="space-y-1">
+                      <h3 className="font-display text-xl font-bold text-text-main dark:text-text-main">
                         Presencia
                       </h3>
-                      <p className="text-sm text-text-subtle">
+                      <p className="text-sm text-text-light">
                         Acompaño desde una mirada amorosa, profunda y guiada.
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-4 p-6 bg-white rounded-2xl shadow-sm border border-background-alt/50">
-                    <span className="material-symbols-outlined text-primary text-3xl">
+                  <div className="flex items-start gap-4 p-8 bg-white dark:bg-background-alt/10 rounded-3xl shadow-sm border border-background-alt/50 transition-all hover:shadow-md">
+                    <span className="material-symbols-outlined text-primary-dark text-4xl">
                       favorite
                     </span>
-                    <div>
-                      <h3 className="font-display text-xl font-bold mb-1">
+                    <div className="space-y-1">
+                      <h3 className="font-display text-xl font-bold text-text-main dark:text-text-main">
                         Sanación
                       </h3>
-                      <p className="text-sm text-text-subtle">
+                      <p className="text-sm text-text-light">
                         Acompaño procesos de sanación desde una mirada integral,
                         respetuosa y consciente.
                       </p>
@@ -72,13 +72,13 @@ export default function Filosofia() {
         <section className="py-20 bg-background-alt/30">
           <div className="max-w-4xl mx-auto px-4 text-center space-y-8">
             <h2 className="font-display text-4xl font-medium">Compromiso</h2>
-            <p className="text-xl text-text-subtle italic leading-relaxed">
+            <p className="text-2xl md:text-3xl text-text-subtle italic leading-relaxed font-light">
               "Mi misión es facilitar un espacio seguro de contención y
               equilibrio, donde cada persona pueda recordar su propia capacidad
               de sanación y redescubrir la luz que ya habita en su interior."
             </p>
-            <div className="h-0.5 w-20 bg-primary/30 mx-auto"></div>
-            <p className="font-bold font-display uppercase tracking-widest text-sm">
+            <div className="h-0.5 w-24 bg-primary/40 mx-auto transition-all group-hover:w-32"></div>
+            <p className="font-bold font-display uppercase tracking-[0.2em] text-xs text-primary-dark">
               — Ana, Terapeuta Holística
             </p>
           </div>
