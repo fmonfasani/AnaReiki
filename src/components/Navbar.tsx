@@ -95,26 +95,32 @@ export default function Navbar() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, scale: 1.1 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.1 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 z-[9999] bg-white dark:bg-[#1b1214] md:hidden flex flex-col w-screen h-screen"
           >
-            <div className="flex flex-col items-center justify-center flex-grow gap-10 px-8">
-              <nav className="flex flex-col items-center gap-8 w-full">
+            {/* Close Button in Modal */}
+            <button
+              onClick={toggleMenu}
+              className="absolute top-4 right-4 p-4 text-text-main dark:text-white"
+            >
+              <span className="material-symbols-outlined text-3xl">close</span>
+            </button>
+
+            <div className="flex flex-col items-center justify-center flex-grow py-20 px-8">
+              <nav className="flex flex-col items-center gap-12 w-full">
                 {navLinks.map((link, i) => (
                   <motion.div
                     key={link.name}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.1 }}
-                    className="w-full text-center"
                   >
                     <Link
                       href={link.href}
                       onClick={() => setIsOpen(false)}
-                      className="font-display text-3xl font-medium text-text-main block py-2 hover:text-terracotta transition-colors"
+                      className="font-display text-4xl font-medium text-text-main dark:text-white hover:text-primary-dark transition-colors"
                     >
                       {link.name}
                     </Link>
@@ -122,17 +128,17 @@ export default function Navbar() {
                 ))}
 
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 }}
-                  className="pt-8 w-full max-w-xs"
+                  className="mt-8"
                 >
                   <Link
                     href="https://calendly.com/murat-anaj"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setIsOpen(false)}
-                    className="bg-primary text-text-main px-8 py-5 rounded-full font-display font-bold text-xl shadow-xl shadow-primary/20 block text-center transform active:scale-95 transition-transform"
+                    className="bg-primary/40 dark:bg-primary-dark/20 text-text-main dark:text-white px-12 py-5 rounded-[2rem] font-display font-medium text-xl shadow-lg shadow-primary/5 block text-center transform active:scale-95 transition-transform"
                   >
                     Agendar Sesión
                   </Link>
@@ -140,19 +146,19 @@ export default function Navbar() {
               </nav>
             </div>
 
+            {/* Logo at bottom */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.7 }}
-              className="pb-12 flex flex-col items-center gap-4 text-text-light"
+              transition={{ delay: 0.6 }}
+              className="pb-12 flex flex-col items-center gap-2"
             >
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary-dark">
+                <span className="material-symbols-outlined text-primary-dark text-xl">
                   spa
                 </span>
-                <span className="font-display font-medium tracking-widest text-xs uppercase">
-                  <span className="text-primary-dark">ANA</span>{" "}
-                  <span className="text-terracotta">MURAT</span>
+                <span className="font-display font-medium tracking-[0.2em] text-[10px] uppercase text-primary-dark">
+                  ANA MURAT
                 </span>
               </div>
             </motion.div>
