@@ -127,13 +127,13 @@ export default function Navbar() {
                   className="pt-8 w-full max-w-xs"
                 >
                   <Link
-                    href="https://wa.me/543584376502"
+                    href="https://calendly.com/murat-anaj"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setIsOpen(false)}
-                    className="bg-whatsapp text-white px-8 py-5 rounded-full font-display font-bold text-xl shadow-xl shadow-whatsapp/20 block text-center transform active:scale-95 transition-transform"
+                    className="bg-primary text-text-main px-8 py-5 rounded-full font-display font-bold text-xl shadow-xl shadow-primary/20 block text-center transform active:scale-95 transition-transform"
                   >
-                    Contactame
+                    Agendar Sesión
                   </Link>
                 </motion.div>
               </nav>
