@@ -98,12 +98,12 @@ export default function Navbar() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] bg-white dark:bg-[#1b1214] md:hidden flex flex-col w-screen h-screen"
+            className="fixed inset-0 z-[10000] bg-white md:hidden flex flex-col"
           >
             {/* Close Button in Modal */}
             <button
               onClick={toggleMenu}
-              className="absolute top-4 right-4 p-4 text-text-main dark:text-white"
+              className="absolute top-4 right-4 p-4 text-text-main"
             >
               <span className="material-symbols-outlined text-3xl">close</span>
             </button>
@@ -120,7 +120,7 @@ export default function Navbar() {
                     <Link
                       href={link.href}
                       onClick={() => setIsOpen(false)}
-                      className="font-display text-4xl font-medium text-text-main dark:text-white hover:text-primary-dark transition-colors"
+                      className="font-display text-4xl font-medium text-text-main hover:text-primary-dark transition-colors"
                     >
                       {link.name}
                     </Link>
@@ -138,7 +138,7 @@ export default function Navbar() {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setIsOpen(false)}
-                    className="bg-primary/40 dark:bg-primary-dark/20 text-text-main dark:text-white px-12 py-5 rounded-[2rem] font-display font-medium text-xl shadow-lg shadow-primary/5 block text-center transform active:scale-95 transition-transform"
+                    className="bg-primary/40 text-text-main px-12 py-5 rounded-[2rem] font-display font-medium text-xl shadow-lg shadow-primary/5 block text-center transform active:scale-95 transition-transform"
                   >
                     Agendar Sesión
                   </Link>
@@ -146,12 +146,12 @@ export default function Navbar() {
               </nav>
             </div>
 
-            {/* Logo at bottom */}
+            {/* Logo at bottom - Moved up as requested */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="pb-12 flex flex-col items-center gap-2"
+              className="pb-24 flex flex-col items-center gap-2"
             >
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary-dark text-xl">
