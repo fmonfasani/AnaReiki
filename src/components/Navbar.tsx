@@ -98,7 +98,7 @@ export default function Navbar() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-background-light md:hidden flex flex-col"
+            className="fixed inset-0 z-[100] bg-white dark:bg-[#1b1214] md:hidden flex flex-col"
           >
             <div className="flex flex-col items-center justify-center flex-grow gap-10 px-8">
               <nav className="flex flex-col items-center gap-8 w-full">
