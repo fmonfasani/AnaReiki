@@ -32,8 +32,7 @@ export async function sendEmail(formData: FormData) {
     if (error) {
       console.error("Resend Error:", error);
       return {
-        error:
-          "Hubo un problema al enviar el correo. Por favor, intenta de nuevo más tarde o contáctame por WhatsApp.",
+        error: `Error de Resend: ${error.message}. Asegúrate de que la API Key de murat.anaj@gmail.com esté cargada en Vercel.`,
       };
     }
 
