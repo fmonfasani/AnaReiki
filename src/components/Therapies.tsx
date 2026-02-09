@@ -60,6 +60,13 @@ const therapies = [
       "Ceremonias de encuentro y sanación que invitan a honrar el cuerpo, la energía femenina y el linaje ancestral, generando espacios de contención, liberación y transformación.",
   },
   {
+    title: "Meditaciones Guiadas",
+    subtitle: "Silencio y presencia",
+    image: "/images/meditaciones_guiadas.png",
+    description:
+      "Un espacio para pausar la mente y conectar con el presente a través de la respiración y la visualización guiada. Ideal para reducir el estrés, calmar la ansiedad y recuperar la claridad mental en medio del ruido diario.",
+  },
+  {
     title: "Celebraciones Holísticas",
     subtitle: "Celebrar con presencia",
     image: "/images/holistic_celebration.png",

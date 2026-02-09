@@ -32,9 +32,10 @@ export default function Home() {
                   </span>
                 </h1>
                 <p className="text-base sm:text-lg text-text-light font-body font-light leading-relaxed max-w-xl mx-auto lg:mx-0 px-4 sm:px-0">
-                  Mi propósito es acompañar procesos terapéuticos desde una
-                  mirada integral, respetando los tiempos de cada persona y
-                  reconociendo al cuerpo como una guía sabia.
+                  En medio del ritmo cotidiano, muchas veces nos alejamos de lo
+                  que sentimos y necesitamos. Este espacio fue creado para
+                  acompañarte a volver a tu centro, escuchar tu cuerpo y
+                  emociones y recuperar el equilibrio que te pertenece.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4 px-6 sm:px-0">
                   <Link
@@ -100,9 +101,9 @@ export default function Home() {
               format_quote
             </span>
             <h2 className="font-display text-2xl md:text-3xl font-medium leading-relaxed text-text-main mb-8">
-              "Mi propósito es acompañar procesos terapéuticos desde una mirada
-              integral, respetando los tiempos de cada persona y reconociendo al
-              cuerpo como una guía sabia."
+              "En medio del ritmo cotidiano, muchas veces nos alejamos de lo que
+              sentimos y necesitamos. Este espacio fue creado para acompañarte a
+              volver a tu centro y recuperar el equilibrio."
             </h2>
             <Link
               href="/filosofia"

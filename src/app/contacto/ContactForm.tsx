@@ -67,6 +67,7 @@ export default function ContactForm() {
             <option value="">Selecciona una opción</option>
             <option value="Bioenergía">Bioenergía</option>
             <option value="Registros Akáshicos">Registros Akáshicos</option>
+            <option value="Meditaciones Guiadas">Meditaciones Guiadas</option>
             <option value="Yoga Consciente">Yoga Consciente</option>
             <option value="Acompañamiento Terapéutico">
               Acompañamiento Terapéutico

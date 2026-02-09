@@ -99,12 +99,25 @@ const services = [
     subtitle: "Honrá tu linaje femenino",
     img: "/images/womb_healing.png",
     description:
-      "Ceremonias de encuentro y sanación que invitan a honrar el cuerpo, la energía femenina y el linaje ancestral, generando espacios de contención, liberación y transformación.",
+      "Ceremonias de encuentro y sanación que invitan a honrar el cuerpo, la energía femenina y el linaje ancestral, generando espacios de con tención, liberación y transformación.",
     benefits: [
       "Sanación ancestral",
       "Energía femenina",
       "Contención grupal",
       "Transformación",
+    ],
+  },
+  {
+    title: "Meditaciones Guiadas",
+    subtitle: "Silencio y presencia",
+    img: "/images/meditaciones_guiadas.png",
+    description:
+      "Un espacio para pausar la mente y conectar con el presente a través de la respiración y la visualización guiada. Ideal para reducir el estrés, calmar la ansiedad y recuperar la claridad mental en medio del ruido diario.",
+    benefits: [
+      "Pausa consciente",
+      "Calma mental",
+      "Reducción de estrés",
+      "Foco y claridad",
     ],
   },
   {
