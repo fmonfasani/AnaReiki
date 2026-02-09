@@ -65,12 +65,26 @@ export default function ContactForm() {
             className="w-full px-6 py-5 rounded-2xl bg-background-light dark:bg-white text-text-main border-none focus:ring-2 focus:ring-primary/40 transition-all appearance-none cursor-pointer"
           >
             <option value="">Selecciona una opción</option>
-            <option value="Bioenergía">Bioenergía</option>
-            <option value="Registros Akáshicos">Registros Akáshicos</option>
             <option value="Meditaciones Guiadas">Meditaciones Guiadas</option>
-            <option value="Yoga Consciente">Yoga Consciente</option>
-            <option value="Acompañamiento Terapéutico">
-              Acompañamiento Terapéutico
+            <option value="Rito y sanación de útero y linaje femenino">
+              Rito y sanación de útero y linaje femenino
+            </option>
+            <option value="Clases de yoga para niños">
+              Clases de yoga para niños
+            </option>
+            <option value="Consultas por encuentros">
+              Consultas por encuentros
+            </option>
+            <option value="Ejercicios de Tapping">Ejercicios de Tapping</option>
+            <option value="Armonización de chakras con péndulo">
+              Armonización de chakras con péndulo
+            </option>
+            <option value="Sesión Reiki">Sesión Reiki</option>
+            <option value="Sesión Biodecodificación">
+              Sesión Biodecodificación
+            </option>
+            <option value="Lectura de Registros Akáshicos">
+              Lectura de Registros Akáshicos
             </option>
           </select>
         </div>
