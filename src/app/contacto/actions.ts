@@ -16,7 +16,7 @@ export async function sendEmail(formData: FormData) {
   try {
     const { data, error } = await resend.emails.send({
       from: "Ana Reiki Contacto <onboarding@resend.dev>",
-      to: ["murat.anaj@gmail.com"],
+      to: ["fmonfasani@gmail.com"],
       subject: `Nuevo mensaje de ${nombre} - Ana Reiki`,
       replyTo: email,
       html: `
@@ -32,8 +32,7 @@ export async function sendEmail(formData: FormData) {
     if (error) {
       console.error("Resend Error:", error);
       return {
-        error:
-          "Hubo un problema al enviar el correo. Intenta de nuevo más tarde.",
+        error: `Error de Resend: ${error.message} (Verifica que el mail de destino sea el mismo que registraste en Resend)`,
       };
     }
 
