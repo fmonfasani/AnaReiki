@@ -13,11 +13,11 @@ export default async function MembersDashboard() {
   // Get next appointment
   const today = new Date().toISOString();
   const { data: nextAppointment } = await supabase
-    .from('appointments')
-    .select('*')
-    .eq('user_id', user.id)
-    .gte('start_time', today)
-    .order('start_time', { ascending: true })
+    .from("appointments")
+    .select("*")
+    .eq("user_id", user.id)
+    .gte("start_time", today)
+    .order("start_time", { ascending: true })
     .limit(1)
     .single();
 
@@ -30,8 +30,8 @@ export default async function MembersDashboard() {
             ¡Hola, {user.user_metadata?.full_name?.split(" ")[0]}! ✨
           </h1>
           <p className="text-purple-100 max-w-xl">
-            Bienvenida a tu espacio sagrado. Hoy es un buen día para conectar con
-            tu energía.
+            Bienvenida a tu espacio sagrado. Hoy es un buen día para conectar
+            con tu energía.
           </p>
         </div>
         <div className="absolute right-0 bottom-0 opacity-20 transform translate-x-10 translate-y-10">
@@ -48,45 +48,53 @@ export default async function MembersDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Mood Tracker */}
         <div className="md:col-span-2">
-           <MoodTracker userId={user.id} />
+          <MoodTracker userId={user.id} />
         </div>
 
         {/* Next Appointment Card */}
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
-           <div>
-              <h3 className="font-bold text-gray-900 mb-4 font-display flex items-center gap-2">
-                 <span className="material-symbols-outlined text-pink-500">event</span>
-                 Próxima Sesión
-              </h3>
-              
-              {nextAppointment ? (
-                 <div>
-                    <p className="text-2xl font-bold text-gray-800">
-                       {new Date(nextAppointment.start_time).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' })}
-                    </p>
-                    <p className="text-pink-600 font-medium text-lg">
-                       {new Date(nextAppointment.start_time).toLocaleTimeString('es-ES', { hour: '2-digit', minute:'2-digit' })} hs
-                    </p>
-                    <span className="inline-block mt-2 px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-bold uppercase tracking-wide">
-                       Confirmada
-                    </span>
-                 </div>
-              ) : (
-                 <p className="text-gray-500 text-sm">
-                    No tienes sesiones agendadas próximamente.
-                 </p>
-              )}
-           </div>
+          <div>
+            <h3 className="font-bold text-gray-900 mb-4 font-display flex items-center gap-2">
+              <span className="material-symbols-outlined text-pink-500">
+                event
+              </span>
+              Próxima Sesión
+            </h3>
 
-           <Link 
-              href="/miembros/reservar"
-              className="mt-6 w-full py-2 px-4 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-xl text-center text-sm transition-colors border border-gray-200"
-           >
-              {nextAppointment ? 'Gestionar Citas' : 'Agendar Sesión'}
-           </Link>
+            {nextAppointment ? (
+              <div>
+                <p className="text-2xl font-bold text-gray-800">
+                  {new Date(nextAppointment.start_time).toLocaleDateString(
+                    "es-ES",
+                    { weekday: "long", day: "numeric" },
+                  )}
+                </p>
+                <p className="text-pink-600 font-medium text-lg">
+                  {new Date(nextAppointment.start_time).toLocaleTimeString(
+                    "es-ES",
+                    { hour: "2-digit", minute: "2-digit" },
+                  )}{" "}
+                  hs
+                </p>
+                <span className="inline-block mt-2 px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-bold uppercase tracking-wide">
+                  Confirmada
+                </span>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">
+                No tienes sesiones agendadas próximamente.
+              </p>
+            )}
+          </div>
+
+          <Link
+            href="/miembros/reservar"
+            className="mt-6 w-full py-2 px-4 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-xl text-center text-sm transition-colors border border-gray-200"
+          >
+            {nextAppointment ? "Gestionar Citas" : "Agendar Sesión"}
+          </Link>
         </div>
       </div>
-
 
       {/* Quick Access Grid */}
       <h3 className="font-bold text-gray-900 text-xl font-display mt-8">
@@ -105,14 +113,31 @@ export default async function MembersDashboard() {
             Retoma tu última clase o explora nuevas secuencias.
           </p>
         </Link>
-        
+
         <Link
           href="/miembros/podcast"
-            </p>
-            <span className="inline-flex items-center text-pink-600 font-bold group-hover:translate-x-2 transition-transform">
-              Escuchar ahora <span className="ml-2">→</span>
-            </span>
+          className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1"
+        >
+          <div className="w-12 h-12 bg-pink-100 rounded-xl flex items-center justify-center text-pink-600 text-2xl mb-4 group-hover:scale-110 transition-transform">
+            🎧
           </div>
+          <h3 className="font-bold text-gray-900 mb-1">Meditaciones</h3>
+          <p className="text-sm text-gray-500">
+            Escucha nuevos episodios y meditaciones guiadas.
+          </p>
+        </Link>
+
+        <Link
+          href="/miembros/evolucion"
+          className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1"
+        >
+          <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center text-teal-600 text-2xl mb-4 group-hover:scale-110 transition-transform">
+            🌿
+          </div>
+          <h3 className="font-bold text-gray-900 mb-1">Mi Evolución</h3>
+          <p className="text-sm text-gray-500">
+            Revisa tu progreso y notas personales.
+          </p>
         </Link>
       </div>
 

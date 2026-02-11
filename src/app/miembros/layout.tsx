@@ -18,6 +18,15 @@ export default async function MembersLayout({
     redirect("/login");
   }
 
+  // Check if user is admin
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  const isAdmin = profile?.role === "admin";
+
   const navItems = [
     { name: "Inicio", href: "/miembros", icon: "home" },
     { name: "Clases", href: "/miembros/clases", icon: "video_library" },
@@ -25,6 +34,14 @@ export default async function MembersLayout({
     { name: "Evolución", href: "/miembros/evolucion", icon: "spa" },
     { name: "Reservar", href: "/miembros/reservar", icon: "calendar_month" },
   ];
+
+  if (isAdmin) {
+    navItems.unshift({
+      name: "Panel Admin",
+      href: "/admin",
+      icon: "admin_panel_settings",
+    });
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
