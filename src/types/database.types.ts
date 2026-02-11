@@ -11,6 +11,7 @@ export interface Database {
           full_name: string | null;
           avatar_url: string | null;
           is_premium: boolean;
+          role: "user" | "admin";
           created_at: string;
           updated_at: string;
         };
@@ -20,6 +21,7 @@ export interface Database {
           full_name?: string | null;
           avatar_url?: string | null;
           is_premium?: boolean;
+          role?: "user" | "admin";
           created_at?: string;
           updated_at?: string;
         };
@@ -29,6 +31,36 @@ export interface Database {
           full_name?: string | null;
           avatar_url?: string | null;
           is_premium?: boolean;
+          role?: "user" | "admin";
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      availability: {
+        Row: {
+          id: string;
+          day_of_week: number;
+          start_time: string;
+          end_time: string;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          day_of_week: number;
+          start_time: string;
+          end_time: string;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          day_of_week?: number;
+          start_time?: string;
+          end_time?: string;
+          is_active?: boolean;
           created_at?: string;
           updated_at?: string;
         };
