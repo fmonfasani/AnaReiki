@@ -62,6 +62,16 @@ export default function Navbar() {
 
           <div className="flex items-center gap-4">
             <Link
+              href="/login"
+              className="hidden lg:flex items-center gap-2 text-sm font-medium text-text-main hover:text-primary-dark transition-all duration-300 px-5 py-2.5 border border-primary-dark/20 rounded-full hover:bg-primary/10 group"
+            >
+              <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">
+                person
+              </span>
+              Área Consultantes
+            </Link>
+
+            <Link
               href="https://wa.me/543584376502"
               target="_blank"
               rel="noopener noreferrer"
@@ -108,8 +118,8 @@ export default function Navbar() {
               <span className="material-symbols-outlined text-3xl">close</span>
             </button>
 
-            <div className="flex flex-col items-center justify-center flex-grow py-20 px-8">
-              <nav className="flex flex-col items-center gap-12 w-full">
+            <div className="flex flex-col items-center justify-center flex-grow py-20 px-8 overflow-y-auto">
+              <nav className="flex flex-col items-center gap-10 w-full">
                 {navLinks.map((link, i) => (
                   <motion.div
                     key={link.name}
@@ -130,17 +140,28 @@ export default function Navbar() {
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="mt-8"
+                  transition={{ delay: 0.4 }}
+                  className="w-full flex flex-col items-center gap-6 mt-4"
                 >
                   <Link
-                    href="https://calendly.com/murat-anaj"
+                    href="/login"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 font-display text-3xl font-medium text-primary-dark hover:text-text-main transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-3xl">
+                      person
+                    </span>
+                    Área Consultantes
+                  </Link>
+
+                  <Link
+                    href="https://wa.me/543584376502"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setIsOpen(false)}
-                    className="bg-primary/40 dark:bg-primary-dark/20 text-text-main dark:text-white px-12 py-5 rounded-[2rem] font-display font-medium text-xl shadow-lg shadow-primary/5 block text-center transform active:scale-95 transition-transform"
+                    className="bg-whatsapp text-white px-12 py-5 rounded-[2rem] font-display font-medium text-xl shadow-lg shadow-whatsapp/10 block text-center transform active:scale-95 transition-transform w-full max-w-[280px]"
                   >
-                    Agendar Sesión
+                    Contactame
                   </Link>
                 </motion.div>
               </nav>
