@@ -19,11 +19,13 @@ export default async function MembersLayout({
   }
 
   // Check if user is admin
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
+
+  console.log("Layout Admin Check:", { userId: user.id, profile, error });
 
   const isAdmin = profile?.role === "admin";
 

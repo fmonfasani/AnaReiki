@@ -12,65 +12,114 @@ export default function BookingCalendar({ userId }: { userId: string }) {
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [adminProfile, setAdminProfile] = useState<any>(null);
+
   const supabase = createClient();
 
+  // Fetch Admin Profile on mount to get settings
   useEffect(() => {
-    if (selectedDay) {
+    const fetchAdmin = async () => {
+      // Find the admin user to get their settings/id
+      // For this app we assume there is one main admin/consultant.
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("role", "admin") // Assuming role is 'admin'
+        .limit(1);
+
+      if (profiles && profiles.length > 0) {
+        setAdminProfile(profiles[0]);
+      }
+    };
+    fetchAdmin();
+  }, []);
+
+  useEffect(() => {
+    if (selectedDay && adminProfile) {
       fetchSlots(selectedDay);
     }
-  }, [selectedDay]);
+  }, [selectedDay, adminProfile]);
 
   const fetchSlots = async (date: Date) => {
+    if (!adminProfile) return;
     setLoading(true);
+
+    const dateString = format(date, "yyyy-MM-dd");
     const dayOfWeek = date.getDay(); // 0-6
 
-    // 1. Get Teacher's availability for this day of week
-    const { data: availability } = await supabase
+    // 1. Check for Specific Date Override (Blocked or Custom)
+    const { data: specificAvailability } = await supabase
       .from("availability")
-      .select("start_time, end_time")
-      .eq("day_of_week", dayOfWeek)
-      .eq("is_active", true);
+      .select("start_time, end_time, is_available")
+      .eq("consultant_id", adminProfile.id)
+      .eq("specific_date", dateString);
 
-    if (!availability || availability.length === 0) {
+    let activeWindows: any[] = [];
+
+    if (specificAvailability && specificAvailability.length > 0) {
+      // If specific rules exist, they override recurring.
+      // Filter only available ones. If is_available=false (blocked), this will be empty.
+      activeWindows = specificAvailability.filter((slot) => slot.is_available);
+    } else {
+      // 2. Fallback to Recurring
+      const { data: recurringAvailability } = await supabase
+        .from("availability")
+        .select("start_time, end_time")
+        .eq("day_of_week", dayOfWeek)
+        .eq("consultant_id", adminProfile.id)
+        .is("specific_date", null) // Only recurring
+        .eq("is_available", true); // Use correct column
+
+      if (recurringAvailability) {
+        activeWindows = recurringAvailability;
+      }
+    }
+
+    if (activeWindows.length === 0) {
       setAvailableSlots([]);
       setLoading(false);
       return;
     }
 
-    // 2. Get existing appointments for this specific date
-    const dateString = format(date, "yyyy-MM-dd");
+    // 3. Get existing appointments for this specific date
     const { data: appointments } = await supabase
       .from("appointments")
-      .select("start_time")
+      .select("start_time, end_time")
+      .eq("consultant_id", adminProfile.id)
+      .eq("status", "pending")
       .gte("start_time", `${dateString}T00:00:00`)
-      .lte("end_time", `${dateString}T23:59:59`)
-      .not("status", "eq", "cancelled");
+      .lte("end_time", `${dateString}T23:59:59`);
 
-    // 3. Generate slots (simplified logic: 1 hour slots)
+    // 4. Generate slots (Dynamic logic)
     const slots: string[] = [];
+    const duration = adminProfile.user_metadata?.session_duration || 60; // Minutes
+    const buffer = adminProfile.user_metadata?.buffer_time || 0; // Minutes
 
-    availability.forEach((window) => {
+    activeWindows.forEach((window: any) => {
       let current = new Date(`${dateString}T${window.start_time}`);
-      const end = new Date(`${dateString}T${window.end_time}`);
+      const windowEnd = new Date(`${dateString}T${window.end_time}`);
 
-      while (current < end) {
+      // While (current + duration) <= windowEnd
+      while (true) {
+        const slotEnd = new Date(current.getTime() + duration * 60000);
+        if (slotEnd > windowEnd) break;
+
         const timeString = format(current, "HH:mm");
 
         // Check collision
+        // Overlap logic: (StartA < EndB) and (EndA > StartB)
         const isBooked = appointments?.some((app) => {
-          const appTime = new Date(app.start_time).toLocaleTimeString("es-ES", {
-            hour: "2-digit",
-            minute: "2-digit",
-          });
-          return appTime === timeString;
+          const appStart = new Date(app.start_time);
+          const appEnd = new Date(app.end_time);
+          return current < appEnd && slotEnd > appStart;
         });
 
         if (!isBooked) {
           slots.push(timeString);
         }
 
-        // Increment 1 hour
-        current.setHours(current.getHours() + 1);
+        // Increment: current + duration + buffer
+        current = new Date(slotEnd.getTime() + buffer * 60000);
       }
     });
 
@@ -79,7 +128,10 @@ export default function BookingCalendar({ userId }: { userId: string }) {
   };
 
   const bookAppointment = async (time: string) => {
-    if (!selectedDay || !userId) return;
+    if (!selectedDay || !userId || !adminProfile) return;
+
+    const duration = adminProfile.user_metadata?.session_duration || 60;
+
     if (
       !confirm(
         `¿Confirmar cita para el ${format(selectedDay, "dd/MM")} a las ${time}?`,
@@ -91,15 +143,16 @@ export default function BookingCalendar({ userId }: { userId: string }) {
     const dateString = format(selectedDay, "yyyy-MM-dd");
     const startDateTime = `${dateString}T${time}:00`;
 
-    // Calculate end time (assuming 1 hour duration)
-    const endDate = new Date(startDateTime);
-    endDate.setHours(endDate.getHours() + 1);
+    // Calculate end time dynamic
+    const startDate = new Date(startDateTime);
+    const endDate = new Date(startDate.getTime() + duration * 60000);
     const endDateTime = endDate.toISOString();
 
     const { error } = await supabase.from("appointments").insert([
       {
         user_id: userId,
-        start_time: new Date(startDateTime).toISOString(),
+        consultant_id: adminProfile.id,
+        start_time: startDate.toISOString(),
         end_time: endDateTime,
         status: "pending",
       },

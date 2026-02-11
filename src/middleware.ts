@@ -3,12 +3,17 @@ import { updateSession } from "@/lib/supabase/middleware";
 import { createServerClient } from "@supabase/ssr";
 
 export async function middleware(request: NextRequest) {
-  // 1. Proteger rutas de miembros y admin
+  // 1. Session Refresh (Always run first!)
+  // This updates the session cookie and handles redirects if unauthenticated
+  let response = await updateSession(request);
+
+  // If updateSession already redirected (e.g. to /login), we stop here
   if (
-    request.nextUrl.pathname.startsWith("/miembros") ||
-    request.nextUrl.pathname.startsWith("/admin")
+    response.headers.get("x-middleware-rewrite") ||
+    response.status === 307 ||
+    response.status === 308
   ) {
-    return await updateSession(request);
+    return response;
   }
 
   // 2. Redirect authenticated users away from login/registro pages
@@ -38,44 +43,10 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 3. Admin Role Check (Specific Logic)
-  if (request.nextUrl.pathname.startsWith("/admin")) {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll() {},
-        },
-      },
-    );
+  // 3. Admin routes are protected by layout/page components
+  // We just ensure session exists here (handled by updateSession above)
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    // If no user, updateSession (above) should have handled it, but double check
-    if (!user) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-
-    // Check Role
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role !== "admin") {
-      // Not admin? Go back to members area
-      return NextResponse.redirect(new URL("/miembros", request.url));
-    }
-  }
-
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
