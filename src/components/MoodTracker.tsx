@@ -31,7 +31,7 @@ export default function MoodTracker({ userId }: { userId: string }) {
       .select("mood_score")
       .eq("user_id", userId)
       .gte("created_at", `${today}T00:00:00`)
-      .single();
+      .maybeSingle();
 
     if (data) {
       setHasSubmitted(true);
