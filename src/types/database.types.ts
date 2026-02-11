@@ -65,6 +65,84 @@ export interface Database {
           updated_at?: string;
         };
       };
+      daily_reflections: {
+        Row: {
+          id: string;
+          user_id: string;
+          mood_score: number;
+          intention: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          mood_score: number;
+          intention?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          mood_score?: number;
+          intention?: string | null;
+          created_at?: string;
+        };
+      };
+      appointments: {
+        Row: {
+          id: string;
+          user_id: string;
+          start_time: string;
+          end_time: string;
+          status: "pending" | "confirmed" | "cancelled" | "completed";
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          start_time: string;
+          end_time: string;
+          status?: "pending" | "confirmed" | "cancelled" | "completed";
+          notes?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          start_time?: string;
+          end_time?: string;
+          status?: "pending" | "confirmed" | "cancelled" | "completed";
+          notes?: string | null;
+          created_at?: string;
+        };
+      };
+      session_notes: {
+        Row: {
+          id: string;
+          user_id: string;
+          admin_id: string | null;
+          content: string;
+          is_private: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          admin_id?: string | null;
+          content: string;
+          is_private?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          admin_id?: string | null;
+          content?: string;
+          is_private?: boolean;
+          created_at?: string;
+        };
+      };
       content: {
         Row: {
           id: string;
