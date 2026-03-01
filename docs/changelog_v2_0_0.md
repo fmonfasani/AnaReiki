@@ -62,4 +62,16 @@ Aseguramos que el sistema sea resistente a errores mediante pruebas automáticas
 > 2. Implementar la pasarela de pagos (Stripe) para citas pagas antes de la sesión.
 
 ---
+
+## [2.1.0] - 2026-03-01 Security & Consistency Update 🛡️
+- **Blindaje de Seguridad (Migración 007)**:
+    - Corregimos una vulnerabilidad crítica en la tabla `profiles` que permitía a usuarios normales auto-asignarse el rol de `admin`.
+    - Restringimos las transiciones de estado de las citas: ahora los usuarios solo pueden cancelar turnos, pero solo el admin puede confirmarlos o completarlos.
+    - Unificamos la verificación de administradores usando claims de JWT para mayor rapidez y consistencia entre la UI y la DB.
+- **Consistencia de Datos**:
+    - Sincronizamos los tipos de TypeScript (`database.types.ts`) con el esquema real de la base de datos, eliminando referencias a columnas obsoletas como `user_id` en las citas.
+    - Aseguramos la compatibilidad total entre el panel de administración y las nuevas tablas de reglas de disponibilidad.
+
+---
+
 *Documentación generada automáticamente por el equipo de Agentes de AnaReiki.*
