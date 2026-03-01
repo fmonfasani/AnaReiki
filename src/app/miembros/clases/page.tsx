@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import VideoPlayer from "@/components/VideoPlayer";
 import Link from "next/link";
 
+import Image from "next/image";
+
 export default async function ClasesPage() {
   const supabase = await createClient();
 
@@ -39,10 +41,11 @@ export default async function ClasesPage() {
               <div className="relative aspect-video bg-gray-900">
                 {/* We use a simple image for thumbnail if stored, otherwise showing a play icon */}
                 {video.thumbnail_url ? (
-                  <img
+                  <Image
                     src={video.thumbnail_url}
                     alt={video.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-white/50">

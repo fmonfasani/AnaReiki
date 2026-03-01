@@ -26,7 +26,7 @@ export default async function MembersLayout({
     { name: "Clases", href: "/miembros/clases", icon: "video_library" },
     { name: "Podcast", href: "/miembros/podcast", icon: "podcasts" },
     { name: "Evolución", href: "/miembros/evolucion", icon: "spa" },
-    { name: "Reservar", href: "/miembros/reservar", icon: "calendar_month" },
+    { name: "Mi Agenda", href: "/miembros/mis-citas", icon: "calendar_month" },
   ];
 
   if (isAdmin) {

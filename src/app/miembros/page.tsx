@@ -91,10 +91,10 @@ export default async function MembersDashboard() {
           </div>
 
           <Link
-            href="/miembros/reservar"
+            href="/miembros/mis-citas"
             className="mt-6 w-full py-2 px-4 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-xl text-center text-sm transition-colors border border-gray-200"
           >
-            {nextAppointment ? "Gestionar Citas" : "Agendar Sesión"}
+            {nextAppointment ? "Gestionar Citas" : "Mi Agenda"}
           </Link>
         </div>
       </div>
