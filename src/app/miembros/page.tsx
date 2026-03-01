@@ -18,7 +18,7 @@ export default async function MembersDashboard() {
   const { data: nextAppointment } = await supabase
     .from("appointments")
     .select("*")
-    .eq("user_id", user.id)
+    .eq("client_id", user.id)
     .gte("start_time", today)
     .order("start_time", { ascending: true })
     .limit(1)

@@ -4,16 +4,20 @@ import React, { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
-import { format, addMonths } from "date-fns";
+import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { useAppointmentActions } from "@/hooks/useAppointmentActions";
 
-export default function BookingCalendar({ userId }: { userId: string }) {
+export default function BookingCalendar() {
   const [selectedDay, setSelectedDay] = useState<Date | undefined>(new Date());
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [bookingLoading, setBookingLoading] = useState(false);
-  const [adminProfile, setAdminProfile] = useState<{ id: string } | null>(null);
+  const [adminProfile, setAdminProfile] = useState<{
+    id: string;
+    serviceId: string;
+  } | null>(null);
   const [adminError, setAdminError] = useState<string | null>(null);
+  const { create, isPending: bookingLoading, setError } = useAppointmentActions();
 
   const supabase = createClient();
 
@@ -21,9 +25,9 @@ export default function BookingCalendar({ userId }: { userId: string }) {
   useEffect(() => {
     const fetchAdmin = async () => {
       const { data: consultantSlots, error: consultantError } = await supabase
-        .from("availability")
+        .from("availability_rules")
         .select("consultant_id")
-        .eq("is_available", true)
+        .eq("is_active", true)
         .limit(1);
 
       if (consultantError) {
@@ -37,7 +41,19 @@ export default function BookingCalendar({ userId }: { userId: string }) {
         return;
       }
 
-      setAdminProfile({ id: consultantId });
+      const { data: services, error: serviceError } = await supabase
+        .from("services")
+        .select("id")
+        .eq("is_active", true)
+        .order("created_at", { ascending: true })
+        .limit(1);
+
+      if (serviceError || !services?.[0]?.id) {
+        setAdminError("No hay servicios configurados para reservar.");
+        return;
+      }
+
+      setAdminProfile({ id: consultantId, serviceId: services[0].id });
     };
     fetchAdmin();
   }, []);
@@ -57,10 +73,10 @@ export default function BookingCalendar({ userId }: { userId: string }) {
 
     // 1. Check for Specific Date Override (Blocked or Custom)
     const { data: specificAvailability } = await supabase
-      .from("availability")
+      .from("availability_exceptions")
       .select("start_time, end_time, is_available")
       .eq("consultant_id", adminProfile.id)
-      .eq("specific_date", dateString);
+      .eq("exception_date", dateString);
 
     let activeWindows: any[] = [];
 
@@ -71,12 +87,11 @@ export default function BookingCalendar({ userId }: { userId: string }) {
     } else {
       // 2. Fallback to Recurring
       const { data: recurringAvailability } = await supabase
-        .from("availability")
+        .from("availability_rules")
         .select("start_time, end_time")
         .eq("day_of_week", dayOfWeek)
         .eq("consultant_id", adminProfile.id)
-        .is("specific_date", null) // Only recurring
-        .eq("is_available", true); // Use correct column
+        .eq("is_active", true); // Use correct column
 
       if (recurringAvailability) {
         activeWindows = recurringAvailability;
@@ -136,9 +151,7 @@ export default function BookingCalendar({ userId }: { userId: string }) {
   };
 
   const bookAppointment = async (time: string) => {
-    if (!selectedDay || !userId || !adminProfile) return;
-
-    const duration = 60;
+    if (!selectedDay || !adminProfile) return;
 
     if (
       !confirm(
@@ -147,32 +160,20 @@ export default function BookingCalendar({ userId }: { userId: string }) {
     )
       return;
 
-    setBookingLoading(true);
+    setError(null);
     const dateString = format(selectedDay, "yyyy-MM-dd");
     const startDateTime = `${dateString}T${time}:00`;
+    const result = await create({
+      serviceId: adminProfile.serviceId,
+      consultantId: adminProfile.id,
+      startTime: new Date(startDateTime).toISOString(),
+    });
 
-    // Calculate end time dynamic
-    const startDate = new Date(startDateTime);
-    const endDate = new Date(startDate.getTime() + duration * 60000);
-    const endDateTime = endDate.toISOString();
-
-    const { error } = await supabase.from("appointments").insert([
-      {
-        user_id: userId,
-        consultant_id: adminProfile.id,
-        start_time: startDate.toISOString(),
-        end_time: endDateTime,
-        status: "pending",
-      },
-    ]);
-
-    setBookingLoading(false);
-
-    if (!error) {
+    if (result.success) {
       alert("¡Cita solicitada con éxito! Recibirás confirmación pronto.");
       fetchSlots(selectedDay); // Refresh
     } else {
-      alert("Error al reservar: " + error.message);
+      alert("Error al reservar: " + result.error);
     }
   };
 

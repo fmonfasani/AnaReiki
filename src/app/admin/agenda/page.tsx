@@ -19,22 +19,21 @@ export default async function AgendaPage() {
     redirect("/miembros");
   }
 
-  // Fetch recurring availability
+  // Fetch recurring availability (from new rules table)
   const { data: availability } = await supabase
-    .from("availability")
+    .from("availability_rules")
     .select("*")
     .eq("consultant_id", user.id)
-    .is("specific_date", null) // Only recurring rules
+    .eq("is_active", true)
     .order("day_of_week")
     .order("start_time");
 
-  // Fetch specific availability (overrides)
+  // Fetch specific availability (from exceptions table)
   const { data: specificAvailability } = await supabase
-    .from("availability")
+    .from("availability_exceptions")
     .select("*")
     .eq("consultant_id", user.id)
-    .not("specific_date", "is", null)
-    .order("specific_date");
+    .order("exception_date");
 
   // Fetch appointments for current month (MVP: fetch next 30 days)
   const today = new Date();

@@ -33,41 +33,57 @@ export async function saveAvailability(formData: FormData) {
     return { error: "Error al guardar configuración de sesión" };
   }
 
-  // 2. Clear existing RECURRING availability for this user (preserve specific dates)
+  // 2. Clear existing RECURRING availability for this user in NEW table
   const { error: deleteError } = await supabase
-    .from("availability")
+    .from("availability_rules")
     .delete()
-    .eq("consultant_id", user.id)
-    .is("specific_date", null);
+    .eq("consultant_id", user.id);
 
   if (deleteError) {
-    console.error("Error deleting old availability:", deleteError);
+    console.error("Error deleting old availability rules:", deleteError);
     return {
       error: `Error al limpiar disponibilidad anterior: ${deleteError.message}`,
     };
   }
 
-  // 3. Insert new availability
+  // 3. Insert new availability into NEW table
   if (availabilityData.length > 0) {
     const rows = availabilityData.map((slot: any) => ({
       consultant_id: user.id,
       day_of_week: slot.id,
       start_time: slot.startTime,
       end_time: slot.endTime,
-      is_available: true,
+      is_active: true,
+      service_id: null, // Default to all services
     }));
 
     const { error: insertError } = await supabase
-      .from("availability")
+      .from("availability_rules")
       .insert(rows);
 
     if (insertError) {
-      console.error("Error inserting availability:", insertError);
+      console.error("Error inserting availability rules:", insertError);
       return {
         error: `Error al guardar nuevos horarios: ${insertError.message}`,
       };
     }
   }
+
+  // 4. Legacy sync (Optional, keeping for safety during transition)
+  await supabase
+    .from("availability")
+    .delete()
+    .eq("consultant_id", user.id)
+    .is("specific_date", null);
+
+  const legacyRows = availabilityData.map((slot: any) => ({
+    consultant_id: user.id,
+    day_of_week: slot.id,
+    start_time: slot.startTime,
+    end_time: slot.endTime,
+    is_available: true,
+  }));
+  await supabase.from("availability").insert(legacyRows);
 
   revalidatePath("/admin/agenda");
   return { success: true };
@@ -110,13 +126,13 @@ export async function saveSpecificSlot(
     return { error: "No autorizado" };
   }
 
-  const { error } = await supabase.from("availability").insert({
+  const { error } = await supabase.from("availability_exceptions").insert({
     consultant_id: user.id,
-    day_of_week: date.getDay(),
+    exception_date: date.toISOString().split("T")[0],
     start_time: startTime,
     end_time: endTime,
-    specific_date: date.toISOString().split("T")[0],
     is_available: true,
+    service_id: null,
   });
 
   if (error) return { error: error.message };
@@ -133,7 +149,7 @@ export async function deleteSpecificSlot(slotId: string) {
     return { error: "No autorizado" };
   }
   const { error } = await supabase
-    .from("availability")
+    .from("availability_exceptions")
     .delete()
     .eq("id", slotId);
 
@@ -152,13 +168,14 @@ export async function blockDate(dateString: string) {
     return { error: "No autorizado" };
   }
 
-  // Insert a "Blocked" rule for this date
-  const { error } = await supabase.from("availability").insert({
+  // Insert a "Blocked" exception for this date
+  const { error } = await supabase.from("availability_exceptions").insert({
     consultant_id: user.id,
-    specific_date: dateString,
+    exception_date: dateString,
     start_time: "00:00",
     end_time: "23:59",
     is_available: false,
+    service_id: null,
   });
 
   if (error) return { error: error.message };
@@ -177,10 +194,10 @@ export async function unblockDate(dateString: string) {
   }
 
   const { error } = await supabase
-    .from("availability")
+    .from("availability_exceptions")
     .delete()
     .eq("consultant_id", user.id)
-    .eq("specific_date", dateString);
+    .eq("exception_date", dateString);
 
   if (error) return { error: error.message };
   revalidatePath("/admin/agenda");

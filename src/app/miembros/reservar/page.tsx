@@ -24,7 +24,7 @@ export default async function ReservarPage() {
         </p>
       </header>
 
-      <BookingCalendar userId={user.id} />
+      <BookingCalendar />
 
       <div className="bg-pink-50 p-6 rounded-2xl border border-pink-100 flex items-start gap-4">
         <span className="material-symbols-outlined text-pink-600 text-3xl">

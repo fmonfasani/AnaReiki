@@ -99,7 +99,7 @@ export default function CalendarView({
 
     // 1. Check specific overrides
     const specific = specificAvailability.filter(
-      (s) => s.specific_date === dateString,
+      (s) => s.exception_date === dateString,
     );
 
     // Check if explicitly blocked
@@ -238,7 +238,7 @@ export default function CalendarView({
                           {slot.start_time.slice(0, 5)} -{" "}
                           {slot.end_time.slice(0, 5)}
                         </span>
-                        {slot.specific_date && (
+                        {slot.exception_date && (
                           <button
                             onClick={() => deleteSpecificSlot(slot.id)}
                             className="hidden group-hover/slot:block text-red-500 hover:text-red-700"
