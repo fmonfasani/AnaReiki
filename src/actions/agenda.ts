@@ -4,6 +4,12 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { isAdminFromAppMetadata } from "@/lib/auth/roles";
 
+type AvailabilitySlotInput = {
+  id: number;
+  startTime: string;
+  endTime: string;
+};
+
 export async function saveAvailability(formData: FormData) {
   const supabase = await createClient();
   const {
@@ -14,7 +20,9 @@ export async function saveAvailability(formData: FormData) {
     return { error: "No autorizado" };
   }
 
-  const availabilityData = JSON.parse(formData.get("availability") as string);
+  const availabilityData = JSON.parse(
+    formData.get("availability") as string,
+  ) as AvailabilitySlotInput[];
   const sessionDuration = parseInt(formData.get("sessionDuration") as string);
   const bufferTime = parseInt(formData.get("bufferTime") as string) || 0;
 
@@ -48,7 +56,7 @@ export async function saveAvailability(formData: FormData) {
 
   // 3. Insert new availability into NEW table
   if (availabilityData.length > 0) {
-    const rows = availabilityData.map((slot: any) => ({
+    const rows = availabilityData.map((slot) => ({
       consultant_id: user.id,
       day_of_week: slot.id,
       start_time: slot.startTime,
@@ -76,7 +84,7 @@ export async function saveAvailability(formData: FormData) {
     .eq("consultant_id", user.id)
     .is("specific_date", null);
 
-  const legacyRows = availabilityData.map((slot: any) => ({
+  const legacyRows = availabilityData.map((slot) => ({
     consultant_id: user.id,
     day_of_week: slot.id,
     start_time: slot.startTime,

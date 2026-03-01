@@ -16,8 +16,8 @@ export default function Footer() {
               </h3>
             </div>
             <p className="text-terracotta text-sm leading-relaxed max-w-sm italic">
-              "Acompaño a cada ser a sanar desde la raíz, integrar su energía y
-              vivir en sincronicidad con su propósito."
+              &quot;Acompaño a cada ser a sanar desde la raíz, integrar su energía y
+              vivir en sincronicidad con su propósito.&quot;
             </p>
           </div>
           <div>

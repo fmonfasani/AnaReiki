@@ -101,9 +101,9 @@ export default function Home() {
               format_quote
             </span>
             <h2 className="font-display text-2xl md:text-3xl font-medium leading-relaxed text-text-main mb-8">
-              "En medio del ritmo cotidiano, muchas veces nos alejamos de lo que
+              &quot;En medio del ritmo cotidiano, muchas veces nos alejamos de lo que
               sentimos y necesitamos. Este espacio fue creado para acompañarte a
-              volver a tu centro y recuperar el equilibrio."
+              volver a tu centro y recuperar el equilibrio.&quot;
             </h2>
             <Link
               href="/filosofia"

@@ -17,11 +17,11 @@ describe("RegistroPage", () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        (createClient as any).mockReturnValue({
+        vi.mocked(createClient).mockReturnValue({
             auth: {
                 signUp: mockSignUp,
             },
-        });
+        } as never);
     });
 
     it("renders registration form correctly", () => {

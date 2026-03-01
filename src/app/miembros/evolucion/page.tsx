@@ -19,11 +19,7 @@ export default function EvolutionPage() {
 
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  async function fetchData() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -52,7 +48,12 @@ export default function EvolutionPage() {
     if (reflectionsData.data) setReflections(reflectionsData.data);
     if (notesData.data) setNotes(notesData.data);
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getMoodEmoji = (score: number) => {
     switch (score) {
@@ -118,7 +119,7 @@ export default function EvolutionPage() {
                         </p>
                         {ref.intention && (
                           <p className="text-sm text-gray-600 truncate max-w-[150px] italic">
-                            "{ref.intention}"
+                            &quot;{ref.intention}&quot;
                           </p>
                         )}
                       </div>

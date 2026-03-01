@@ -4,6 +4,14 @@ import React, { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { CldUploadWidget } from "next-cloudinary";
 
+type CloudinaryUploadResult = {
+  info?: {
+    public_id?: string;
+    thumbnail_url?: string;
+    duration?: number;
+  };
+};
+
 export default function ContenidoPage() {
   const [activeTab, setActiveTab] = useState<"video" | "podcast">("video");
   const [loading, setLoading] = useState(false);
@@ -122,11 +130,13 @@ export default function ContenidoPage() {
                 ) : (
                   <CldUploadWidget
                     uploadPreset="ana-reiki-uploads"
-                    onSuccess={(result: any) => {
-                      setExternalId(result.info.public_id);
-                      setThumbnailUrl(result.info.thumbnail_url);
+                    onSuccess={(result) => {
+                      const upload = result as CloudinaryUploadResult;
+                      if (!upload.info?.public_id) return;
+                      setExternalId(upload.info.public_id);
+                      setThumbnailUrl(upload.info.thumbnail_url || "");
                       setDuration(
-                        Math.round(result.info.duration / 60) + " min",
+                        Math.round((upload.info.duration || 0) / 60) + " min",
                       );
                     }}
                   >
@@ -162,7 +172,7 @@ export default function ContenidoPage() {
                   required
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  Copia el enlace de "Compartir" de Spotify.
+                  Copia el enlace de &quot;Compartir&quot; de Spotify.
                 </p>
               </div>
             )}

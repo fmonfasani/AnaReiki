@@ -8,6 +8,12 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useAppointmentActions } from "@/hooks/useAppointmentActions";
 
+type AvailabilityWindow = {
+  start_time: string;
+  end_time: string;
+  is_available?: boolean;
+};
+
 export default function BookingCalendar() {
   const [selectedDay, setSelectedDay] = useState<Date | undefined>(new Date());
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
@@ -56,15 +62,10 @@ export default function BookingCalendar() {
       setAdminProfile({ id: consultantId, serviceId: services[0].id });
     };
     fetchAdmin();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (selectedDay && adminProfile) {
-      fetchSlots(selectedDay);
-    }
-  }, [selectedDay, adminProfile]);
-
-  const fetchSlots = async (date: Date) => {
+  async function fetchSlots(date: Date) {
     if (!adminProfile) return;
     setLoading(true);
 
@@ -78,7 +79,7 @@ export default function BookingCalendar() {
       .eq("consultant_id", adminProfile.id)
       .eq("exception_date", dateString);
 
-    let activeWindows: any[] = [];
+    let activeWindows: AvailabilityWindow[] = [];
 
     if (specificAvailability && specificAvailability.length > 0) {
       // If specific rules exist, they override recurring.
@@ -118,7 +119,7 @@ export default function BookingCalendar() {
     const duration = 60; // Minutes
     const buffer = 0; // Minutes
 
-    activeWindows.forEach((window: any) => {
+    activeWindows.forEach((window) => {
       let current = new Date(`${dateString}T${window.start_time}`);
       const windowEnd = new Date(`${dateString}T${window.end_time}`);
 
@@ -148,7 +149,14 @@ export default function BookingCalendar() {
 
     setAvailableSlots(slots);
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    if (selectedDay && adminProfile) {
+      fetchSlots(selectedDay);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDay, adminProfile]);
 
   const bookAppointment = async (time: string) => {
     if (!selectedDay || !adminProfile) return;

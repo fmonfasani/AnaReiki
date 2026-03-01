@@ -44,8 +44,8 @@ export default function Encounters() {
             Encuentros
           </h2>
           <p className="text-text-light max-w-2xl mx-auto italic mb-6">
-            "Espacios grupales diseñados para la conexión comunitaria y el
-            crecimiento compartido."
+            &quot;Espacios grupales diseñados para la conexión comunitaria y el
+            crecimiento compartido.&quot;
           </p>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 text-text-main font-medium text-xs uppercase tracking-wider">
             <span className="material-symbols-outlined text-sm">

@@ -73,9 +73,9 @@ export default function Filosofia() {
           <div className="max-w-4xl mx-auto px-4 text-center space-y-8">
             <h2 className="font-display text-4xl font-medium">Compromiso</h2>
             <p className="text-2xl md:text-3xl text-text-subtle italic leading-relaxed font-light">
-              "Mi misión es facilitar un espacio seguro de contención y
+              &quot;Mi misión es facilitar un espacio seguro de contención y
               equilibrio, donde cada persona pueda recordar su propia capacidad
-              de sanación y redescubrir la luz que ya habita en su interior."
+              de sanación y redescubrir la luz que ya habita en su interior.&quot;
             </p>
             <div className="h-0.5 w-24 bg-primary/40 mx-auto transition-all group-hover:w-32"></div>
             <p className="font-bold font-display uppercase tracking-[0.2em] text-xs text-primary-dark">

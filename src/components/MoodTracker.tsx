@@ -19,12 +19,7 @@ export default function MoodTracker({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
 
-  // Check if already submitted today
-  useEffect(() => {
-    checkTodayEntry();
-  }, []);
-
-  const checkTodayEntry = async () => {
+  async function checkTodayEntry() {
     const today = new Date().toISOString().split("T")[0];
     const { data } = await supabase
       .from("daily_reflections")
@@ -37,7 +32,13 @@ export default function MoodTracker({ userId }: { userId: string }) {
       setHasSubmitted(true);
       setSelectedMood(data.mood_score);
     }
-  };
+  }
+
+  // Check if already submitted today
+  useEffect(() => {
+    checkTodayEntry();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSubmit = async () => {
     if (!selectedMood) return;

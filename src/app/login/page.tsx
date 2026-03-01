@@ -29,8 +29,10 @@ export default function LoginPage() {
       // Redirect to members area
       router.push("/miembros");
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Error al iniciar sesión");
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Error al iniciar sesión",
+      );
     } finally {
       setLoading(false);
     }

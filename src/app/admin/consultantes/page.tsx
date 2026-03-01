@@ -11,13 +11,9 @@ export default function ConsultantesPage() {
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchConsultantes();
-  }, []);
-
-  const fetchConsultantes = async () => {
+  async function fetchConsultantes() {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("profiles")
       .select("*")
       .order("created_at", { ascending: false });
@@ -26,7 +22,12 @@ export default function ConsultantesPage() {
       setConsultantes(data);
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    fetchConsultantes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const togglePremium = async (id: string, currentStatus: boolean) => {
     const { error } = await supabase

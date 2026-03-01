@@ -15,7 +15,6 @@ import {
   isSameMonth,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { motion } from "framer-motion";
 import {
   saveSpecificSlot,
   deleteSpecificSlot,
@@ -23,10 +22,33 @@ import {
   unblockDate,
 } from "@/actions/agenda";
 
+type RecurringAvailability = {
+  id: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+};
+
+type SpecificAvailability = {
+  id: string;
+  exception_date: string;
+  start_time: string;
+  end_time: string;
+  is_available: boolean;
+};
+
+type Appointment = {
+  id: string;
+  start_time: string;
+  profiles: {
+    full_name: string | null;
+  } | null;
+};
+
 interface CalendarViewProps {
-  recurringAvailability: any[];
-  specificAvailability: any[];
-  appointments: any[];
+  recurringAvailability: RecurringAvailability[];
+  specificAvailability: SpecificAvailability[];
+  appointments: Appointment[];
 }
 
 type ViewMode = "month" | "week";
@@ -38,7 +60,6 @@ export default function CalendarView({
 }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("week");
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // Helper to get days to display
   const getDays = () => {
@@ -229,16 +250,16 @@ export default function CalendarView({
               ) : (
                 <>
                   {Array.isArray(slots) && slots.length > 0 ? (
-                    slots.map((slot: any) => (
+                    slots.map((slot: RecurringAvailability | SpecificAvailability) => (
                       <div
-                        key={slot.id || Math.random()}
+                        key={slot.id}
                         className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded border border-green-100 flex justify-between group/slot"
                       >
                         <span>
                           {slot.start_time.slice(0, 5)} -{" "}
                           {slot.end_time.slice(0, 5)}
                         </span>
-                        {slot.exception_date && (
+                        {"exception_date" in slot && slot.exception_date && (
                           <button
                             onClick={() => deleteSpecificSlot(slot.id)}
                             className="hidden group-hover/slot:block text-red-500 hover:text-red-700"
@@ -257,7 +278,7 @@ export default function CalendarView({
                   )}
 
                   {/* Appointments */}
-                  {dayAppointments.map((appt: any) => (
+                  {dayAppointments.map((appt) => (
                     <div
                       key={appt.id}
                       className="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded border border-purple-100 font-medium"

@@ -17,11 +17,11 @@ describe("LoginPage", () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        (createClient as any).mockReturnValue({
+        vi.mocked(createClient).mockReturnValue({
             auth: {
                 signInWithPassword: mockSignIn,
             },
-        });
+        } as never);
     });
 
     it("renders login form correctly", () => {

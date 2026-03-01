@@ -22,7 +22,7 @@ describe("Appointments Server Actions", () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        (createClient as any).mockResolvedValue(mockSupabase);
+        vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
     });
 
     it("should fail if user is not authenticated", async () => {

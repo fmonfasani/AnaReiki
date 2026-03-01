@@ -11,7 +11,11 @@ export default function AdminLayoutUI({
   user,
 }: {
   children: React.ReactNode;
-  user: any;
+  user: {
+    user_metadata?: {
+      full_name?: string;
+    };
+  };
 }) {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);

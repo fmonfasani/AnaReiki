@@ -5,7 +5,7 @@ import { createServerClient } from "@supabase/ssr";
 export async function middleware(request: NextRequest) {
   // 1. Session Refresh (Always run first!)
   // This updates the session cookie and handles redirects if unauthenticated
-  let response = await updateSession(request);
+  const response = await updateSession(request);
 
   // If updateSession already redirected (e.g. to /login), we stop here
   if (
