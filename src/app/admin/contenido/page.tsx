@@ -26,7 +26,7 @@ export default function ContenidoPage() {
         description,
         type: activeTab,
         external_id: externalId,
-        thumbnail: activeTab === "video" ? thumbnailUrl : undefined,
+        thumbnail_url: activeTab === "video" ? thumbnailUrl : undefined,
         duration: duration || null,
         is_premium: true,
       },
