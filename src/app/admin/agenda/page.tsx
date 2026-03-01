@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import AvailabilityConfig from "@/components/admin/agenda/AvailabilityConfig";
 import CalendarView from "@/components/admin/agenda/CalendarView";
 import AgendaTabs from "@/components/admin/agenda/AgendaTabs";
+import PendingAppointments from "@/components/admin/agenda/PendingAppointments";
 import { isAdminFromAppMetadata } from "@/lib/auth/roles";
 
 export default async function AgendaPage() {
@@ -35,7 +36,15 @@ export default async function AgendaPage() {
     .eq("consultant_id", user.id)
     .order("exception_date");
 
-  // Fetch appointments for current month (MVP: fetch next 30 days)
+  // Fetch ALL pending appointments (for the requests tab)
+  const { data: pendingAppointments } = await supabase
+    .from("appointments")
+    .select("*, profiles:client_id(full_name)")
+    .eq("consultant_id", user.id)
+    .eq("status", "pending")
+    .order("start_time", { ascending: true });
+
+  // Fetch appointments for current calendar view (confirmed/upcoming)
   const today = new Date();
   const nextMonth = new Date();
   nextMonth.setDate(today.getDate() + 30);
@@ -44,6 +53,7 @@ export default async function AgendaPage() {
     .from("appointments")
     .select("*, profiles:client_id(full_name)")
     .eq("consultant_id", user.id)
+    .neq("status", "cancelled")
     .gte("start_time", today.toISOString())
     .lte("end_time", nextMonth.toISOString());
 
@@ -58,12 +68,16 @@ export default async function AgendaPage() {
           Gestión de Agenda 📅
         </h1>
         <p className="text-gray-500">
-          Visualiza tu calendario, citas pendientes y configura tu
+          Visualiza tu calendario, confirma nuevas solicitudes y configura tu
           disponibilidad.
         </p>
       </header>
 
       <AgendaTabs
+        pendingCount={pendingAppointments?.length || 0}
+        pendingComponent={
+          <PendingAppointments appointments={pendingAppointments || []} />
+        }
         recurringComponent={
           <AvailabilityConfig
             initialData={availability || []}
