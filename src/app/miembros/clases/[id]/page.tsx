@@ -6,10 +6,10 @@ import Link from "next/link";
 export default async function ClaseDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const supabase = await createClient();
-  const { id } = params;
+  const { id } = await params;
 
   const { data: video, error } = await supabase
     .from("content")
