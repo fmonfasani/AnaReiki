@@ -17,12 +17,15 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
-  // Verify Admin Role via secure RPC function (bypasses RLS)
-  const { data: isAdmin, error } = await supabase.rpc("is_admin_user", {
-    target_user_id: user.id,
-  });
+  // Verify admin role from the user's own profile row.
+  // This avoids hard dependency on a custom RPC that may not exist.
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
 
-  if (!isAdmin || error) {
+  if (error || profile?.role !== "admin") {
     redirect("/miembros");
   }
 

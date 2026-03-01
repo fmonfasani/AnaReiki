@@ -1,0 +1,23 @@
+{
+  "name": "agent",
+  "version": "1.0.0",
+  "description": "Autonomous agent system for AnaReiki project",
+  "scripts": {
+    "watch": "node watcher.js",
+    "build-watch": "node buildWatcher.js",
+    "nightly": "node nightly.js",
+    "team": "node team.js",
+    "guardian": "node team.js guardian",
+    "builder": "node team.js builder",
+    "tester": "node team.js tester"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "execa": "^8.0.1",
+    "node-cron": "^4.2.1",
+    "simple-git": "^3.32.3"
+  }
+}

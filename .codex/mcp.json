@@ -1,0 +1,50 @@
+{
+  "servers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "."
+      ]
+    },
+    "git": {
+      "command": "python",
+      "args": [
+        "-m",
+        "mcp_server_git",
+        "--repository",
+        "."
+      ]
+    }
+  },
+  "skills": [
+    ".codex/skills/filesystem.md",
+    ".codex/skills/git.md",
+    ".codex/skills/shell.md",
+    ".codex/skills/test.md"
+  ],
+  "context": {
+    "instructions": ".codex/instructions.md",
+    "primary": "AGENTS.md",
+    "memory": ".codex/PROJECT_MEMORY.md"
+  },
+  "project": {
+    "name": "AnaReiki",
+    "framework": "Next.js 16",
+    "language": "TypeScript",
+    "packageManager": "npm",
+    "entrypoint": "src/app/page.tsx",
+    "devCommand": "npm run dev",
+    "buildCommand": "npm run build",
+    "lintCommand": "npm run lint"
+  },
+  "_install": {
+    "note": "Run these once to activate MCP servers:",
+    "commands": [
+      "pip install mcp mcp-server-git",
+      "npm install -g @openai/codex",
+      "npx -y @modelcontextprotocol/server-filesystem --help"
+    ]
+  }
+}
