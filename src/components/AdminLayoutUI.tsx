@@ -63,10 +63,9 @@ export default function AdminLayoutUI({
                 key={item.href}
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group relative
-                  ${
-                    isActive
-                      ? "bg-pink-50 text-pink-700 font-medium shadow-sm"
-                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                  ${isActive
+                    ? "bg-pink-50 text-pink-700 font-medium shadow-sm"
+                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
                   }`}
               >
                 <span
@@ -99,21 +98,27 @@ export default function AdminLayoutUI({
           })}
         </nav>
 
-        <div className="p-4 border-t border-gray-100">
+        <div className="p-4 border-t border-gray-100 mt-auto">
           <div
-            className={`flex items-center gap-3 ${!isSidebarOpen && "justify-center"}`}
+            className={`flex items-center gap-3 ${!isSidebarOpen ? "justify-center" : "justify-between"}`}
           >
-            <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 font-bold text-xs shrink-0">
-              {user.user_metadata?.full_name?.charAt(0) || "A"}
-            </div>
-            {isSidebarOpen && (
-              <div className="overflow-hidden">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {user.user_metadata?.full_name || "Ana Murat"}
-                </p>
-                <p className="text-xs text-gray-400 truncate">Administradora</p>
+            <div className="flex items-center gap-3 overflow-hidden">
+              <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 font-bold text-xs shrink-0">
+                {user.user_metadata?.full_name?.charAt(0) || "A"}
               </div>
-            )}
+              {isSidebarOpen && (
+                <div className="overflow-hidden">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {user.user_metadata?.full_name || "Ana Murat"}
+                  </p>
+                  <p className="text-xs text-gray-400 truncate">
+                    Administradora
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <LogoutButton showText={isSidebarOpen} />
           </div>
         </div>
       </aside>
