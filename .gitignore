@@ -3,6 +3,7 @@
 # ─── Dependencies ────────────────────────────────────────────────────────────
 # Matches node_modules in root AND all subdirectories (e.g. agent/node_modules)
 **/node_modules
+/.npm-cache
 /.pnp
 .pnp.*
 .yarn/*
