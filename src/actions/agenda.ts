@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { isAdminFromAppMetadata } from "@/lib/auth/roles";
 
 export async function saveAvailability(formData: FormData) {
   const supabase = await createClient();
@@ -9,7 +10,7 @@ export async function saveAvailability(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (!user || !isAdminFromAppMetadata(user)) {
     return { error: "No autorizado" };
   }
 
@@ -78,7 +79,7 @@ export async function getAppointments(startDate: Date, endDate: Date) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return [];
+  if (!user || !isAdminFromAppMetadata(user)) return [];
 
   const { data, error } = await supabase
     .from("appointments")
@@ -105,7 +106,9 @@ export async function saveSpecificSlot(
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return { error: "No autorizado" };
+  if (!user || !isAdminFromAppMetadata(user)) {
+    return { error: "No autorizado" };
+  }
 
   const { error } = await supabase.from("availability").insert({
     consultant_id: user.id,
@@ -123,6 +126,12 @@ export async function saveSpecificSlot(
 
 export async function deleteSpecificSlot(slotId: string) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || !isAdminFromAppMetadata(user)) {
+    return { error: "No autorizado" };
+  }
   const { error } = await supabase
     .from("availability")
     .delete()
@@ -139,7 +148,9 @@ export async function blockDate(dateString: string) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return { error: "No autorizado" };
+  if (!user || !isAdminFromAppMetadata(user)) {
+    return { error: "No autorizado" };
+  }
 
   // Insert a "Blocked" rule for this date
   const { error } = await supabase.from("availability").insert({
@@ -161,7 +172,9 @@ export async function unblockDate(dateString: string) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return { error: "No autorizado" };
+  if (!user || !isAdminFromAppMetadata(user)) {
+    return { error: "No autorizado" };
+  }
 
   const { error } = await supabase
     .from("availability")

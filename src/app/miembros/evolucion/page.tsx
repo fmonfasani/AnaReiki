@@ -5,11 +5,13 @@ import { createClient } from "@/lib/supabase/client";
 import { Database } from "@/types/database.types";
 import { motion } from "framer-motion";
 import MoodTracker from "@/components/MoodTracker";
+import { useRouter } from "next/navigation";
 
 type Reflection = Database["public"]["Tables"]["daily_reflections"]["Row"];
 type SessionNote = Database["public"]["Tables"]["session_notes"]["Row"];
 
 export default function EvolutionPage() {
+  const router = useRouter();
   const [reflections, setReflections] = useState<Reflection[]>([]);
   const [notes, setNotes] = useState<SessionNote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,7 +27,10 @@ export default function EvolutionPage() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      router.replace("/login");
+      return;
+    }
     setUserId(user.id);
 
     // Parallel fetching

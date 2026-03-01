@@ -10,7 +10,8 @@ export function LogoutButton() {
   const handleLogout = async () => {
     setLoading(true);
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      const res = await fetch("/api/auth/logout", { method: "POST" });
+      if (!res.ok) throw new Error(`Logout failed: ${res.status}`);
       router.push("/login");
       router.refresh();
     } catch (error) {

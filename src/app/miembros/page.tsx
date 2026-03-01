@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import MoodTracker from "@/components/MoodTracker";
+import { redirect } from "next/navigation";
 
 export default async function MembersDashboard() {
   const supabase = await createClient();
@@ -8,7 +9,9 @@ export default async function MembersDashboard() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return null; // Should be handled by layout/middleware
+  if (!user) {
+    redirect("/login");
+  }
 
   // Get next appointment
   const today = new Date().toISOString();

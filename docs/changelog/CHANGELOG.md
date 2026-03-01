@@ -30,9 +30,12 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 - `docs/runbook/agent_system.md` — Runbook completo del sistema de agentes
 - `docs/adr/ADR-001-agent-system.md` — Registro de decisión arquitectónica
 
-#### Code Smells detectados (pendiente de fix)
-- Admin auth gap: `/admin` protegido solo por layout, no por middleware
-- CTA duplicado en `src/app/page.tsx`: "Contactame" y "Contactar" apuntan al mismo destino
+### Security & Hardening — 2026-03-01
+- **Fix Security Audit**: Resuelta la vulnerabilidad de escalación de privilegios (user -> admin) mediante restricción RLS en `public.profiles`.
+- **Migration 004**: Creada migración de endurecimiento que alinea el esquema (`availability`, `appointments`) con las expectativas del código.
+- **Server Actions Secure**: Implementado `isAdminFromAppMetadata` check en todos los actions sensibles de agenda.
+- **Bug Fixes**: Corregido stall de carga en `/miembros/reservar` y manejo de errores en `LogoutButton`.
+- **MCP Fully Operational**: Activado `config.toml` con servers `filesystem` y `git`, permitiendo a Codex actuar de forma operativa en el repo.
 
 ---
 

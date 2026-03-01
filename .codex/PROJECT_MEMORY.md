@@ -85,28 +85,17 @@ is_premium  BOOLEAN DEFAULT true
 ## Potential Code Smells & Security Issues
 > Full audit: `docs/runbook/auth_security_audit.md`
 
-### 🔴 CRÍTICO #1 — Privilege escalation: user → admin
-- **Ruta:** `UPDATE profiles SET role='admin' WHERE id=auth.uid()`
-- **Por qué funciona:** política "Users can update own profile" (`001:33`) existe antes de que se agregue la columna `role` (`002:7`). Sin restricción de columnas.
-- **Admin gate:** `admin/layout.tsx:22` solo verifica `profiles.role === 'admin'`
-- **Fix:** nueva migración que restrinja columnas permitidas en la política de update propia
+### ✅ FIJADO #1 & #2 — Escalación de privilegios y Self-premium
+- **Status**: SOLUCIONADO
+- **Fix**: Migración `004_security_hardening.sql` restringe política UPDATE agregando `WITH CHECK` que valida que el `role` y `is_premium` no hayan cambiado.
 
-### 🔴 CRÍTICO #2 — Self-enable premium
-- **Ruta:** `UPDATE profiles SET is_premium=true WHERE id=auth.uid()`
-- **Mismo origen:** misma política sin columnas restringidas
-- **Fix:** misma migración
+### ✅ FIJADO #3 — Server Actions con role check
+- **Status**: SOLUCIONADO
+- **Fix**: Se agregó `isAdminFromAppMetadata(user)` en `src/actions/agenda.ts`.
 
-### 🟠 ALTO #3 — Server Actions sin role check
-- `src/actions/agenda.ts:12`, `:108`, `:164`
-- `saveAvailability`, `saveSpecificSlot`, `blockDate` — solo verifican auth, no role
-- **Fix:** agregar role check explícito al inicio de cada action admin
-
-### 🟠 ALTO #4 — Schema mismatch código vs migraciones
-- Código usa `consultant_id`, `specific_date`, `is_available` en `availability`
-- Migración `002` define `admin_id`, `is_active` — columnas distintas
-- `appointments` en código usa `consultant_id/client_id` — no están en `003`
-- **Fix:** migración 004 que alinee el schema
-
+### ✅ FIJADO #4 — Schema alignment
+- **Status**: SOLUCIONADO
+- **Fix**: Migración `004` agregó columnas `consultant_id`, `specific_date` e `is_available` para coincidir con el código.
 ### 🟡 MEDIO #5 — Admin content UI vs RLS
 - `admin/contenido/page.tsx:23` inserta content con anon key
 - `001:72` solo permite INSERT a `service_role`

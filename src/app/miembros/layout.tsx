@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LogoutButton } from "@/components/LogoutButton";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { isAdminFromAppMetadata } from "@/lib/auth/roles";
 
 export default async function MembersLayout({
   children,
@@ -18,16 +19,7 @@ export default async function MembersLayout({
     redirect("/login");
   }
 
-  // Check if user is admin
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  console.log("Layout Admin Check:", { userId: user.id, profile, error });
-
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = isAdminFromAppMetadata(user);
 
   const navItems = [
     { name: "Inicio", href: "/miembros", icon: "home" },

@@ -93,7 +93,7 @@ watcher.on("change", async (filePath) => {
             "codex",
             [
                 "exec",
-                `a file was modified: ${rel}. Audit the change, detect potential side effects and fix them if needed.`,
+                `AUDIT: File ${rel} changed. Analyze ONLY the diff. Use grep to find related components. Fix side effects with minimal diffs.`,
             ],
             { cwd: PROJECT, stdio: "inherit" }
         );

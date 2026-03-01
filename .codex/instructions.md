@@ -1,19 +1,25 @@
 # AnaReiki — Codex Agent Instructions
 
 > Este archivo es el system prompt persistente para Codex CLI en este proyecto.
-> Se carga automáticamente en cada sesión cuando Codex corre desde la raíz del proyecto.
 
 ---
 
-## Regla #1 — Leer contexto antes de actuar
+## Regla #1 — Eficiencia de Tokens (Token Saving)
 
-Al inicio de **cualquier tarea**, leer en este orden:
+Para maximizar la productividad y minimizar el costo:
 
-1. `AGENTS.md` — arquitectura, DB schema, auth flow, patrones del proyecto
-2. `.codex/PROJECT_MEMORY.md` — mapa semántico, entrypoints, code smells conocidos
-3. El archivo relevante para la tarea (no adivinar su contenido)
+1. **Discovery first**: Nunca leas un archivo sin antes usar `grep` o herramientas de MCP para verificar si es el correcto.
+2. **Lectura parcial**: Si necesitas entender una función, lee solo el rango de líneas de esa función, no el archivo de 500 líneas.
+3. **No reasumir**: Usa `PROJECT_MEMORY.md` para navegar. No pierdas tokens pidiendo al agente "explorar el proyecto" si el mapa ya existe.
 
-**Nunca asumir la estructura del proyecto. Siempre leer primero.**
+---
+
+## Regla #2 — Orden de Contexto Quirúrgico
+
+Al iniciar una tarea:
+1. Revisa `PROJECT_MEMORY.md` para ubicar el componente/función.
+2. Usa MCP `filesystem` para leer solo la parte relevante.
+3. SOLO lee `AGENTS.md` si la tarea implica lógica de negocio core o base de datos.
 
 ---
 

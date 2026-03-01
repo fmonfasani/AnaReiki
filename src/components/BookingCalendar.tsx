@@ -12,24 +12,32 @@ export default function BookingCalendar({ userId }: { userId: string }) {
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
-  const [adminProfile, setAdminProfile] = useState<any>(null);
+  const [adminProfile, setAdminProfile] = useState<{ id: string } | null>(null);
+  const [adminError, setAdminError] = useState<string | null>(null);
 
   const supabase = createClient();
 
   // Fetch Admin Profile on mount to get settings
   useEffect(() => {
     const fetchAdmin = async () => {
-      // Find the admin user to get their settings/id
-      // For this app we assume there is one main admin/consultant.
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("role", "admin") // Assuming role is 'admin'
+      const { data: consultantSlots, error: consultantError } = await supabase
+        .from("availability")
+        .select("consultant_id")
+        .eq("is_available", true)
         .limit(1);
 
-      if (profiles && profiles.length > 0) {
-        setAdminProfile(profiles[0]);
+      if (consultantError) {
+        setAdminError("No se pudo cargar el consultante disponible.");
+        return;
       }
+
+      const consultantId = consultantSlots?.[0]?.consultant_id;
+      if (!consultantId) {
+        setAdminError("No hay consultantes disponibles en este momento.");
+        return;
+      }
+
+      setAdminProfile({ id: consultantId });
     };
     fetchAdmin();
   }, []);
@@ -92,8 +100,8 @@ export default function BookingCalendar({ userId }: { userId: string }) {
 
     // 4. Generate slots (Dynamic logic)
     const slots: string[] = [];
-    const duration = adminProfile.user_metadata?.session_duration || 60; // Minutes
-    const buffer = adminProfile.user_metadata?.buffer_time || 0; // Minutes
+    const duration = 60; // Minutes
+    const buffer = 0; // Minutes
 
     activeWindows.forEach((window: any) => {
       let current = new Date(`${dateString}T${window.start_time}`);
@@ -130,7 +138,7 @@ export default function BookingCalendar({ userId }: { userId: string }) {
   const bookAppointment = async (time: string) => {
     if (!selectedDay || !userId || !adminProfile) return;
 
-    const duration = adminProfile.user_metadata?.session_duration || 60;
+    const duration = 60;
 
     if (
       !confirm(
@@ -170,6 +178,11 @@ export default function BookingCalendar({ userId }: { userId: string }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+      {adminError && (
+        <div className="md:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          {adminError}
+        </div>
+      )}
       <div className="border-r border-gray-100 pr-6">
         <h3 className="text-lg font-bold text-gray-900 mb-4 font-display">
           Selecciona una fecha

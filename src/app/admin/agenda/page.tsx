@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import AvailabilityConfig from "@/components/admin/agenda/AvailabilityConfig";
 import CalendarView from "@/components/admin/agenda/CalendarView";
 import AgendaTabs from "@/components/admin/agenda/AgendaTabs";
+import { isAdminFromAppMetadata } from "@/lib/auth/roles";
 
 export default async function AgendaPage() {
   const supabase = await createClient();
@@ -13,6 +14,9 @@ export default async function AgendaPage() {
 
   if (!user) {
     redirect("/login");
+  }
+  if (!isAdminFromAppMetadata(user)) {
+    redirect("/miembros");
   }
 
   // Fetch recurring availability

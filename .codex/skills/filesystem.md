@@ -48,7 +48,26 @@ Styles:       src/app/globals.css
 - `VideoPlayer.tsx` - Cloudinary video embed
 - `PodcastPlayer.tsx` - Audio embed
 
+## Surgical Discovery Patterns (Token Saving)
+To maximize productivity and minimize token usage, follow these patterns instead of reading full files:
+
+1. **Symbol Location**:
+   Instead of reading a file to find a function, use `shell` search:
+   `grep -nE "function|const|class" src/lib/supabase/server.ts`
+
+2. **Usage Tracking**:
+   `grep -r "createClient" src/`
+
+3. **Partial Reading (PowerShell)**:
+   If the file is > 100 lines, read only the target range:
+   `Get-Content -Path "file.ts" -TotalCount 50 | Select-Object -Last 10` (reads lines 40-50)
+
+4. **Component Props Check**:
+   Instead of reading the whole component, check the `interface` or `type` definition using `grep`.
+
+---
+
 ## Usage Instructions
-When asked to read a file, use the MCP `filesystem` server.
-When asked to locate a function, search by filename pattern or component name.
-Always prefer reading the actual file over guessing its contents.
+1. Use **Surgical Discovery** tools (grep/findstr) before reading full files.
+2. If you must read a file, use the MCP `read_file` tool.
+3. Always check `PROJECT_MEMORY.md` first to find the correct path.

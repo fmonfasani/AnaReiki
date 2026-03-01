@@ -1,25 +1,16 @@
-"use client";
-
-import React, { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import React from "react";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import BookingCalendar from "@/components/BookingCalendar";
 
-export default function ReservarPage() {
-  const [userId, setUserId] = useState<string | null>(null);
-  const supabase = createClient();
-
-  useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) setUserId(user.id);
-    };
-    getUser();
-  }, []);
-
-  if (!userId)
-    return <div className="p-8 text-center text-gray-400">Cargando...</div>;
+export default async function ReservarPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -33,7 +24,7 @@ export default function ReservarPage() {
         </p>
       </header>
 
-      <BookingCalendar userId={userId} />
+      <BookingCalendar userId={user.id} />
 
       <div className="bg-pink-50 p-6 rounded-2xl border border-pink-100 flex items-start gap-4">
         <span className="material-symbols-outlined text-pink-600 text-3xl">

@@ -21,17 +21,17 @@ const AGENTS = {
     guardian: {
         label: "🛡️  Guardian (QA/Bugs)",
         prompt:
-            "Act as a senior QA engineer. Review the entire repository and detect bugs, edge cases, security issues, and error handling gaps. For each issue found, propose a fix with a code diff.",
+            "Find bugs/security issues in DIFFS from the last 24h. Use 'git diff' to find targets. Do not read full files unless necessary.",
     },
     builder: {
         label: "🔨 Builder (Features)",
         prompt:
-            "Act as a senior full-stack developer. Review the repository and identify missing or incomplete functionality. Implement any missing features, API endpoints, or UI components following the existing architecture and code style.",
+            "Implement next items in PROJECT_MEMORY.md 'Code Smells' using minimal lines of code. Use grep to find component targets.",
     },
     tester: {
         label: "🧪 Tester (Tests)",
         prompt:
-            "Act as a QA automation engineer. Review the repository and write regression tests using Vitest for all components and utility functions that currently have no test coverage. Prioritize: BookingCalendar, MoodTracker, middleware, and Supabase client factories.",
+            "Write 1 Vitest unit test for the latest modified function. Locate target with 'git show' and 'grep'.",
     },
 };
 

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import AdminLayoutUI from "@/components/AdminLayoutUI";
+import { isAdminFromAppMetadata } from "@/lib/auth/roles";
 
 export default async function AdminLayout({
   children,
@@ -17,15 +18,7 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
-  // Verify admin role from the user's own profile row.
-  // This avoids hard dependency on a custom RPC that may not exist.
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (error || profile?.role !== "admin") {
+  if (!isAdminFromAppMetadata(user)) {
     redirect("/miembros");
   }
 
