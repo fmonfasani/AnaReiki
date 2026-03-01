@@ -6,7 +6,7 @@ describe("isAdminFromAppMetadata", () => {
   it("returns true when app_metadata.roles includes admin", () => {
     const user = {
       app_metadata: { roles: ["member", "admin"] },
-    } as User;
+    } as unknown as User;
 
     expect(isAdminFromAppMetadata(user)).toBe(true);
   });
@@ -14,7 +14,7 @@ describe("isAdminFromAppMetadata", () => {
   it("returns true when app_metadata.role is admin", () => {
     const user = {
       app_metadata: { role: "admin" },
-    } as User;
+    } as unknown as User;
 
     expect(isAdminFromAppMetadata(user)).toBe(true);
   });
