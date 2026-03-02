@@ -1,7 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import VideoPlayer from "@/components/VideoPlayer";
 import Link from "next/link";
-
 import Image from "next/image";
 
 export default async function ClasesPage() {

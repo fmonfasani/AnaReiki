@@ -159,3 +159,36 @@ export async function adminConfirmAppointment(input: {
   revalidateAppointmentsViews();
   return { success: true, data };
 }
+export async function adminManageAppointment(input: {
+  appointmentId: string;
+  status?: string;
+  notes?: string;
+  newStartTime?: string;
+}): Promise<ActionResult> {
+  if (!isUuid(input.appointmentId)) {
+    return { error: "Invalid appointment id" };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Unauthorized" };
+  }
+
+  const { data, error } = await supabase.rpc("admin_manage_appointment", {
+    p_appointment_id: input.appointmentId,
+    p_status: input.status || null,
+    p_notes: input.notes?.trim() || null,
+    p_new_start_time: input.newStartTime ? toIsoOrNull(input.newStartTime) : null,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidateAppointmentsViews();
+  return { success: true, data };
+}
