@@ -36,28 +36,17 @@ export default async function AgendaPage() {
     .eq("consultant_id", user.id)
     .order("exception_date");
 
-  // Fetch ALL pending appointments (for the requests tab)
-  const { data: pendingAppointments } = await supabase
+  // Fetch ALL relevant appointments for management (pending, confirmed, etc.)
+  // We'll get all from today onwards plus some history for the Global Management tab
+  const { data: allAppointments } = await supabase
     .from("appointments")
-    .select("*, profiles:client_id(full_name)")
-    .eq("consultant_id", user.id)
-    .eq("status", "pending")
-    .order("start_time", { ascending: true });
+    .select("*, profiles:client_id(full_name), services:service_id(name)")
+    .order("start_time", { ascending: false });
 
-  // Fetch appointments for current calendar view (confirmed/upcoming)
-  const today = new Date();
-  const nextMonth = new Date();
-  nextMonth.setDate(today.getDate() + 30);
+  // Filter pending count for the badge
+  const pendingCount = allAppointments?.filter(a => a.status === 'pending').length || 0;
 
-  const { data: appointments } = await supabase
-    .from("appointments")
-    .select("*, profiles:client_id(full_name)")
-    .eq("consultant_id", user.id)
-    .neq("status", "cancelled")
-    .gte("start_time", today.toISOString())
-    .lte("end_time", nextMonth.toISOString());
-
-  // Fetch session duration from metadata (default to 60 if not set)
+  // Session settings from user metadata
   const sessionDuration = user.user_metadata?.session_duration || 60;
   const bufferTime = user.user_metadata?.buffer_time || 0;
 
@@ -74,10 +63,8 @@ export default async function AgendaPage() {
       </header>
 
       <AgendaTabs
-        pendingCount={pendingAppointments?.length || 0}
-        pendingComponent={
-          <PendingAppointments appointments={pendingAppointments || []} />
-        }
+        pendingCount={pendingCount}
+        appointments={allAppointments || []}
         recurringComponent={
           <AvailabilityConfig
             initialData={availability || []}
@@ -89,7 +76,7 @@ export default async function AgendaPage() {
           <CalendarView
             recurringAvailability={availability || []}
             specificAvailability={specificAvailability || []}
-            appointments={appointments || []}
+            appointments={allAppointments || []}
           />
         }
       />
