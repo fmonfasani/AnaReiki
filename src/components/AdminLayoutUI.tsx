@@ -25,6 +25,9 @@ export default function AdminLayoutUI({
     { name: "Consultantes", href: "/admin/consultantes", icon: "groups" },
     { name: "Agenda", href: "/admin/agenda", icon: "calendar_month" },
     { name: "Contenido", href: "/admin/contenido", icon: "video_library" },
+    { name: "Comunidad", href: "/admin/comunidad", icon: "forum" },
+    { name: "Pagos", href: "/admin/pagos", icon: "payments" },
+    { name: "Email Marketing", href: "/admin/email-marketing", icon: "mail" },
   ];
 
   return (
@@ -102,7 +105,17 @@ export default function AdminLayoutUI({
           })}
         </nav>
 
-        <div className="p-4 border-t border-gray-100 mt-auto">
+        <div className="p-4 mt-2">
+          <Link
+            href="/consultantes"
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-pink-50 hover:text-pink-700 transition-all"
+          >
+            <span className="material-symbols-outlined text-xl">arrow_back</span>
+            {isSidebarOpen && <span>Ver como consultante</span>}
+          </Link>
+        </div>
+
+        <div className="p-4 border-t border-gray-100">
           <div
             className={`flex items-center gap-3 ${!isSidebarOpen ? "justify-center" : "justify-between"}`}
           >

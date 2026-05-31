@@ -1,6 +1,3 @@
-// Database Types for Supabase Tables
-// Manually maintained to match migration 006/007
-
 export type Json =
   | string
   | number
@@ -8,6 +5,8 @@ export type Json =
   | null
   | { [key: string]: Json | undefined }
   | Json[]
+
+export type AppointmentStatus = "pending" | "confirmed" | "cancelled" | "completed" | "no_show"
 
 export interface Database {
   public: {
@@ -18,8 +17,8 @@ export interface Database {
           email: string
           full_name: string | null
           avatar_url: string | null
-          role: string | null
           is_premium: boolean
+          role: string | null
           created_at: string
           updated_at: string
         }
@@ -28,8 +27,8 @@ export interface Database {
           email: string
           full_name?: string | null
           avatar_url?: string | null
-          role?: string | null
           is_premium?: boolean
+          role?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -38,8 +37,8 @@ export interface Database {
           email?: string
           full_name?: string | null
           avatar_url?: string | null
-          role?: string | null
           is_premium?: boolean
+          role?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -54,6 +53,7 @@ export interface Database {
           buffer_minutes: number
           is_active: boolean
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
@@ -64,6 +64,7 @@ export interface Database {
           buffer_minutes?: number
           is_active?: boolean
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -74,6 +75,7 @@ export interface Database {
           buffer_minutes?: number
           is_active?: boolean
           created_at?: string
+          updated_at?: string
         }
       }
       availability_rules: {
@@ -85,6 +87,8 @@ export interface Database {
           start_time: string
           end_time: string
           is_active: boolean
+          created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
@@ -94,6 +98,8 @@ export interface Database {
           start_time: string
           end_time: string
           is_active?: boolean
+          created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -103,6 +109,8 @@ export interface Database {
           start_time?: string
           end_time?: string
           is_active?: boolean
+          created_at?: string
+          updated_at?: string
         }
       }
       availability_exceptions: {
@@ -114,6 +122,7 @@ export interface Database {
           start_time: string
           end_time: string
           is_available: boolean
+          created_at: string
         }
         Insert: {
           id?: string
@@ -123,6 +132,7 @@ export interface Database {
           start_time: string
           end_time: string
           is_available: boolean
+          created_at?: string
         }
         Update: {
           id?: string
@@ -132,6 +142,7 @@ export interface Database {
           start_time?: string
           end_time?: string
           is_available?: boolean
+          created_at?: string
         }
       }
       appointments: {
@@ -142,9 +153,14 @@ export interface Database {
           client_id: string
           start_time: string
           end_time: string
-          status: "pending" | "confirmed" | "cancelled" | "completed" | "no_show"
+          status: AppointmentStatus
           notes: string | null
           created_at: string
+          updated_at: string
+          confirmed_at: string | null
+          confirmed_by: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
         }
         Insert: {
           id?: string
@@ -153,9 +169,14 @@ export interface Database {
           client_id: string
           start_time: string
           end_time: string
-          status?: "pending" | "confirmed" | "cancelled" | "completed" | "no_show"
+          status?: AppointmentStatus
           notes?: string | null
           created_at?: string
+          updated_at?: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
         }
         Update: {
           id?: string
@@ -164,9 +185,14 @@ export interface Database {
           client_id?: string
           start_time?: string
           end_time?: string
-          status?: "pending" | "confirmed" | "cancelled" | "completed" | "no_show"
+          status?: AppointmentStatus
           notes?: string | null
           created_at?: string
+          updated_at?: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
         }
       }
       content: {
@@ -217,6 +243,7 @@ export interface Database {
           mood_score: number
           intention: string | null
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
@@ -224,6 +251,7 @@ export interface Database {
           mood_score: number
           intention?: string | null
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -231,6 +259,7 @@ export interface Database {
           mood_score?: number
           intention?: string | null
           created_at?: string
+          updated_at?: string
         }
       }
       session_notes: {
@@ -241,6 +270,7 @@ export interface Database {
           content: string
           is_private: boolean
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
@@ -249,6 +279,7 @@ export interface Database {
           content: string
           is_private?: boolean
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -257,7 +288,127 @@ export interface Database {
           content?: string
           is_private?: boolean
           created_at?: string
+          updated_at?: string
         }
+      }
+      availability: {
+        Row: {
+          id: string
+          day_of_week: number
+          start_time: string
+          end_time: string
+          is_active: boolean
+          consultant_id: string | null
+          specific_date: string | null
+          is_available: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          day_of_week: number
+          start_time: string
+          end_time: string
+          is_active?: boolean
+          consultant_id?: string | null
+          specific_date?: string | null
+          is_available?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          day_of_week?: number
+          start_time?: string
+          end_time?: string
+          is_active?: boolean
+          consultant_id?: string | null
+          specific_date?: string | null
+          is_available?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      admin_users: {
+        Row: {
+          id: string
+          user_id: string
+          role: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          role?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          role?: string
+          created_at?: string
+        }
+      }
+      consultants: {
+        Row: {
+          id: string
+          full_name: string
+          title: string | null
+          bio: string | null
+          avatar_url: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          full_name: string
+          title?: string | null
+          bio?: string | null
+          avatar_url?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          full_name?: string
+          title?: string | null
+          bio?: string | null
+          avatar_url?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+    }
+    Functions: {
+      jwt_is_admin: {
+        Args: Record<string, never>
+        Returns: boolean
+      }
+      admin_manage_appointment: {
+        Args: {
+          p_appointment_id: string
+          p_status?: AppointmentStatus
+          p_notes?: string
+          p_new_start_time?: string
+        }
+        Returns: Json
+      }
+      reschedule_appointment: {
+        Args: {
+          p_appointment_id: string
+          p_new_start_time: string
+          p_new_end_time: string
+        }
+        Returns: Json
+      }
+      cancel_appointment: {
+        Args: {
+          p_appointment_id: string
+        }
+        Returns: Json
       }
     }
   }

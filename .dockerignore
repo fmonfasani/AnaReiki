@@ -1,0 +1,17 @@
+.next
+node_modules
+.git
+.gitignore
+.env
+.env.local
+.env.*.local
+*.md
+coverage
+.gitkeep
+Dockerfile
+.dockerignore
+docker-compose.yml
+nginx
+ssl
+infra
+tmp

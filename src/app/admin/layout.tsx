@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import AdminLayoutUI from "@/components/AdminLayoutUI";
-import { isAdminFromAppMetadata } from "@/lib/auth/roles";
+import { isAdmin } from "@/lib/auth/roles";
 
 export default async function AdminLayout({
   children,
@@ -18,8 +18,8 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
-  if (!isAdminFromAppMetadata(user)) {
-    redirect("/miembros");
+  if (!(await isAdmin(user, supabase))) {
+    redirect("/consultantes");
   }
 
   return <AdminLayoutUI user={user}>{children}</AdminLayoutUI>;

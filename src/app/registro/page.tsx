@@ -38,7 +38,7 @@ export default function RegistroPage() {
       // If email confirmation is disabled, redirect immediately
       if (data.user && !data.user.identities?.length) {
         setTimeout(() => {
-          router.push("/miembros");
+          router.push("/consultantes");
           router.refresh();
         }, 2000);
       }
@@ -75,13 +75,13 @@ export default function RegistroPage() {
           </h2>
           <p className="text-gray-600 mb-4">
             Tu cuenta ha sido creada exitosamente. Redirigiendo al área de
-            miembros...
+            consultantes...
           </p>
           <Link
-            href="/miembros"
+            href="/consultantes"
             className="inline-block text-purple-600 hover:text-purple-500 font-medium"
           >
-            Ir al área de miembros →
+            Ir al área de consultantes�
           </Link>
         </div>
       </div>

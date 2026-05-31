@@ -5,7 +5,7 @@
 
 -- 1. Add 'role' column to profiles table
 ALTER TABLE public.profiles 
-ADD COLUMN IF NOT EXISTS role text NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin'));
+ADD COLUMN IF NOT EXISTS role text NOT NULL DEFAULT 'consultante' CHECK (role IN ('consultante', 'admin'));
 
 -- 2. Create 'availability' table for the Agenda
 CREATE TABLE IF NOT EXISTS public.availability (

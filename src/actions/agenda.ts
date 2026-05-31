@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { isAdminFromAppMetadata } from "@/lib/auth/roles";
+import { isAdmin } from "@/lib/auth/roles";
 
 type AvailabilitySlotInput = {
   id: number;
@@ -16,7 +16,7 @@ export async function saveAvailability(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || !isAdminFromAppMetadata(user)) {
+  if (!user || !(await isAdmin(user, supabase))) {
     return { error: "No autorizado" };
   }
 
@@ -103,7 +103,7 @@ export async function getAppointments(startDate: Date, endDate: Date) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || !isAdminFromAppMetadata(user)) return [];
+  if (!user || !(await isAdmin(user, supabase))) return [];
 
   const { data, error } = await supabase
     .from("appointments")
@@ -130,7 +130,7 @@ export async function saveSpecificSlot(
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || !isAdminFromAppMetadata(user)) {
+  if (!user || !(await isAdmin(user, supabase))) {
     return { error: "No autorizado" };
   }
 
@@ -153,7 +153,7 @@ export async function deleteSpecificSlot(slotId: string) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user || !isAdminFromAppMetadata(user)) {
+  if (!user || !(await isAdmin(user, supabase))) {
     return { error: "No autorizado" };
   }
   const { error } = await supabase
@@ -172,7 +172,7 @@ export async function blockDate(dateString: string) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || !isAdminFromAppMetadata(user)) {
+  if (!user || !(await isAdmin(user, supabase))) {
     return { error: "No autorizado" };
   }
 
@@ -197,7 +197,7 @@ export async function unblockDate(dateString: string) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || !isAdminFromAppMetadata(user)) {
+  if (!user || !(await isAdmin(user, supabase))) {
     return { error: "No autorizado" };
   }
 

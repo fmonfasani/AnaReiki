@@ -1,13 +1,43 @@
+"use client";
+
+import { useEffect, useRef, useCallback } from "react";
+import { saveProgress } from "@/actions/library";
+
 interface PodcastPlayerProps {
   url: string;
+  contentId?: string;
+  duration?: number;
 }
 
-export default function PodcastPlayer({ url }: PodcastPlayerProps) {
-  // Convert normal Spotify URL to Embed URL if needed
-  // Example: https://open.spotify.com/episode/XXXX -> https://open.spotify.com/embed/episode/XXXX
-  const getEmbedUrl = (url: string) => {
-    if (url.includes("/embed/")) return url;
-    return url.replace("open.spotify.com/", "open.spotify.com/embed/");
+export default function PodcastPlayer({ url, contentId, duration }: PodcastPlayerProps) {
+  const progressRef = useRef(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const saveCurrentProgress = useCallback(async () => {
+    if (!contentId) return;
+    await saveProgress(contentId, progressRef.current, duration);
+  }, [contentId, duration]);
+
+  useEffect(() => {
+    if (!contentId) return;
+
+    timerRef.current = setInterval(() => {
+      saveCurrentProgress();
+    }, 30000);
+
+    const handleBeforeUnload = () => saveCurrentProgress();
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      saveCurrentProgress();
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [contentId, saveCurrentProgress]);
+
+  const getEmbedUrl = (inputUrl: string) => {
+    if (inputUrl.includes("/embed/")) return inputUrl;
+    return inputUrl.replace("open.spotify.com/", "open.spotify.com/embed/");
   };
 
   const embedUrl = getEmbedUrl(url);
@@ -22,7 +52,7 @@ export default function PodcastPlayer({ url }: PodcastPlayerProps) {
         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
         loading="lazy"
         className="block"
-      ></iframe>
+      />
     </div>
   );
 }

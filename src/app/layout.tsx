@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Newsreader, Noto_Sans } from "next/font/google";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/react"
 
 const newsreader = Newsreader({
   variable: "--font-newsreader",

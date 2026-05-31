@@ -1,121 +1,69 @@
-import React from "react";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import AdminDashboard from "@/components/admin/AdminDashboard";
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
 
-  // Fetch quick stats
-  const { count: usersCount } = await supabase
-    .from("profiles")
-    .select("*", { count: "exact", head: true });
-  const { count: premiumCount } = await supabase
+  const now = new Date();
+  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  const [
+    { count: totalUsers },
+    { count: premiumUsers },
+    { count: pendingAppointments },
+    { count: appointmentsThisMonth },
+    moodResult,
+  ] = await Promise.all([
+    supabase.from("profiles").select("*", { count: "exact", head: true }),
+    supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true })
+      .eq("is_premium", true),
+    supabase
+      .from("appointments")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "pending"),
+    supabase
+      .from("appointments")
+      .select("*", { count: "exact", head: true })
+      .gte("start_time", firstOfMonth.toISOString()),
+    supabase
+      .from("daily_reflections")
+      .select("mood_score")
+      .gte("created_at", thirtyDaysAgo.toISOString()),
+  ]);
+
+  const { count: activeThisMonth } = await supabase
+    .from("daily_reflections")
+    .select("user_id", { count: "exact", head: true })
+    .gte("created_at", thirtyDaysAgo.toISOString());
+
+  const { count: recentSignups } = await supabase
     .from("profiles")
     .select("*", { count: "exact", head: true })
-    .eq("is_premium", true);
-  const { count: appointmentsCount } = await supabase
-    .from("appointments")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "pending");
+    .gte("created_at", thirtyDaysAgo.toISOString());
+
+  const avgMood =
+    moodResult.data && moodResult.data.length > 0
+      ? Math.round(
+          (moodResult.data.reduce((s, r) => s + r.mood_score, 0) /
+            moodResult.data.length) *
+            10,
+        ) / 10
+      : null;
 
   return (
-    <div className="space-y-8">
-      <header>
-        <h1 className="text-3xl font-bold text-gray-900 font-display">
-          Panel de Control 🛠️
-        </h1>
-        <p className="text-gray-500">
-          Bienvenida Ana. Aquí tienes un resumen de tu plataforma.
-        </p>
-      </header>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-gray-500 font-medium">Total Miembros</span>
-            <span className="material-symbols-outlined text-purple-600 bg-purple-100 p-2 rounded-lg">
-              group
-            </span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">{usersCount || 0}</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-gray-500 font-medium">Miembros Premium</span>
-            <span className="material-symbols-outlined text-pink-600 bg-pink-100 p-2 rounded-lg">
-              diamond
-            </span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">
-            {premiumCount || 0}
-          </p>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-gray-500 font-medium">Citas Pendientes</span>
-            <span className="material-symbols-outlined text-orange-600 bg-orange-100 p-2 rounded-lg">
-              notifications_active
-            </span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">
-            {appointmentsCount || 0}
-          </p>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <h3 className="text-xl font-bold text-gray-900 font-display mt-8">
-        Accesos Rápidos
-      </h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Link
-          href="/admin/consultantes"
-          className="group bg-white p-6 rounded-xl border border-gray-200 hover:border-pink-300 hover:shadow-md transition-all"
-        >
-          <h4 className="font-bold text-gray-900 flex items-center gap-2">
-            <span className="material-symbols-outlined text-pink-500">
-              manage_accounts
-            </span>
-            Gestionar Usuarios
-          </h4>
-          <p className="text-sm text-gray-500 mt-2">
-            Activar cuentas premium o ver perfiles.
-          </p>
-        </Link>
-
-        <Link
-          href="/admin/agenda"
-          className="group bg-white p-6 rounded-xl border border-gray-200 hover:border-pink-300 hover:shadow-md transition-all"
-        >
-          <h4 className="font-bold text-gray-900 flex items-center gap-2">
-            <span className="material-symbols-outlined text-pink-500">
-              edit_calendar
-            </span>
-            Configurar Agenda
-          </h4>
-          <p className="text-sm text-gray-500 mt-2">
-            Definir días y horarios de atención.
-          </p>
-        </Link>
-
-        <Link
-          href="/admin/contenido"
-          className="group bg-white p-6 rounded-xl border border-gray-200 hover:border-pink-300 hover:shadow-md transition-all"
-        >
-          <h4 className="font-bold text-gray-900 flex items-center gap-2">
-            <span className="material-symbols-outlined text-pink-500">
-              upload_file
-            </span>
-            Subir Contenido
-          </h4>
-          <p className="text-sm text-gray-500 mt-2">
-            Agregar nuevos videos o podcasts.
-          </p>
-        </Link>
-      </div>
-    </div>
+    <AdminDashboard
+      kpis={{
+        totalUsers: totalUsers || 0,
+        premiumUsers: premiumUsers || 0,
+        pendingAppointments: pendingAppointments || 0,
+        activeThisMonth: activeThisMonth || 0,
+        appointmentsThisMonth: appointmentsThisMonth || 0,
+        recentSignups: recentSignups || 0,
+        avgMood,
+      }}
+    />
   );
 }

@@ -6,7 +6,7 @@
 ## Project Overview
 
 **AnaReiki** is a wellness/holistic therapy web app for a Reiki practitioner named Ana.
-It is a public-facing marketing site + a members-only area + an admin dashboard.
+It is a public-facing marketing site + a consultantes-only area + an admin dashboard.
 
 | Property      | Value                                |
 |---------------|--------------------------------------|
@@ -19,7 +19,7 @@ It is a public-facing marketing site + a members-only area + an admin dashboard.
 | Media         | Cloudinary (videos), Spotify (audio) |
 | Email         | Resend                               |
 | Animation     | Framer Motion                        |
-| Deployment    | Vercel (assumed)                     |
+| Deployment    | Docker (VPS — Hetzner)               |
 | Testing       | ❌ None configured                   |
 
 ---
@@ -49,7 +49,13 @@ src/
 │       ├── client.ts     # Browser client
 │       ├── server.ts     # Server client (RSC / actions)
 │       └── middleware.ts # Session refresh utility
-├── middleware.ts         # Auth middleware (route protection + redirects)
+├── proxy.ts              # Auth middleware (Next.js 16: `proxy.ts` exporta `proxy`)
+├── infra/                # WebsHooks infra structure (ID 0008)
+├── nginx/                # Nginx reverse proxy config
+├── scripts/              # Deploy & maintenance scripts
+├── Dockerfile            # Multi-stage Next.js build
+├── docker-compose.yml    # App + nginx + certbot
+└── .env.production       # Production env template
 └── types/                # Shared TypeScript types
 ```
 
@@ -99,18 +105,18 @@ Auto-created via trigger `on_auth_user_created` on Supabase signup.
 ## Authentication Flow
 
 ```
-User visits /miembros or /admin
+User visits /consultantes or /admin
         ↓
-middleware.ts runs updateSession()
+proxy.ts runs updateSession()
         ↓
 If no session → redirect to /login
-If session + visiting /login → redirect to /miembros
+If session + visiting /login → redirect to /consultantes
         ↓
-Admin routes: guarded by layout components checking admin_users table
+Admin routes: guarded by layout components checking profiles.role
 ```
 
 **Key files:**
-- `src/middleware.ts` — Route gating + session refresh
+- `src/proxy.ts` — Route gating + session refresh (Next.js 16: archivo se llama `proxy.ts`, exporta `proxy`)
 - `src/lib/supabase/middleware.ts` — `updateSession()` implementation
 - `src/lib/supabase/server.ts` — Server-side Supabase client
 - `src/lib/supabase/client.ts` — Browser-side Supabase client
@@ -148,7 +154,7 @@ Registered in `.codex/skills/`:
 ---
 
 ## Known Issues / Technical Debt
-- ❌ No test suite configured (Vitest recommended)
+- ❌ No test suite configured → ✅ **168 tests** en 17 archivos (Vitest)
 - ⚠️ `OPENAI_API_KEY` in `.env` is commented out — AI features not yet active
 - ⚠️ Admin routes rely on layout-level auth checks, not middleware — risk of direct URL access
 - ⚠️ `content` table mutation locked to `service_role` — no admin UI write path via regular auth

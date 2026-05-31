@@ -60,6 +60,7 @@ export default function CalendarView({
 }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("week");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // Helper to get days to display
   const getDays = () => {

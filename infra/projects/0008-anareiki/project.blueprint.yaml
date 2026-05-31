@@ -1,0 +1,60 @@
+project:
+  id: "0008"
+  name: anareiki
+  type: saas
+  environment: production
+
+domains:
+  app: anamurat.online
+
+ports:
+  web: 31008
+
+containers:
+  - name: anareiki-web
+    service: web
+    internal_port: 3000
+    external_port: 31008
+    cpu: "0.5"
+    memory: "256M"
+
+  - name: anareiki-nginx
+    service: proxy
+    cpu: "0.3"
+    memory: "128M"
+
+  - name: anareiki-certbot
+    service: worker
+    cpu: "0.1"
+    memory: "64M"
+
+storage:
+  postgres: false
+  reason: "Supabase managed — no local PostgreSQL needed"
+
+  minio: false
+  reason: "Uses Docker volume anareiki_uploads for multimedia — can migrate to MinIO/R2 later"
+
+  redis: false
+  reason: "Not needed yet — consider for queues/cache in v2"
+
+monitoring:
+  level: basic
+  healthcheck: true
+  logs: docker-logs
+
+deployment:
+  platform: docker-compose
+  strategy: blue-green
+  auto_deploy: true
+  rollback_enabled: true
+
+security:
+  ssl: true
+  provider: lets-encrypt
+  https_redirect: true
+  rate_limit: false
+
+team:
+  owner: ana
+  project_manager: fede

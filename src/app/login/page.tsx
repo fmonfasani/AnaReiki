@@ -26,8 +26,14 @@ export default function LoginPage() {
 
       if (error) throw error;
 
-      // Redirect to members area
-      router.push("/miembros");
+      const roleRes = await fetch("/api/auth/check-role");
+      if (!roleRes.ok) {
+        router.push("/consultantes");
+        router.refresh();
+        return;
+      }
+      const { isAdmin } = await roleRes.json();
+      router.push(isAdmin ? "/admin" : "/consultantes");
       router.refresh();
     } catch (err: unknown) {
       setError(
@@ -44,7 +50,7 @@ export default function LoginPage() {
         <div className="text-center">
           <h2 className="text-3xl font-bold text-gray-900">Iniciar Sesión</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Accede a tu área de miembros
+            Accede a tu área de consultantes
           </p>
         </div>
 

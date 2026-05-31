@@ -4,8 +4,9 @@ import { redirect } from "next/navigation";
 import AvailabilityConfig from "@/components/admin/agenda/AvailabilityConfig";
 import CalendarView from "@/components/admin/agenda/CalendarView";
 import AgendaTabs from "@/components/admin/agenda/AgendaTabs";
-import PendingAppointments from "@/components/admin/agenda/PendingAppointments";
-import { isAdminFromAppMetadata } from "@/lib/auth/roles";
+import AgendaAnalytics from "@/components/admin/agenda/AgendaAnalytics";
+import AdminWaitlistManager from "@/components/admin/agenda/AdminWaitlistManager";
+import { isAdmin } from "@/lib/auth/roles";
 
 export default async function AgendaPage() {
   const supabase = await createClient();
@@ -16,11 +17,10 @@ export default async function AgendaPage() {
   if (!user) {
     redirect("/login");
   }
-  if (!isAdminFromAppMetadata(user)) {
-    redirect("/miembros");
+  if (!(await isAdmin(user, supabase))) {
+    redirect("/consultantes");
   }
 
-  // Fetch recurring availability (from new rules table)
   const { data: availability } = await supabase
     .from("availability_rules")
     .select("*")
@@ -29,24 +29,19 @@ export default async function AgendaPage() {
     .order("day_of_week")
     .order("start_time");
 
-  // Fetch specific availability (from exceptions table)
   const { data: specificAvailability } = await supabase
     .from("availability_exceptions")
     .select("*")
     .eq("consultant_id", user.id)
     .order("exception_date");
 
-  // Fetch ALL relevant appointments for management (pending, confirmed, etc.)
-  // We'll get all from today onwards plus some history for the Global Management tab
   const { data: allAppointments } = await supabase
     .from("appointments")
     .select("*, profiles:client_id(full_name), services:service_id(name)")
     .order("start_time", { ascending: false });
 
-  // Filter pending count for the badge
   const pendingCount = allAppointments?.filter(a => a.status === 'pending').length || 0;
 
-  // Session settings from user metadata
   const sessionDuration = user.user_metadata?.session_duration || 60;
   const bufferTime = user.user_metadata?.buffer_time || 0;
 
@@ -57,10 +52,11 @@ export default async function AgendaPage() {
           Gestión de Agenda 📅
         </h1>
         <p className="text-gray-500">
-          Visualiza tu calendario, confirma nuevas solicitudes y configura tu
-          disponibilidad.
+          Visualiza tu calendario, confirma solicitudes, revisa analytics y gestioná la lista de espera.
         </p>
       </header>
+
+      <AgendaAnalytics />
 
       <AgendaTabs
         pendingCount={pendingCount}
@@ -80,6 +76,8 @@ export default async function AgendaPage() {
           />
         }
       />
+
+      <AdminWaitlistManager />
     </div>
   );
 }

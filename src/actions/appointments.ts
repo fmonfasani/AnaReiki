@@ -22,8 +22,8 @@ function toIsoOrNull(value: string): string | null {
 }
 
 function revalidateAppointmentsViews() {
-  revalidatePath("/miembros");
-  revalidatePath("/miembros/reservar");
+  revalidatePath("/consultantes");
+  revalidatePath("/consultantes/reservar");
   revalidatePath("/admin");
   revalidatePath("/admin/agenda");
 }

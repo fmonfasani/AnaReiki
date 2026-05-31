@@ -1,0 +1,106 @@
+services:
+  web:
+    build: .
+    image: 0008-anareiki-web:latest
+    container_name: anareiki-web
+    restart: unless-stopped
+    expose:
+      - "3000"
+    env_file: .env.production
+    volumes:
+      - anareiki_uploads:/app/public/uploads
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    labels:
+      project.id: "0008"
+      project.name: "anareiki"
+      project.type: "saas"
+      project.environment: "production"
+      project.team: "webshooks"
+      project.owner: "ana"
+      project.port: "31008"
+      monitoring.enabled: "true"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "256M"
+    networks:
+      - anareiki-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: anareiki-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - anareiki_ssl:/etc/nginx/ssl
+      - anareiki_certbot:/var/www/certbot
+    depends_on:
+      - web
+    labels:
+      project.id: "0008"
+      project.name: "anareiki"
+      project.type: "proxy"
+      project.environment: "production"
+      project.team: "webshooks"
+      project.owner: "ana"
+      project.port: "443"
+      monitoring.enabled: "true"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.3"
+          memory: "128M"
+    networks:
+      - anareiki-network
+
+  certbot:
+    image: certbot/certbot
+    container_name: anareiki-certbot
+    restart: unless-stopped
+    volumes:
+      - anareiki_ssl:/etc/letsencrypt
+      - anareiki_certbot:/var/www/certbot
+    entrypoint: >
+      /bin/sh -c "
+        trap exit TERM;
+        while :; do
+          certbot renew --quiet;
+          sleep 12h & wait $${!};
+        done;
+      "
+    depends_on:
+      - nginx
+    labels:
+      project.id: "0008"
+      project.name: "anareiki"
+      project.type: "worker"
+      project.environment: "production"
+      project.team: "webshooks"
+      project.owner: "ana"
+      project.port: "443"
+      monitoring.enabled: "true"
+    networks:
+      - anareiki-network
+
+volumes:
+  anareiki_uploads:
+    name: anareiki_uploads
+  anareiki_ssl:
+    name: anareiki_ssl
+  anareiki_certbot:
+    name: anareiki_certbot
+
+networks:
+  anareiki-network:
+    name: anareiki-network
+    driver: bridge

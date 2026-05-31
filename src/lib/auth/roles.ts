@@ -1,13 +1,15 @@
 import type { User } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-export function isAdminFromAppMetadata(user: User | null): boolean {
+export async function isAdmin(
+  user: User | null,
+  supabase: SupabaseClient
+): Promise<boolean> {
   if (!user) return false;
-  const appMetadata = user.app_metadata ?? {};
-  const role = appMetadata.role;
-  const roles = appMetadata.roles;
-
-  if (role === "admin") return true;
-  if (Array.isArray(roles) && roles.includes("admin")) return true;
-
-  return false;
+  const { data } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  return data?.role === "admin";
 }
