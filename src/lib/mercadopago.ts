@@ -71,6 +71,7 @@ export async function createPreapproval(input: {
   trialDays: number;
   payerEmail: string;
   externalReference: string;
+  backUrl: string;
 }): Promise<{ id: string; init_point: string } | { error: string }> {
   const accessToken = getAccessToken();
   if (!accessToken) return { error: "Mercado Pago no configurado" };
@@ -89,6 +90,8 @@ export async function createPreapproval(input: {
       payer_email: input.payerEmail,
       reason: input.planName,
       external_reference: input.externalReference,
+      back_url: input.backUrl,
+      status: "pending",
       auto_recurring: {
         frequency: input.interval === "year" ? 12 : 1,
         frequency_type: "months",
@@ -98,7 +101,10 @@ export async function createPreapproval(input: {
     };
 
     if (input.trialDays > 0) {
-      (body.auto_recurring as Record<string, unknown>).free_trial = input.trialDays;
+      (body.auto_recurring as Record<string, unknown>).free_trial = {
+        frequency: input.trialDays,
+        frequency_type: "days",
+      };
     }
 
     const res = await fetch(`${MP_API_BASE}/preapproval`, {

@@ -123,7 +123,9 @@ describe("Mercado Pago Lib", () => {
       expect(body.auto_recurring.frequency).toBe(12); // year → 12 months
       expect(body.auto_recurring.frequency_type).toBe("months");
       expect(body.auto_recurring.transaction_amount).toBe(189000);
-      expect(body.auto_recurring.free_trial).toBe(7);
+      expect(body.auto_recurring.free_trial).toEqual({ frequency: 7, frequency_type: "days" });
+      expect(body.status).toBe("pending");
+      expect(body.back_url).toBe("https://anareiki.com/consultantes/suscripciones");
       expect(result).toEqual({ id: "preapp-123", init_point: "https://mp.com/subscribe/preapp-123" });
     });
 
@@ -151,7 +153,7 @@ describe("Mercado Pago Lib", () => {
       expect(body.auto_recurring.free_trial).toBeUndefined();
     });
 
-    it("should NOT include back_url or status in body", async () => {
+    it("should include back_url and status=pending in body", async () => {
       let capturedBody: string = "";
       mockFetch.mockImplementation(async (_url: string, opts: RequestInit) => {
         capturedBody = opts.body as string;
@@ -160,9 +162,8 @@ describe("Mercado Pago Lib", () => {
 
       await mp.createPreapproval(preapprovalInput);
       const body = JSON.parse(capturedBody);
-      expect(body.back_url).toBeUndefined();
-      expect(body.back_urls).toBeUndefined();
-      expect(body.status).toBeUndefined();
+      expect(body.back_url).toBe("https://anareiki.com/consultantes/suscripciones");
+      expect(body.status).toBe("pending");
     });
 
     it("should return error on MP API failure", async () => {
