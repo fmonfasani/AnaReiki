@@ -116,7 +116,7 @@ export async function deleteComment(commentId: string): Promise<ActionResult> {
 }
 
 export async function sendMessage(input: {
-  receiverId: string;
+  receiverId?: string;
   subject?: string;
   content: string;
 }): Promise<ActionResult> {
@@ -124,9 +124,23 @@ export async function sendMessage(input: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "No autorizado" };
 
+  let receiverId = input.receiverId;
+  if (!receiverId) {
+    const { createServiceClient } = await import("@/lib/supabase/service");
+    const svc = createServiceClient();
+    const { data: admin } = await svc
+      .from("profiles")
+      .select("id")
+      .eq("role", "admin")
+      .limit(1)
+      .single();
+    if (!admin) return { error: "No se encontró un administrador" };
+    receiverId = admin.id;
+  }
+
   const { error } = await supabase.from("direct_messages").insert({
     sender_id: user.id,
-    receiver_id: input.receiverId,
+    receiver_id: receiverId,
     subject: input.subject || null,
     content: input.content,
   });

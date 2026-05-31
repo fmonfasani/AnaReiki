@@ -48,7 +48,11 @@ export default function CommentsSection({ contentId }: CommentsSectionProps) {
     e.preventDefault();
     if (!text.trim()) return;
     setSubmitting(true);
-    await addComment(contentId, text);
+    const result = await addComment(contentId, text);
+    if (result.error) {
+      setSubmitting(false);
+      return;
+    }
     setText("");
 
     const { data } = await supabase

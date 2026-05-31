@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { sendMessage, markAsRead } from "@/actions/community";
-import { createClient } from "@/lib/supabase/client";
 
 type Message = {
   id: string;
@@ -31,21 +30,6 @@ export default function MessagesClient({ sent, received, unreadCount: initialUnr
   const [content, setContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [adminId, setAdminId] = useState<string | null>(null);
-
-  const supabase = createClient();
-
-  useEffect(() => {
-    const fetchAdmin = async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id")
-        .limit(1)
-        .single();
-      if (data) setAdminId(data.id);
-    };
-    fetchAdmin();
-  }, []);
 
   useEffect(() => {
     if (tab === "inbox" && allMessages.length > 0) {
@@ -59,11 +43,10 @@ export default function MessagesClient({ sent, received, unreadCount: initialUnr
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() || !adminId) return;
+    if (!content.trim()) return;
     setSubmitting(true);
     setError(null);
     const result = await sendMessage({
-      receiverId: adminId,
       subject: subject || "Mensaje para Ana",
       content,
     });
