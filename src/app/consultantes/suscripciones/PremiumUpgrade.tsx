@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 
 type Plan = {
   id: string;
@@ -30,30 +29,45 @@ interface PremiumUpgradeProps {
   userEmail: string;
 }
 
-const PRANA_FEATURES = [
-  "Perfil personal",
-  "Agendar citas con Ana",
-  "Mi Agenda (ver/cancelar turnos)",
-  "Comunidad (leer y participar)",
-  "Notificaciones de recordatorio",
-];
+const TIER_ORDER = ["prana", "shakti", "ananda"] as const;
+type Tier = (typeof TIER_ORDER)[number];
 
-const SHAKTI_FEATURES = [
-  "Todo lo de Prana",
-  "Biblioteca: podcasts, meditaciones, reiki y yoga",
-  "Evolución: mood tracker básico",
-];
+const TIER_LABELS: Record<Tier, { name: string; emoji: string; desc: string }> = {
+  prana: { name: "Prana", emoji: "🌿", desc: "Energía vital — lo esencial" },
+  shakti: { name: "Shakti", emoji: "🔥", desc: "Poder divino — expandí tu práctica" },
+  ananda: { name: "Ananda", emoji: "☀️", desc: "Dicha plena — sin límites" },
+};
 
-const ANANDA_FEATURES = [
-  "Todo lo de Shakti sin límites",
-  "Biblioteca completa (videos, podcasts, meditaciones, reiki, yoga, reflexiones, ejercicios)",
-  "Todas las clases grabadas + contenido premium",
-  "Comunidad: escribir, foro, comentarios",
-  "Mensajes directos con otros consultantes",
-  "Chat IA ilimitado",
-  "Evolución completa con insights IA",
-  "Favoritos y seguimiento sincronizado",
-];
+const FEATURES: Record<Tier, string[]> = {
+  prana: [
+    "Perfil personal",
+    "Agendar citas con Ana",
+    "Mi Agenda (ver/cancelar turnos)",
+    "Comunidad (leer y participar)",
+    "Notificaciones de recordatorio",
+  ],
+  shakti: [
+    "Todo lo de Prana",
+    "Biblioteca: podcasts, meditaciones, reiki y yoga",
+    "Evolución: mood tracker básico",
+  ],
+  ananda: [
+    "Todo lo de Shakti sin límites",
+    "Biblioteca completa (videos, podcasts, meditaciones, reiki, yoga, reflexiones, ejercicios)",
+    "Todas las clases grabadas + contenido premium",
+    "Comunidad: escribir, foro, comentarios",
+    "Mensajes directos con otros consultantes",
+    "Chat IA ilimitado",
+    "Evolución completa con insights IA",
+    "Favoritos y seguimiento sincronizado",
+  ],
+};
+
+const TIER_BORDERS: Record<Tier, string> = {
+  prana: "border-gray-100",
+  shakti: "border-pink-200",
+  ananda: "border-amber-300",
+};
 
 export default function PremiumUpgrade({
   isPremium,
@@ -66,27 +80,43 @@ export default function PremiumUpgrade({
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const currentSlug = subscription?.pricing_plans?.slug;
+  const currentTier = (TIER_ORDER.includes(planTier as Tier) ? planTier : "prana") as Tier;
+  const currentIdx = TIER_ORDER.indexOf(currentTier);
 
-  const handleSubscribe = async (planId: string) => {
+  const tierPlans = (tier: Tier) =>
+    plans.filter((p) => {
+      if (tier === "prana") return p.slug === "prana";
+      return p.slug.startsWith(tier) && p.interval === billingInterval;
+    });
+
+  const formatPrice = (cents: number, currency: string) => {
+    const amount = cents / 100;
+    return currency === "ARS"
+      ? `$${amount.toLocaleString("es-AR")}`
+      : `$${amount.toFixed(2)}`;
+  };
+
+  const handleUpgrade = async (planId: string) => {
     setLoading(planId);
     setError(null);
-
     try {
-      const res = await fetch("/api/mercadopago/create-preference", {
+      const endpoint = isPremium
+        ? "/api/mercadopago/change-plan"
+        : "/api/mercadopago/create-preference";
+      const body = isPremium
+        ? JSON.stringify({ planId, action: "upgrade" })
+        : JSON.stringify({ planId });
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId }),
+        body,
       });
-
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Error al iniciar pago");
-      }
-
+      if (!res.ok) throw new Error(data.error || "Error al iniciar pago");
       if (data.init_point) {
         window.location.href = data.init_point;
+      } else if (data.success) {
+        window.location.reload();
       } else {
         throw new Error("No se pudo generar el link de pago");
       }
@@ -97,61 +127,49 @@ export default function PremiumUpgrade({
     }
   };
 
-  const formatPrice = (cents: number, currency: string) => {
-    const amount = cents / 100;
-    if (currency === "ARS") {
-      return `$${amount.toLocaleString("es-AR")}`;
+  const handleDowngrade = async (planId: string) => {
+    if (!confirm("¿Estás seguro de que querés bajar de plan? Perderás acceso a las funciones del plan actual.")) return;
+    setLoading(planId);
+    setError(null);
+    try {
+      const res = await fetch("/api/mercadopago/change-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planId, action: "downgrade" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al cambiar de plan");
+      if (data.init_point) {
+        window.location.href = data.init_point;
+      } else {
+        window.location.reload();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error de conexión");
+    } finally {
+      setLoading(null);
     }
-    return `$${amount.toFixed(2)}`;
   };
 
-  if (isPremium) {
-    const planName = subscription?.pricing_plans?.name || "Ananda";
-    return (
-      <div className="max-w-2xl mx-auto space-y-8">
-        <header className="text-center">
-          <span className="text-6xl block mb-4">🌟</span>
-          <h1 className="text-4xl font-extrabold text-gray-900">
-            Tu suscripción
-          </h1>
-          <p className="text-lg text-gray-500 mt-2">
-            {currentSlug?.startsWith("ananda")
-              ? "Disfrutás de acceso completo a todo."
-              : "Disfrutás de acceso parcial. Actualizá para obtener más."}
-          </p>
-        </header>
-
-        <div className="bg-gradient-to-br from-pink-500 to-purple-600 rounded-3xl p-8 text-white shadow-xl text-center">
-          <span className="material-symbols-outlined text-5xl mb-4">diamond</span>
-          <h2 className="text-2xl font-bold mb-2">Plan {planName}</h2>
-          {subscription?.current_period_end && (
-            <p className="text-white/80">
-              Tu plan vence el{" "}
-              {new Date(subscription.current_period_end).toLocaleDateString("es-AR", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-            </p>
-          )}
-        </div>
-
-        <div className="text-center">
-          <Link
-            href="/consultantes/biblioteca"
-            className="inline-flex items-center gap-2 bg-pink-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-pink-200 hover:shadow-xl hover:-translate-y-0.5 transition-all"
-          >
-            <span className="material-symbols-outlined">library_books</span>
-            Explorar contenido
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const paidPlans = plans.filter((p) => p.price_cents > 0);
-  const shaktiPlans = paidPlans.filter((p) => p.slug.startsWith("shakti") && p.interval === billingInterval);
-  const anandaPlans = paidPlans.filter((p) => p.slug.startsWith("ananda") && p.interval === billingInterval);
+  const handleCancel = async () => {
+    if (!confirm("¿Estás seguro? Perderás acceso a todo el contenido premium al final del período.")) return;
+    setLoading("cancel");
+    setError(null);
+    try {
+      const res = await fetch("/api/mercadopago/change-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cancel" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al cancelar");
+      window.location.reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error de conexión");
+    } finally {
+      setLoading(null);
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-12">
@@ -160,7 +178,9 @@ export default function PremiumUpgrade({
           Suscripciones
         </h1>
         <p className="text-lg text-gray-500 mt-2 max-w-xl mx-auto">
-          Crece en tu práctica con el plan que mejor se adapte a vos.
+          {isPremium
+            ? `Estás en el plan ${TIER_LABELS[currentTier].name}. Elegí el que mejor se adapte a vos.`
+            : "Crece en tu práctica con el plan que mejor se adapte a vos."}
         </p>
       </header>
 
@@ -170,7 +190,6 @@ export default function PremiumUpgrade({
         </div>
       )}
 
-      {/* Billing toggle */}
       <div className="flex justify-center">
         <div className="bg-gray-100 rounded-xl p-1 inline-flex items-center gap-1">
           <button
@@ -198,141 +217,112 @@ export default function PremiumUpgrade({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-        {/* PRANA - Free */}
-        <div className="bg-white rounded-3xl border-2 border-gray-100 p-8 shadow-sm flex flex-col">
-          <div className="mb-6">
-            <span className="text-4xl block mb-3">🌿</span>
-            <h3 className="text-xl font-bold text-gray-900">Prana</h3>
-            <p className="text-sm text-gray-500 mt-1">Energía vital — lo esencial</p>
-          </div>
-          <div className="mb-6">
-            <span className="text-4xl font-black text-gray-900">Gratis</span>
-          </div>
-          <ul className="space-y-3 mb-8 flex-1">
-            {PRANA_FEATURES.map((f, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                <span className="material-symbols-outlined text-green-500 text-sm mt-0.5">check</span>
-                {f}
-              </li>
-            ))}
-          </ul>
-          {planTier === "prana" ? (
-            <div className="w-full py-3 rounded-xl font-bold text-sm text-center bg-gray-100 text-gray-400">
-              Plan actual
-            </div>
-          ) : null}
-        </div>
+        {TIER_ORDER.map((tier) => {
+          const tierPlansList = tierPlans(tier);
+          const isCurrent = tier === currentTier;
+          const tierIdx = TIER_ORDER.indexOf(tier);
 
-        {/* SHAKTI - Medium */}
-        <div className="bg-white rounded-3xl border-2 border-pink-200 p-8 shadow-sm flex flex-col relative">
-          {shaktiPlans.length > 0 && (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-pink-600 to-purple-600 text-white text-xs font-bold px-4 py-1 rounded-full">
-              Popular
-            </div>
-          )}
-          <div className="mb-6">
-            <span className="text-4xl block mb-3">🔥</span>
-            <h3 className="text-xl font-bold text-gray-900">Shakti</h3>
-            <p className="text-sm text-gray-500 mt-1">Poder divino — expandí tu práctica</p>
-          </div>
-          <div className="mb-6 space-y-2">
-            {shaktiPlans.map((plan) => (
-              <div key={plan.id} className="flex items-center justify-between">
-                <span className="text-2xl font-black text-gray-900">
-                  {formatPrice(plan.price_cents, plan.currency)}
-                </span>
-                <span className="text-gray-400 text-sm">
-                  /{plan.interval === "month" ? "mes" : "año"}
-                </span>
-              </div>
-            ))}
-          </div>
-          <ul className="space-y-3 mb-8 flex-1">
-            {SHAKTI_FEATURES.map((f, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                <span className="material-symbols-outlined text-green-500 text-sm mt-0.5">check</span>
-                {f}
-              </li>
-            ))}
-          </ul>
-          <div className="space-y-2">
-            {shaktiPlans.map((plan) => (
-              <button
-                key={plan.id}
-                onClick={() => handleSubscribe(plan.id)}
-                disabled={loading === plan.id}
-                className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${
-                  plan.interval === "year"
-                    ? "bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-lg shadow-pink-200 hover:shadow-xl hover:-translate-y-0.5"
-                    : "bg-gray-900 text-white hover:bg-gray-800"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                {loading === plan.id
-                  ? "Redirigiendo..."
-                  : plan.trial_days > 0
-                    ? `Probar gratis ${plan.trial_days} días`
-                    : plan.interval === "month"
-                      ? "Suscribirme mensual"
-                      : "Suscribirme anual"}
-              </button>
-            ))}
-          </div>
-        </div>
+          return (
+            <div
+              key={tier}
+              className={`bg-white rounded-3xl border-2 ${TIER_BORDERS[tier]} p-8 shadow-sm flex flex-col relative ${
+                tier === currentTier
+                  ? "ring-2 ring-pink-500 ring-offset-2"
+                  : ""
+              }`}
+            >
+              {tier === "shakti" && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-pink-600 to-purple-600 text-white text-xs font-bold px-4 py-1 rounded-full">
+                  Popular
+                </div>
+              )}
+              {tier === "ananda" && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-bold px-4 py-1 rounded-full">
+                  Todo incluido
+                </div>
+              )}
 
-        {/* ANANDA - Full */}
-        <div className="bg-white rounded-3xl border-2 border-amber-300 p-8 shadow-sm flex flex-col relative">
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-bold px-4 py-1 rounded-full">
-            Todo incluido
-          </div>
-          <div className="mb-6">
-            <span className="text-4xl block mb-3">☀️</span>
-            <h3 className="text-xl font-bold text-gray-900">Ananda</h3>
-            <p className="text-sm text-gray-500 mt-1">Dicha plena — sin límites</p>
-          </div>
-          <div className="mb-6 space-y-2">
-            {anandaPlans.map((plan) => (
-              <div key={plan.id} className="flex items-center justify-between">
-                <span className="text-2xl font-black text-gray-900">
-                  {formatPrice(plan.price_cents, plan.currency)}
-                </span>
-                <span className="text-gray-400 text-sm">
-                  /{plan.interval === "month" ? "mes" : "año"}
-                </span>
+              <div className="mb-6">
+                <span className="text-4xl block mb-3">{TIER_LABELS[tier].emoji}</span>
+                <h3 className="text-xl font-bold text-gray-900">{TIER_LABELS[tier].name}</h3>
+                <p className="text-sm text-gray-500 mt-1">{TIER_LABELS[tier].desc}</p>
               </div>
-            ))}
-          </div>
-          <ul className="space-y-3 mb-8 flex-1">
-            {ANANDA_FEATURES.map((f, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                <span className="material-symbols-outlined text-green-500 text-sm mt-0.5">check</span>
-                {f}
-              </li>
-            ))}
-          </ul>
-          <div className="space-y-2">
-            {anandaPlans.map((plan) => (
-              <button
-                key={plan.id}
-                onClick={() => handleSubscribe(plan.id)}
-                disabled={loading === plan.id}
-                className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${
-                  plan.interval === "year"
-                    ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-200 hover:shadow-xl hover:-translate-y-0.5"
-                    : "bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-lg shadow-pink-200 hover:shadow-xl hover:-translate-y-0.5"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                {loading === plan.id
-                  ? "Redirigiendo..."
-                  : plan.trial_days > 0
-                    ? `Probar gratis ${plan.trial_days} días`
-                    : plan.interval === "month"
-                      ? "Suscribirme mensual"
-                      : "Suscribirme anual"}
-              </button>
-            ))}
-          </div>
-        </div>
+
+              <div className="mb-6 space-y-2">
+                {tier === "prana" ? (
+                  <span className="text-4xl font-black text-gray-900">Gratis</span>
+                ) : tierPlansList.length === 0 ? (
+                  <span className="text-gray-400 italic">No disponible</span>
+                ) : (
+                  tierPlansList.map((plan) => (
+                    <div key={plan.id} className="flex items-center justify-between">
+                      <span className="text-2xl font-black text-gray-900">
+                        {formatPrice(plan.price_cents, plan.currency)}
+                      </span>
+                      <span className="text-gray-400 text-sm">
+                        /{plan.interval === "month" ? "mes" : "año"}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <ul className="space-y-3 mb-8 flex-1">
+                {FEATURES[tier].map((f, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                    <span className="material-symbols-outlined text-green-500 text-sm mt-0.5">
+                      check
+                    </span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+
+              {isCurrent ? (
+                <div className="w-full py-3 rounded-xl font-bold text-sm text-center bg-pink-50 text-pink-700 border border-pink-200">
+                  Plan actual
+                </div>
+              ) : tierIdx > currentIdx ? (
+                <button
+                  onClick={() => tierPlansList[0] && handleUpgrade(tierPlansList[0].id)}
+                  disabled={loading !== null || tierPlansList.length === 0}
+                  className="w-full py-3 rounded-xl font-bold text-sm transition-all bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-lg shadow-pink-200 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading === tierPlansList[0]?.id
+                    ? "Redirigiendo..."
+                    : tier === "ananda"
+                      ? "Actualizar a Ananda"
+                      : "Actualizar a Shakti"}
+                </button>
+              ) : (
+                <button
+                  onClick={() => tierPlansList[0] && handleDowngrade(tierPlansList[0]?.id || "")}
+                  disabled={loading !== null}
+                  className="w-full py-3 rounded-xl font-bold text-sm transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading === (tierPlansList[0]?.id || "downgrade")
+                    ? "Procesando..."
+                    : `Bajar a ${TIER_LABELS[tier].name}`}
+                </button>
+              )}
+            </div>
+          );
+        })}
       </div>
+
+      {isPremium && currentTier !== "prana" && (
+        <div className="text-center">
+          <button
+            onClick={handleCancel}
+            disabled={loading === "cancel"}
+            className="text-sm text-gray-400 hover:text-red-600 underline underline-offset-2 disabled:opacity-50"
+          >
+            {loading === "cancel"
+              ? "Cancelando..."
+              : "Cancelar suscripción (al final del período vigente)"}
+          </button>
+        </div>
+      )}
 
       <div className="text-center">
         <p className="text-xs text-gray-400 max-w-lg mx-auto">

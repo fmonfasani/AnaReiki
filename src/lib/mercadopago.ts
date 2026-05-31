@@ -168,6 +168,36 @@ export async function getPreapproval(preapprovalId: string): Promise<{
   }
 }
 
+export async function cancelPreapproval(
+  preapprovalId: string,
+): Promise<{ success: true } | { error: string }> {
+  const accessToken = getAccessToken();
+  if (!accessToken) return { error: "Mercado Pago no configurado" };
+
+  try {
+    const res = await fetch(`${MP_API_BASE}/preapproval/${preapprovalId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ status: "cancelled" }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      return { error: data.message || `Error al cancelar (${res.status})` };
+    }
+
+    return { success: true };
+  } catch (err) {
+    return {
+      error:
+        err instanceof Error ? err.message : "Error de conexión con Mercado Pago",
+    };
+  }
+}
+
 export async function getPayment(paymentId: string): Promise<{
   status: string;
   status_detail: string;
