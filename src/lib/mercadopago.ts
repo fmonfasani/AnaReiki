@@ -89,7 +89,6 @@ export async function createPreapproval(input: {
       payer_email: input.payerEmail,
       reason: input.planName,
       external_reference: input.externalReference,
-      notification_url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://anamurat.online"}/api/mercadopago/webhook`,
       auto_recurring: {
         frequency: input.interval === "year" ? 12 : 1,
         frequency_type: "months",
