@@ -69,26 +69,38 @@ export async function createPreapproval(input: {
   priceCents: number;
   interval: string;
   trialDays: number;
-  backUrl: string;
   payerEmail: string;
   externalReference: string;
 }): Promise<{ id: string; init_point: string } | { error: string }> {
   const accessToken = getAccessToken();
   if (!accessToken) return { error: "Mercado Pago no configurado" };
 
+  if (!input.payerEmail) {
+    return { error: "Email del pagador requerido" };
+  }
+
+  const amount = input.priceCents / 100;
+  if (amount <= 0) {
+    return { error: "Monto inválido" };
+  }
+
   try {
-    const body = {
+    const body: Record<string, unknown> = {
       payer_email: input.payerEmail,
       reason: input.planName,
       external_reference: input.externalReference,
+      notification_url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://anamurat.online"}/api/mercadopago/webhook`,
       auto_recurring: {
         frequency: input.interval === "year" ? 12 : 1,
         frequency_type: "months",
-        transaction_amount: input.priceCents / 100,
+        transaction_amount: amount,
         currency_id: "ARS",
-        ...(input.trialDays > 0 && { free_trial: input.trialDays }),
       },
     };
+
+    if (input.trialDays > 0) {
+      (body.auto_recurring as Record<string, unknown>).free_trial = input.trialDays;
+    }
 
     const res = await fetch(`${MP_API_BASE}/preapproval`, {
       method: "POST",
@@ -102,7 +114,10 @@ export async function createPreapproval(input: {
     const data = await res.json();
 
     if (!res.ok) {
-      return { error: `${data.status} — ${data.message || JSON.stringify(data)}` };
+      console.error("MP preapproval error:", JSON.stringify(data));
+      return {
+        error: data.message || data.cause?.[0]?.description || `Error MP (${res.status})`,
+      };
     }
 
     return { id: data.id, init_point: data.init_point };

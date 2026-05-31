@@ -37,15 +37,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const backUrl = `${request.headers.get("origin") || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/consultantes/suscripciones`;
-
     const result = await createPreapproval({
       planId: plan.id,
       planName: plan.name,
       priceCents: plan.price_cents,
       interval: plan.interval,
       trialDays: plan.trial_days,
-      backUrl,
       payerEmail: user.email || "",
       externalReference: JSON.stringify({
         userId: user.id,

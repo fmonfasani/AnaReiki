@@ -170,7 +170,7 @@ describe("Mercado Pago Lib", () => {
         ok: false,
         json: () => Promise.resolve({ status: "400", message: "invalid field" }),
       });
-      expect(await mp.createPreapproval(preapprovalInput)).toEqual({ error: "400 — invalid field" });
+      expect(await mp.createPreapproval(preapprovalInput)).toEqual({ error: "invalid field" });
     });
   });
 

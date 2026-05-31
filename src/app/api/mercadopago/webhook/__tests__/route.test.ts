@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
-vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
+vi.mock("@/lib/supabase/service", () => ({ createServiceClient: vi.fn() }));
 
 const mockGetPreapproval = vi.fn();
 const mockGetPayment = vi.fn();
@@ -63,7 +63,7 @@ describe("POST /api/mercadopago/webhook", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+    vi.mocked(createServiceClient).mockReturnValue(mockSupabase as never);
   });
 
   describe("subscription_preapproval", () => {

@@ -1,13 +1,12 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { getPayment, getPreapproval } from "@/lib/mercadopago";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const supabase = await createClient();
+    const supabase = createServiceClient();
 
-    // Handle subscription preapproval notification
     if (body.type === "subscription_preapproval" || body.type === "preapproval") {
       const preapprovalId = body.data?.id;
 
@@ -28,8 +27,6 @@ export async function POST(request: Request) {
       } catch {}
 
       if (refData.userId && refData.planId) {
-        const planSlug = body.action === "created" || preapproval.status === "authorized" ? "shakti" : undefined;
-
         const { data: plan } = await supabase
           .from("pricing_plans")
           .select("*")
@@ -40,7 +37,6 @@ export async function POST(request: Request) {
           const planTier = plan.slug.startsWith("ananda") ? "ananda" : "shakti";
 
           if (preapproval.status === "authorized" || preapproval.status === "pending") {
-            // Check if subscription already exists
             const { data: existing } = await supabase
               .from("subscriptions")
               .select("id")
@@ -57,7 +53,7 @@ export async function POST(request: Request) {
                 current_period_end: new Date(
                   Date.now() + (plan.interval === "year" ? 365 : 30) * 24 * 60 * 60 * 1000
                 ).toISOString(),
-                mp_subscription_id: String(preapprovalId),
+                mp_preapproval_id: String(preapprovalId),
                 cancel_at_period_end: false,
               });
 
@@ -66,15 +62,15 @@ export async function POST(request: Request) {
                 .update({ is_premium: true, plan_tier: planTier })
                 .eq("id", refData.userId);
 
-              console.log(`✅ Subscription created: user=${refData.userId}, plan=${plan.name}`);
+              console.log(`Subscription created: user=${refData.userId}, plan=${plan.name}`);
             }
           }
 
           if (preapproval.status === "cancelled") {
             await supabase
               .from("subscriptions")
-              .update({ status: "cancelled", cancel_at_period_end: true })
-              .eq("mp_subscription_id", String(preapprovalId));
+              .update({ status: "canceled", cancel_at_period_end: true })
+              .eq("mp_preapproval_id", String(preapprovalId));
           }
         }
       }
@@ -82,7 +78,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
 
-    // Handle payment notification (first charge after trial ends)
     if (body.type === "payment") {
       const paymentId = body.data?.id;
 
@@ -98,7 +93,6 @@ export async function POST(request: Request) {
       }
 
       if (payment.status === "approved") {
-        // Try to get external reference from payment
         let refData: { userId?: string; planId?: string } = {};
         try {
           const res = await fetch(
