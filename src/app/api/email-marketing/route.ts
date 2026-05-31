@@ -46,9 +46,11 @@ export async function POST(request: Request) {
       );
     }
 
+    const fromAddr = process.env.RESEND_FROM || "Ana Reiki <onboarding@resend.dev>";
+
     const emailPromises = profiles.map((profile) =>
       resend.emails.send({
-        from: "Ana Reiki <onboarding@resend.dev>",
+        from: fromAddr,
         to: profile.email,
         subject,
         html: `
@@ -69,12 +71,23 @@ export async function POST(request: Request) {
 
     const results = await Promise.allSettled(emailPromises);
     const sent = results.filter((r) => r.status === "fulfilled").length;
-    const failed = results.filter((r) => r.status === "rejected").length;
+    const failedResults = results.filter((r) => r.status === "rejected");
+    const firstError = failedResults[0]?.reason;
+
+    if (firstError) {
+      const msg = firstError?.message || String(firstError);
+      if (msg.includes("1010")) {
+        return NextResponse.json({
+          success: true, sent, failed: failedResults.length, total: profiles.length,
+          warning: "Resend requiere verificar el dominio. Los emails no se entregarán hasta que configures los registros DNS en resend.com/domains.",
+        });
+      }
+    }
 
     return NextResponse.json({
       success: true,
       sent,
-      failed,
+      failed: failedResults.length,
       total: profiles.length,
     });
   } catch (err) {

@@ -88,8 +88,20 @@ export async function deleteTopic(topicId: string): Promise<ActionResult> {
 
 export async function deleteReply(replyId: string): Promise<ActionResult> {
   const supabase = await createClient();
+
+  const { data: reply } = await supabase
+    .from("discussion_replies")
+    .select("topic_id")
+    .eq("id", replyId)
+    .single();
+
   const { error } = await supabase.from("discussion_replies").delete().eq("id", replyId);
   if (error) return { error: error.message };
+
+  if (reply?.topic_id) {
+    revalidatePath(`/consultantes/comunidad/${reply.topic_id}`);
+  }
+  revalidatePath("/consultantes/comunidad");
   return { success: true };
 }
 
@@ -112,6 +124,7 @@ export async function deleteComment(commentId: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase.from("content_comments").delete().eq("id", commentId);
   if (error) return { error: error.message };
+  revalidatePath("/consultantes/biblioteca");
   return { success: true };
 }
 

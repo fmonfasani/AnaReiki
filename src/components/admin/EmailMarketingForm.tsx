@@ -12,6 +12,7 @@ export default function EmailMarketingForm() {
     failed?: number;
     total?: number;
     error?: string;
+    warning?: string;
   } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,11 +105,13 @@ export default function EmailMarketingForm() {
               : "bg-green-50 text-green-700 border border-green-200"
           }`}
         >
-          {result.error
-            ? `Error: ${result.error}`
-            : `✅ Enviado a ${result.sent} de ${result.total} destinatarios${
-                result.failed ? `. Fallaron: ${result.failed}` : ""
-              }`}
+            {result.error
+              ? `Error: ${result.error}`
+              : `✅ Procesado: ${result.sent} enviados, ${result.failed || 0} fallaron (${result.total} total)`
+            }
+            {(result as any).warning && (
+              <p className="text-amber-700 mt-2">⚠️ {(result as any).warning}</p>
+            )}
         </div>
       )}
 
