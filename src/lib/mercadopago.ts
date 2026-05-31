@@ -100,12 +100,12 @@ export async function createPreapproval(input: {
       },
     };
 
-    if (input.trialDays > 0) {
-      (body.auto_recurring as Record<string, unknown>).free_trial = {
-        frequency: input.trialDays,
-        frequency_type: "days",
-      };
-    }
+    // if (input.trialDays > 0) {
+    //   (body.auto_recurring as Record<string, unknown>).free_trial = {
+    //     frequency: input.trialDays,
+    //     frequency_type: "days",
+    //   };
+    // }
 
     const res = await fetch(`${MP_API_BASE}/preapproval`, {
       method: "POST",

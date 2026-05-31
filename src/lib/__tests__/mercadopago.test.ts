@@ -123,7 +123,7 @@ describe("Mercado Pago Lib", () => {
       expect(body.auto_recurring.frequency).toBe(12); // year → 12 months
       expect(body.auto_recurring.frequency_type).toBe("months");
       expect(body.auto_recurring.transaction_amount).toBe(189000);
-      expect(body.auto_recurring.free_trial).toEqual({ frequency: 7, frequency_type: "days" });
+      expect(body.auto_recurring.free_trial).toBeUndefined();
       expect(body.status).toBe("pending");
       expect(body.back_url).toBe("https://anareiki.com/consultantes/suscripciones");
       expect(result).toEqual({ id: "preapp-123", init_point: "https://mp.com/subscribe/preapp-123" });
