@@ -19,15 +19,12 @@ export default async function MisCitasPage() {
         redirect("/login");
     }
 
-    // Fetch all appointments for this user with service details
     const { data: appointments, error } = await supabase
         .from("appointments")
         .select(`
       *,
-      services (
-        name,
-        duration_minutes
-      )
+      services (id, name, slug, duration_minutes, allowed_modalities),
+      availability_slots (id, slot_date, start_time, end_time, modality)
     `)
         .eq("client_id", user.id)
         .order("start_time", { ascending: false });
@@ -42,30 +39,23 @@ export default async function MisCitasPage() {
                 <div className="space-y-2">
                     <Link
                         href="/consultantes"
-                        className="text-sm font-bold text-purple-600 hover:text-purple-700 transition-colors flex items-center gap-1 group"
+                        className="text-sm font-bold text-[var(--color-primary-dark)] hover:opacity-80 transition-colors flex items-center gap-1 group"
                     >
-                        <span className="material-symbols-outlined text-sm group-hover:-translate-x-1 transition-transform">
-                            arrow_back
-                        </span>
-                        Volver al Inicio
+                        ← Volver al Inicio
                     </Link>
                     <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight font-display">
-                        Mis Citas 📅
+                        Mis Citas
                     </h1>
                     <p className="text-lg text-gray-500 max-w-2xl">
-                        Gestiona tus próximas sesiones o descarga el historial de tus procesos
-                        de sanación.
+                        Gestioná tus próximas sesiones y revisá tu historial.
                     </p>
                 </div>
 
                 <Link
                     href="/consultantes/reservar"
-                    className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-2xl font-bold hover:shadow-xl transition-all shadow-lg shadow-purple-100 group"
+                    className="inline-flex items-center gap-2 bg-[var(--color-terracotta)] text-white px-8 py-4 rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg group"
                 >
-                    <span className="material-symbols-outlined group-hover:rotate-12 transition-transform">
-                        add_circle
-                    </span>
-                    Nueva Reserva
+                    + Nueva Reserva
                 </Link>
             </header>
 

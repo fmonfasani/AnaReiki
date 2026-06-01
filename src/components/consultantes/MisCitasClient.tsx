@@ -57,14 +57,16 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
         <div className="space-y-10">
             <section>
                 <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2 font-display">
-                    <span className="material-symbols-outlined text-purple-600">schedule</span>
+                    <span className="text-[var(--color-terracotta)]">◉</span>
                     Próximas Sesiones
                 </h2>
 
                 {upcoming.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <AnimatePresence mode="popLayout">
-                            {upcoming.map((appt) => (
+                            {upcoming.map((appt) => {
+                                const apt = appt as Appointment & { modality?: string; availability_slots?: { slot_date: string; start_time: string; end_time: string; modality: string } | null };
+                                return (
                                 <motion.div
                                     key={appt.id}
                                     layout
@@ -75,7 +77,7 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
                                 >
                                     <div className="flex justify-between items-start mb-4">
                                         <div>
-                                            <span className="text-xs font-bold text-purple-600 uppercase tracking-widest">
+                                            <span className="text-xs font-bold text-[var(--color-primary-dark)] uppercase tracking-widest">
                                                 {appt.services?.name || "Sesión"}
                                             </span>
                                             <h3 className="text-lg font-bold text-gray-900 capitalize">
@@ -88,14 +90,18 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-4 text-gray-500 text-sm mb-6">
+                                    <div className="flex flex-wrap items-center gap-3 text-gray-500 text-sm mb-6">
                                         <div className="flex items-center gap-1">
-                                            <span className="material-symbols-outlined text-sm text-gray-400">schedule</span>
+                                            <span className="text-sm text-gray-400">🕐</span>
                                             {format(parseISO(appt.start_time), "HH:mm")} hs
                                         </div>
                                         <div className="flex items-center gap-1">
-                                            <span className="material-symbols-outlined text-sm text-gray-400">hourglass_top</span>
+                                            <span className="text-sm text-gray-400">⏱</span>
                                             {appt.services?.duration_minutes} min
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            {apt.modality === "online" ? "💻" : "🏠"}
+                                            <span className="capitalize">{apt.modality || "presencial"}</span>
                                         </div>
                                     </div>
 
@@ -109,23 +115,24 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
                                         </button>
                                         <button
                                             onClick={() => setReschedulingId(appt.id)}
-                                            className="flex-1 py-2 text-sm font-bold text-purple-600 hover:bg-purple-50 rounded-xl border border-transparent hover:border-purple-100 transition-all"
+                                            className="flex-1 py-2 text-sm font-bold text-[var(--color-terracotta)] hover:bg-orange-50 rounded-xl border border-transparent hover:border-orange-100 transition-all"
                                         >
                                             Reprogramar
                                         </button>
                                     </div>
                                 </motion.div>
-                            ))}
+                                );
+                            })}
                         </AnimatePresence>
                     </div>
                 ) : (
                     <div className="bg-gray-50 rounded-3xl p-12 text-center border-2 border-dashed border-gray-200">
-                        <p className="text-gray-500 mb-6">No tienes ninguna cita programada.</p>
+                        <p className="text-gray-500 mb-6">No tenés ninguna cita programada.</p>
                         <Link
                             href="/consultantes/reservar"
-                            className="inline-flex items-center gap-2 bg-purple-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-purple-700 transition-all shadow-lg shadow-purple-200"
+                            className="inline-flex items-center gap-2 bg-[var(--color-terracotta)] text-white px-6 py-3 rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg"
                         >
-                            <span className="material-symbols-outlined">add_circle</span>
+                            <span>+</span>
                             Reservar ahora
                         </Link>
                     </div>
@@ -161,6 +168,11 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-600">
                                                 {appt.services?.name}
+                                                {(appt as any).modality && (
+                                                    <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${(appt as any).modality === "online" ? "bg-blue-50 text-blue-600" : "bg-green-50 text-green-600"}`}>
+                                                        {(appt as any).modality === "online" ? "💻 Online" : "🏠 Presencial"}
+                                                    </span>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-tighter ${appt.status === 'completed' ? 'bg-green-50 text-green-600 border border-green-100' :
