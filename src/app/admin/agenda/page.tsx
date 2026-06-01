@@ -6,6 +6,8 @@ import CalendarView from "@/components/admin/agenda/CalendarView";
 import AgendaTabs from "@/components/admin/agenda/AgendaTabs";
 import AgendaAnalytics from "@/components/admin/agenda/AgendaAnalytics";
 import AdminWaitlistManager from "@/components/admin/agenda/AdminWaitlistManager";
+import SlotManager from "@/components/admin/agenda/SlotManager";
+import AppointmentManager from "@/components/admin/agenda/AppointmentManager";
 import { isAdmin } from "@/lib/auth/roles";
 
 export default async function AgendaPage() {
@@ -52,7 +54,7 @@ export default async function AgendaPage() {
           Gestión de Agenda 📅
         </h1>
         <p className="text-gray-500">
-          Visualiza tu calendario, confirma solicitudes, revisa analytics y gestioná la lista de espera.
+          Visualiza tu calendario, confirma solicitudes, gestioná slots y revisá analytics.
         </p>
       </header>
 
@@ -76,6 +78,14 @@ export default async function AgendaPage() {
           />
         }
       />
+
+      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <SlotManager />
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <AppointmentManager />
+      </div>
 
       <AdminWaitlistManager />
     </div>
