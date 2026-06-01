@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { sendAppointmentEmail } from "@/lib/email";
 
 export async function PUT(
   request: Request,
@@ -55,7 +56,7 @@ export async function PUT(
 
     const { data: service, error: serviceError } = await supabase
       .from("services")
-      .select("duration_minutes")
+      .select("name, duration_minutes")
       .eq("id", appointment.service_id)
       .single();
 
@@ -98,6 +99,17 @@ export async function PUT(
       .from("availability_slots")
       .update({ booked_count: newSlot.booked_count + 1 })
       .eq("id", new_slot_id);
+
+    const dateStr = startDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
+    const timeStr = startDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+
+    sendAppointmentEmail("reprogramacion", user.email!, user.user_metadata?.full_name || "", {
+      serviceName: service.name,
+      modality: newSlot.modality,
+      date: dateStr,
+      time: timeStr,
+      duration: service.duration_minutes,
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { sendAppointmentEmail, notifyAdminNewAppointment } from "@/lib/email";
 
 export async function POST(request: Request) {
   try {
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
 
     const { data: service, error: serviceError } = await supabase
       .from("services")
-      .select("duration_minutes, allowed_modalities")
+      .select("name, duration_minutes, allowed_modalities")
       .eq("id", service_id)
       .single();
 
@@ -84,6 +85,29 @@ export async function POST(request: Request) {
     if (updateError) {
       console.error("Failed to update slot count:", updateError.message);
     }
+
+    const dateStr = startDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
+    const timeStr = startDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+
+    sendAppointmentEmail("confirmacion", user.email!, user.user_metadata?.full_name || "", {
+      serviceName: service.name,
+      modality,
+      date: dateStr,
+      time: timeStr,
+      duration: service.duration_minutes,
+      notes: notes || null,
+      appointmentId: appointment.id,
+    });
+
+    notifyAdminNewAppointment({
+      clientName: user.user_metadata?.full_name || user.email || "Consultante",
+      clientEmail: user.email!,
+      serviceName: service.name,
+      modality,
+      date: dateStr,
+      time: timeStr,
+      duration: service.duration_minutes,
+    });
 
     return NextResponse.json({ data: appointment }, { status: 201 });
   } catch (err) {

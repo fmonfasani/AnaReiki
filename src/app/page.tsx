@@ -140,18 +140,18 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
               <Link
+                href="/consultantes/reservar"
+                className="bg-primary-dark hover:bg-primary-dark/90 text-white px-12 py-5 rounded-full font-display font-bold text-xl transition-all shadow-xl shadow-primary-dark/30 transform hover:-translate-y-1"
+              >
+                Reservá tu turno
+              </Link>
+              <Link
                 href="https://wa.me/543584376502"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-whatsapp hover:bg-whatsapp/90 text-white px-12 py-5 rounded-full font-display font-bold text-xl transition-all shadow-xl shadow-whatsapp/30 transform hover:-translate-y-1"
               >
                 Contactame
-              </Link>
-              <Link
-                href="/contacto"
-                className="bg-white hover:bg-background-alt text-text-main px-12 py-5 rounded-full font-display font-bold text-xl transition-all shadow-md transform hover:-translate-y-1"
-              >
-                Contactar
               </Link>
             </div>
           </div>

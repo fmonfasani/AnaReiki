@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { sendAppointmentEmail } from "@/lib/email";
 
 export async function PUT(
   request: Request,
@@ -18,7 +19,7 @@ export async function PUT(
 
     const { data: appointment, error: fetchError } = await supabase
       .from("appointments")
-      .select("id, client_id, slot_id, status")
+      .select("id, client_id, slot_id, status, start_time, end_time, modality, notes, services(name, duration_minutes)")
       .eq("id", id)
       .single();
 
@@ -43,6 +44,22 @@ export async function PUT(
 
     if (cancelError) {
       return NextResponse.json({ error: cancelError.message }, { status: 500 });
+    }
+
+    const apt = appointment as unknown as { services: { name: string; duration_minutes: number } | null; start_time: string; modality: string };
+    const startDate = new Date(apt.start_time);
+    const dateStr = startDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
+    const timeStr = startDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+
+    const { data: profile } = await supabase.from("profiles").select("full_name, email").eq("id", user.id).single();
+    if (profile?.email) {
+      sendAppointmentEmail("cancelacion", profile.email, profile.full_name || "", {
+        serviceName: apt.services?.name || "Sesión",
+        modality: apt.modality || "presencial",
+        date: dateStr,
+        time: timeStr,
+        duration: apt.services?.duration_minutes || 60,
+      });
     }
 
     return NextResponse.json({ success: true });
