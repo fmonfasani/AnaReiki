@@ -1,24 +1,21 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
+import { sendAppointmentEmail } from "@/lib/email";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-export async function POST() {
+export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const authHeader = request.headers.get("authorization");
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
+    const { createServiceClient } = await import("@/lib/supabase/service");
+    const svc = createServiceClient();
+    const supabase = await createClient();
+
     const now = new Date().toISOString();
 
-    const { data: pending, error } = await supabase
+    const { data: pending, error } = await svc
       .from("appointment_reminders")
       .select("*, appointments!inner(*, profiles!client_id(email, full_name))")
       .eq("status", "pending")
@@ -48,36 +45,21 @@ export async function POST() {
       try {
         const startTime = new Date(appointment.start_time);
         const dateStr = startTime.toLocaleDateString("es-AR", {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
+          weekday: "long", day: "numeric", month: "long",
         });
         const timeStr = startTime.toLocaleTimeString("es-AR", {
-          hour: "2-digit",
-          minute: "2-digit",
+          hour: "2-digit", minute: "2-digit",
         });
 
-        await resend.emails.send({
-          from: "Ana Reiki <onboarding@resend.dev>",
-          to: clientEmail,
-          subject: "Recordatorio: tenés una cita mañana ✨",
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-              <h1 style="color: #db2777;">Recordatorio de Cita</h1>
-              <p>Hola ${clientName || "!"},</p>
-              <p>Te recordamos que tenés una cita agendada:</p>
-              <div style="background: #fdf2f8; padding: 16px; border-radius: 12px; margin: 16px 0;">
-                <p><strong>Fecha:</strong> ${dateStr}</p>
-                <p><strong>Horario:</strong> ${timeStr} hs</p>
-              </div>
-              <p>Si necesitas reprogramar o cancelar, ingresá a tu panel de consultante.</p>
-              <hr style="margin: 32px 0; border-color: #f3f4f6;" />
-              <p style="font-size: 12px; color: #9ca3af;">Ana Reiki — Terapias Holísticas</p>
-            </div>
-          `,
+        await sendAppointmentEmail("confirmacion", clientEmail, clientName, {
+          serviceName: "Sesión",
+          modality: appointment.modality || "presencial",
+          date: dateStr,
+          time: timeStr,
+          duration: 60,
         });
 
-        await supabase
+        await svc
           .from("appointment_reminders")
           .update({ status: "sent", sent_at: now })
           .eq("id", reminder.id);
@@ -85,7 +67,7 @@ export async function POST() {
         sent++;
       } catch (err) {
         failed++;
-        await supabase
+        await svc
           .from("appointment_reminders")
           .update({
             status: "failed",
