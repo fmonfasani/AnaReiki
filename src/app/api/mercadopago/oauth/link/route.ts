@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getMpAuthUrl } from "@/lib/mercadopago-oauth";
+import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -12,5 +13,5 @@ export async function GET() {
     return NextResponse.json({ error: "MP OAuth no configurado" }, { status: 500 });
   }
 
-  return NextResponse.json({ url });
+  redirect(url);
 }

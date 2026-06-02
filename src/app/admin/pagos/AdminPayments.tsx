@@ -78,12 +78,6 @@ export default function AdminPayments({
       .catch(() => setMpLoading(false));
   }, []);
 
-  const handleConnectMp = async () => {
-    const res = await fetch("/api/mercadopago/oauth/link");
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
-  };
-
   const formatPrice = (cents: number, currency: string) => {
     const amount = cents / 100;
     if (currency === "ARS") return `$${amount.toLocaleString("es-AR")}`;
@@ -109,12 +103,12 @@ export default function AdminPayments({
                 </p>
               </div>
               {!mpConnected && (
-                <button
-                  onClick={handleConnectMp}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
+                <a
+                  href="/api/mercadopago/oauth/link"
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors inline-block"
                 >
                   Conectar Mercado Pago
-                </button>
+                </a>
               )}
             </div>
           </div>
