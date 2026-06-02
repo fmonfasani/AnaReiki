@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export async function isAdmin(
   user: User | null,
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
 ): Promise<boolean> {
   if (!user) return false;
   const { data } = await supabase
@@ -11,5 +11,18 @@ export async function isAdmin(
     .select("role")
     .eq("id", user.id)
     .single();
-  return data?.role === "admin";
+  return data?.role === "admin" || data?.role === "owner";
+}
+
+export async function isOwner(
+  user: User | null,
+  supabase: SupabaseClient,
+): Promise<boolean> {
+  if (!user) return false;
+  const { data } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  return data?.role === "owner";
 }

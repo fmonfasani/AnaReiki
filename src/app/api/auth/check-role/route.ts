@@ -16,7 +16,7 @@ export async function GET() {
     .single();
 
   return NextResponse.json({
-    isAdmin: profile?.role === "admin",
+    isAdmin: profile?.role === "admin" || profile?.role === "owner",
     role: profile?.role || "consultante",
   });
 }

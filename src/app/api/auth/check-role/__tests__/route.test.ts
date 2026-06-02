@@ -28,6 +28,22 @@ describe("GET /api/auth/check-role", () => {
     expect(body).toEqual({ isAdmin: false, role: null });
   });
 
+  it("should return isAdmin=true for owner user", async () => {
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: "owner-1" } } });
+    mockSupabase.from.mockReturnValue({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          single: vi.fn(() => ({ data: { role: "owner" }, error: null })),
+        })),
+      })),
+    });
+
+    const res = await callRoute();
+    const body = await res.json();
+
+    expect(body).toEqual({ isAdmin: true, role: "owner" });
+  });
+
   it("should return isAdmin=true for admin user", async () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: "admin-1" } } });
     mockSupabase.from.mockReturnValue({

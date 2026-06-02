@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { isAdmin } from "@/lib/auth/roles";
+import { isAdmin, isOwner } from "@/lib/auth/roles";
 
 describe("isAdmin", () => {
   const mockSupabase = {
@@ -29,6 +29,11 @@ describe("isAdmin", () => {
     expect(mockSupabase.from).toHaveBeenCalledWith("profiles");
   });
 
+  it("should return true if role is owner", async () => {
+    mockSupabase.from.mockReturnValue(mockChain({ data: { role: "owner" }, error: null }));
+    expect(await isAdmin({ id: "user-owner" } as never, mockSupabase as never)).toBe(true);
+  });
+
   it("should return false if role is consultante", async () => {
     mockSupabase.from.mockReturnValue(mockChain({ data: { role: "consultante" }, error: null }));
     expect(await isAdmin({ id: "user-2" } as never, mockSupabase as never)).toBe(false);
@@ -45,5 +50,40 @@ describe("isAdmin", () => {
 
     await isAdmin({ id: "specific-user" } as never, mockSupabase as never);
     expect(chain.eq).toHaveBeenCalledWith("id", "specific-user");
+  });
+});
+
+describe("isOwner", () => {
+  const mockSupabase = { from: vi.fn() };
+
+  function mockChain(data: unknown) {
+    const chain = {
+      select: vi.fn(() => chain),
+      eq: vi.fn(() => chain),
+      single: vi.fn(() => chain),
+    };
+    chain.select.mockReturnValue(chain);
+    chain.eq.mockReturnValue(chain);
+    chain.single.mockResolvedValue(data);
+    return chain;
+  }
+
+  it("should return false if user is null", async () => {
+    expect(await isOwner(null, mockSupabase as never)).toBe(false);
+  });
+
+  it("should return true if role is owner", async () => {
+    mockSupabase.from.mockReturnValue(mockChain({ data: { role: "owner" }, error: null }));
+    expect(await isOwner({ id: "user-1" } as never, mockSupabase as never)).toBe(true);
+  });
+
+  it("should return false if role is admin", async () => {
+    mockSupabase.from.mockReturnValue(mockChain({ data: { role: "admin" }, error: null }));
+    expect(await isOwner({ id: "user-2" } as never, mockSupabase as never)).toBe(false);
+  });
+
+  it("should return false if role is consultante", async () => {
+    mockSupabase.from.mockReturnValue(mockChain({ data: { role: "consultante" }, error: null }));
+    expect(await isOwner({ id: "user-3" } as never, mockSupabase as never)).toBe(false);
   });
 });
