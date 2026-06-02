@@ -140,7 +140,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_approval public.pending_approvals;
+  v_approval public.pending_approvals%ROWTYPE;
 BEGIN
   IF NOT public.is_owner_user() THEN
     RAISE EXCEPTION 'Solo el owner puede aprobar o rechazar solicitudes';
@@ -206,6 +206,9 @@ BEGIN
     );
 
   ELSIF p_approval.resource_type = 'user_role' THEN
+    IF (p_approval.payload->>'new_role') NOT IN ('consultante', 'admin', 'gerente', 'owner') THEN
+      RAISE EXCEPTION 'Rol inválido: %', p_approval.payload->>'new_role';
+    END IF;
     UPDATE public.profiles SET
       role       = p_approval.payload->>'new_role',
       updated_at = now()
@@ -256,9 +259,11 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT COUNT(*)::integer
-  FROM public.pending_approvals
-  WHERE status = 'pending' AND expires_at > now();
+  SELECT CASE WHEN public.is_owner_user() OR public.is_admin_user()
+    THEN (SELECT COUNT(*)::integer FROM public.pending_approvals
+          WHERE status = 'pending' AND expires_at > now())
+    ELSE 0
+  END;
 $$;
 
 COMMIT;
