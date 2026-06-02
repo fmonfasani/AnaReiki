@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -65,6 +65,24 @@ export default function AdminPayments({
   activeSubscriptions,
 }: AdminPaymentsProps) {
   const [tab, setTab] = useState<"overview" | "payments" | "subscriptions">("overview");
+  const [mpConnected, setMpConnected] = useState(false);
+  const [mpLoading, setMpLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/mercadopago/oauth/status")
+      .then((r) => r.json())
+      .then((data) => {
+        setMpConnected(data.connected);
+        setMpLoading(false);
+      })
+      .catch(() => setMpLoading(false));
+  }, []);
+
+  const handleConnectMp = async () => {
+    const res = await fetch("/api/mercadopago/oauth/link");
+    const data = await res.json();
+    if (data.url) window.location.href = data.url;
+  };
 
   const formatPrice = (cents: number, currency: string) => {
     const amount = cents / 100;
@@ -81,6 +99,27 @@ export default function AdminPayments({
         <p className="text-gray-500">
           Gestioná suscripciones y revisá el historial de pagos.
         </p>
+        {!mpLoading && (
+          <div className={`p-4 rounded-xl border ${mpConnected ? "bg-green-50 border-green-200" : "bg-amber-50 border-amber-200"}`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-gray-900">Mercado Pago</p>
+                <p className="text-xs text-gray-500">
+                  {mpConnected ? "Conectado correctamente" : "No conectado — vinculá tu cuenta de MP para cobrar"}
+                </p>
+              </div>
+              {!mpConnected && (
+                <button
+                  onClick={handleConnectMp}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
+                >
+                  Conectar Mercado Pago
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
