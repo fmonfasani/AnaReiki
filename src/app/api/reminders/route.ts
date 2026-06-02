@@ -15,6 +15,8 @@ export async function POST(request: Request) {
 
     const now = new Date().toISOString();
 
+    await svc.rpc("expire_old_approvals").maybeSingle();
+
     const { data: pending, error } = await svc
       .from("appointment_reminders")
       .select("*, appointments!inner(*, profiles!client_id(email, full_name))")
