@@ -1,12 +1,11 @@
 import React from "react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import AvailabilityConfig from "@/components/admin/agenda/AvailabilityConfig";
+import RuleManager from "@/components/admin/agenda/RuleManager";
 import CalendarView from "@/components/admin/agenda/CalendarView";
 import AgendaTabs from "@/components/admin/agenda/AgendaTabs";
 import AgendaAnalytics from "@/components/admin/agenda/AgendaAnalytics";
 import AdminWaitlistManager from "@/components/admin/agenda/AdminWaitlistManager";
-import SlotManager from "@/components/admin/agenda/SlotManager";
 import AppointmentManager from "@/components/admin/agenda/AppointmentManager";
 import { isAdmin } from "@/lib/auth/roles";
 
@@ -23,19 +22,11 @@ export default async function AgendaPage() {
     redirect("/consultantes");
   }
 
-  const { data: availability } = await supabase
-    .from("availability_rules")
-    .select("*")
-    .eq("consultant_id", user.id)
-    .eq("is_active", true)
+  const { data: rulesV2 } = await supabase
+    .from("availability_rules_v2")
+    .select("*, services:service_id(name, slug)")
     .order("day_of_week")
     .order("start_time");
-
-  const { data: specificAvailability } = await supabase
-    .from("availability_exceptions")
-    .select("*")
-    .eq("consultant_id", user.id)
-    .order("exception_date");
 
   const { data: allAppointments } = await supabase
     .from("appointments")
@@ -43,9 +34,6 @@ export default async function AgendaPage() {
     .order("start_time", { ascending: false });
 
   const pendingCount = allAppointments?.filter(a => a.status === 'pending').length || 0;
-
-  const sessionDuration = user.user_metadata?.session_duration || 60;
-  const bufferTime = user.user_metadata?.buffer_time || 0;
 
   return (
     <div className="space-y-8">
@@ -64,24 +52,15 @@ export default async function AgendaPage() {
         pendingCount={pendingCount}
         appointments={allAppointments || []}
         recurringComponent={
-          <AvailabilityConfig
-            initialData={availability || []}
-            sessionDuration={sessionDuration}
-            bufferTime={bufferTime}
-          />
+          <RuleManager />
         }
         calendarComponent={
           <CalendarView
-            recurringAvailability={availability || []}
-            specificAvailability={specificAvailability || []}
+            rules={rulesV2 || []}
             appointments={allAppointments || []}
           />
         }
       />
-
-      <div className="bg-white rounded-2xl border border-gray-100 p-6">
-        <SlotManager />
-      </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
         <AppointmentManager />

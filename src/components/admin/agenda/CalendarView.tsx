@@ -15,27 +15,7 @@ import {
   isSameMonth,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import {
-  saveSpecificSlot,
-  deleteSpecificSlot,
-  blockDate,
-  unblockDate,
-} from "@/actions/agenda";
-
-type RecurringAvailability = {
-  id: string;
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
-};
-
-type SpecificAvailability = {
-  id: string;
-  exception_date: string;
-  start_time: string;
-  end_time: string;
-  is_available: boolean;
-};
+import type { RuleV2 } from "@/types/appointments";
 
 type Appointment = {
   id: string;
@@ -46,56 +26,34 @@ type Appointment = {
 };
 
 interface CalendarViewProps {
-  recurringAvailability: RecurringAvailability[];
-  specificAvailability: SpecificAvailability[];
+  rules: RuleV2[];
   appointments: Appointment[];
 }
 
 type ViewMode = "month" | "week";
 
 export default function CalendarView({
-  recurringAvailability,
-  specificAvailability,
+  rules,
   appointments,
 }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("week");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  // Helper to get days to display
   const getDays = () => {
     if (viewMode === "week") {
       const start = startOfWeek(currentDate, {
         weekStartsOn: 1,
-      }); // Monday start
+      });
       const end = endOfWeek(currentDate, {
         weekStartsOn: 1,
       });
-      return eachDayOfInterval({
-        start,
-        end,
-      });
+      return eachDayOfInterval({ start, end });
     }
-
-    // Month View Logic:
-    // 1. Get first and last day of current month
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(currentDate);
-
-    // 2. Pad start to Monday
-    const startDate = startOfWeek(monthStart, {
-      weekStartsOn: 1,
-    });
-
-    // 3. Pad end to Sunday
-    const endDate = endOfWeek(monthEnd, {
-      weekStartsOn: 1,
-    });
-
-    return eachDayOfInterval({
-      start: startDate,
-      end: endDate,
-    });
+    const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
+    const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
+    return eachDayOfInterval({ start: startDate, end: endDate });
   };
 
   const days = getDays();
@@ -116,41 +74,22 @@ export default function CalendarView({
     }
   };
 
-  const getSlotsForDate = (date: Date) => {
+  const getWindowsForDate = (date: Date) => {
     const dateString = format(date, "yyyy-MM-dd");
-
-    // 1. Check specific overrides
-    const specific = specificAvailability.filter(
-      (s) => s.exception_date === dateString,
-    );
-
-    // Check if explicitly blocked
-    const isBlocked = specific.some((s) => s.is_available === false);
-    if (isBlocked) return "BLOCKED";
-
+    const specific = rules.filter((r) => r.specific_date === dateString);
     if (specific.length > 0) return specific;
-
-    // 2. Fallback to recurring
-    // Note: JS getDay() returns 0 for Sunday, 1 for Monday.
-    // Our DB uses 0=Sunday (based on date-fns/standard usually), let's check input data.
-    // Assuming 0-6 match.
     const dayOfWeek = date.getDay();
-    return recurringAvailability.filter((s) => s.day_of_week === dayOfWeek);
+    return rules.filter((r) => r.day_of_week === dayOfWeek && r.is_active);
   };
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900 font-display capitalize">
           {format(currentDate, "MMMM yyyy", { locale: es })}
         </h2>
-
         <div className="flex items-center gap-2">
-          <button
-            onClick={handlePrev}
-            className="p-2 hover:bg-gray-100 rounded-full"
-          >
+          <button onClick={handlePrev} className="p-2 hover:bg-gray-100 rounded-full">
             <span className="material-symbols-outlined">chevron_left</span>
           </button>
           <button
@@ -159,14 +98,10 @@ export default function CalendarView({
           >
             Hoy
           </button>
-          <button
-            onClick={handleNext}
-            className="p-2 hover:bg-gray-100 rounded-full"
-          >
+          <button onClick={handleNext} className="p-2 hover:bg-gray-100 rounded-full">
             <span className="material-symbols-outlined">chevron_right</span>
           </button>
         </div>
-
         <div className="flex bg-gray-100 p-1 rounded-lg">
           <button
             onClick={() => setViewMode("week")}
@@ -183,13 +118,11 @@ export default function CalendarView({
         </div>
       </div>
 
-      {/* Grid */}
       <div className="grid grid-cols-7 gap-4">
         {days.map((day) => {
           const isToday = isSameDay(day, new Date());
           const isCurrentMonth = isSameMonth(day, currentDate);
-          const slots = getSlotsForDate(day);
-          const isBlocked = slots === "BLOCKED";
+          const windows = getWindowsForDate(day);
           const dayAppointments = appointments.filter((a) =>
             isSameDay(parseISO(a.start_time), day),
           );
@@ -198,116 +131,46 @@ export default function CalendarView({
             <div
               key={day.toISOString()}
               className={`
-                        border rounded-xl p-3 flex flex-col gap-2 transition-all relative group
-                        ${viewMode === "week" ? "min-h-[200px]" : "min-h-[120px]"}
-                        ${isToday ? "border-pink-200 bg-pink-50/30" : "border-gray-100"}
-                        ${isBlocked ? "bg-gray-100/50" : ""}
-                        ${!isCurrentMonth && viewMode === "month" ? "opacity-40" : ""}
-                    `}
+                border rounded-xl p-3 flex flex-col gap-2 transition-all
+                ${viewMode === "week" ? "min-h-[200px]" : "min-h-[120px]"}
+                ${isToday ? "border-pink-200 bg-pink-50/30" : "border-gray-100"}
+                ${!isCurrentMonth && viewMode === "month" ? "opacity-40" : ""}
+              `}
             >
-              <div className="text-center mb-2 flex justify-between items-start">
-                <div className="flex-1">
-                  <span className="text-xs text-gray-500 uppercase font-bold block">
-                    {format(day, "EEE", { locale: es })}
-                  </span>
-                  <span
-                    className={`text-lg font-bold ${isToday ? "text-pink-600" : "text-gray-900"}`}
-                  >
-                    {format(day, "d")}
-                  </span>
-                </div>
-
-                {/* Block/Unblock Button (Visible on hover) */}
-                {isBlocked ? (
-                  <button
-                    onClick={() => unblockDate(format(day, "yyyy-MM-dd"))}
-                    title="Desbloquear día"
-                    className="text-gray-400 hover:text-green-600"
-                  >
-                    <span className="material-symbols-outlined text-sm">
-                      lock_open
-                    </span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => blockDate(format(day, "yyyy-MM-dd"))}
-                    title="Bloquear día entero"
-                    className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <span className="material-symbols-outlined text-sm">
-                      block
-                    </span>
-                  </button>
-                )}
+              <div className="text-center mb-2">
+                <span className="text-xs text-gray-500 uppercase font-bold block">
+                  {format(day, "EEE", { locale: es })}
+                </span>
+                <span className={`text-lg font-bold ${isToday ? "text-pink-600" : "text-gray-900"}`}>
+                  {format(day, "d")}
+                </span>
               </div>
 
-              {/* Availability Slots */}
-              {isBlocked ? (
-                <div className="flex-1 flex items-center justify-center">
-                  <span className="text-xs font-bold text-gray-400 border border-gray-200 rounded px-2 py-0.5 bg-gray-50">
-                    BLOQUEADO
-                  </span>
-                </div>
-              ) : (
-                <>
-                  {Array.isArray(slots) && slots.length > 0 ? (
-                    slots.map((slot: RecurringAvailability | SpecificAvailability) => (
-                      <div
-                        key={slot.id}
-                        className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded border border-green-100 flex justify-between group/slot"
-                      >
-                        <span>
-                          {slot.start_time.slice(0, 5)} -{" "}
-                          {slot.end_time.slice(0, 5)}
-                        </span>
-                        {"exception_date" in slot && slot.exception_date && (
-                          <button
-                            onClick={() => deleteSpecificSlot(slot.id)}
-                            className="hidden group-hover/slot:block text-red-500 hover:text-red-700"
-                          >
-                            <span className="material-symbols-outlined text-[10px]">
-                              close
-                            </span>
-                          </button>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-xs text-gray-400 text-center py-4 italic">
-                      No disponible
-                    </div>
-                  )}
-
-                  {/* Appointments */}
-                  {dayAppointments.map((appt) => (
-                    <div
-                      key={appt.id}
-                      className="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded border border-purple-100 font-medium"
-                    >
-                      {format(parseISO(appt.start_time), "HH:mm")} -{" "}
-                      {appt.profiles?.full_name || "Cita"}
-                    </div>
-                  ))}
-
-                  {/* Add Slot Button */}
-                  <button
-                    onClick={() => {
-                      const time = prompt(
-                        "Ingresa hora inicio y fin (ej: 10:00-11:00)",
-                      );
-                      if (time) {
-                        const [start, end] = time.split("-");
-                        if (start && end) {
-                          saveSpecificSlot(day, start.trim(), end.trim());
-                        }
-                      }
-                    }}
-                    className="mt-auto w-full py-1 text-xs text-center text-gray-400 hover:text-pink-600 hover:bg-pink-50 rounded border border-transparent hover:border-pink-100 transition-all opacity-0 group-hover:opacity-100"
+              {windows.length > 0 ? (
+                windows.map((rule) => (
+                  <div
+                    key={rule.id}
+                    className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded border border-green-100"
                   >
-                    + Agregar Hora
-                  </button>
-                </>
+                    {rule.start_time.slice(0, 5)} - {rule.end_time.slice(0, 5)}
+                    <span className="ml-1 text-[10px] opacity-60">{rule.duration_minutes}min</span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-xs text-gray-400 text-center py-4 italic">
+                  No disponible
+                </div>
               )}
+
+              {dayAppointments.map((appt) => (
+                <div
+                  key={appt.id}
+                  className="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded border border-purple-100 font-medium"
+                >
+                  {format(parseISO(appt.start_time), "HH:mm")} -{" "}
+                  {appt.profiles?.full_name || "Cita"}
+                </div>
+              ))}
             </div>
           );
         })}

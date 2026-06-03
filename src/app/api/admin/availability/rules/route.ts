@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth/roles";
 
@@ -10,6 +11,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
+    const serviceSb = createServiceClient();
+
     const { searchParams } = new URL(request.url);
     const dayOfWeek = searchParams.get("day_of_week");
     const from = searchParams.get("from");
@@ -17,7 +20,7 @@ export async function GET(request: Request) {
     const modality = searchParams.get("modality");
     const active = searchParams.get("is_active");
 
-    let query = supabase
+    let query = serviceSb
       .from("availability_rules_v2")
       .select("*, services(id, name, slug)")
       .order("day_of_week")
@@ -64,6 +67,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
+    const serviceSb = createServiceClient();
+
     const body = await request.json();
     const {
       day_of_week,
@@ -93,7 +98,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: rule, error } = await supabase
+    const { data: rule, error } = await serviceSb
       .from("availability_rules_v2")
       .insert({
         day_of_week: day_of_week ?? null,

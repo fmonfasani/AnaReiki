@@ -23,8 +23,7 @@ export default async function MisCitasPage() {
         .from("appointments")
         .select(`
       *,
-      services (id, name, slug, duration_minutes, allowed_modalities),
-      availability_slots (id, slot_date, start_time, end_time, modality)
+      services (id, name, slug, duration_minutes, allowed_modalities)
     `)
         .eq("client_id", user.id)
         .order("start_time", { ascending: false });

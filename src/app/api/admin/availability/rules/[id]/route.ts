@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
 import { isAdmin, isOwner } from "@/lib/auth/roles";
 
@@ -15,6 +16,8 @@ export async function PUT(
     if (!(await isAdmin(user, supabase))) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
+
+    const serviceSb = createServiceClient();
 
     const { id } = await params;
     const body = await request.json();
@@ -39,7 +42,7 @@ export async function PUT(
 
     updates.updated_at = new Date().toISOString();
 
-    const { data: rule, error } = await supabase
+    const { data: rule, error } = await serviceSb
       .from("availability_rules_v2")
       .update(updates)
       .eq("id", id)
@@ -73,9 +76,11 @@ export async function DELETE(
       return NextResponse.json({ error: "Solo el owner puede eliminar reglas" }, { status: 403 });
     }
 
+    const serviceSb = createServiceClient();
+
     const { id } = await params;
 
-    const { error } = await supabase
+    const { error } = await serviceSb
       .from("availability_rules_v2")
       .delete()
       .eq("id", id);

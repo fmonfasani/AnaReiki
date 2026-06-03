@@ -4,14 +4,7 @@ import React, { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
-type Slot = {
-  rule_id: string;
-  slot_start: string;
-  slot_end: string;
-  modality: string;
-  max_participants: number;
-  booked: number;
-};
+import type { Slot } from "@/types/appointments";
 
 type Props = {
   date: Date;

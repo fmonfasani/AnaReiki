@@ -15,8 +15,7 @@ export async function GET() {
       .select(`
         id, start_time, end_time, modality, status, notes, created_at,
         slot_id, consultant_id,
-        services (id, name, slug, duration_minutes),
-        availability_slots (id, slot_date, start_time, end_time, modality)
+        services (id, name, slug, duration_minutes)
       `)
       .eq("client_id", user.id)
       .order("start_time", { ascending: false });

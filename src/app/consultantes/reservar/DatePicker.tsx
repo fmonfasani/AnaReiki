@@ -5,10 +5,7 @@ import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { es } from "date-fns/locale";
-
-type Slot = {
-  slot_date: string;
-};
+import type { SlotDate } from "@/types/appointments";
 
 type Props = {
   modality: string;
@@ -34,7 +31,7 @@ export default function DatePicker({ modality, serviceId, selected, onSelect }: 
       try {
         const res = await fetch(`/api/availability?${params}`);
         const json = await res.json();
-        const dates = new Set<string>((json.data || []).map((s: Slot) => s.slot_date));
+        const dates = new Set<string>((json.data || []).map((s: SlotDate) => s.slot_date));
         setAvailableDates(dates);
       } catch {
         setAvailableDates(new Set());

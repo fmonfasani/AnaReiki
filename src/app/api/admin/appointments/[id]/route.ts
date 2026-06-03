@@ -35,8 +35,7 @@ export async function GET(
         *,
         services (id, name, slug, duration_minutes, allowed_modalities),
         client:client_id (id, email, full_name),
-        consultant:consultant_id (id, email, full_name),
-        availability_slots (id, slot_date, start_time, end_time, modality)
+        consultant:consultant_id (id, email, full_name)
       `)
       .eq("id", id)
       .single();

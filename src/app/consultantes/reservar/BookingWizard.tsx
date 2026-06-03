@@ -9,6 +9,8 @@ import TimeSlots from "./TimeSlots";
 import BookingConfirm from "./BookingConfirm";
 import BookingConfirmation from "./BookingConfirmation";
 
+import type { Slot } from "@/types/appointments";
+
 type Service = {
   id: string;
   name: string;
@@ -16,15 +18,6 @@ type Service = {
   description: string | null;
   duration_minutes: number;
   allowed_modalities: string[] | null;
-};
-
-type Slot = {
-  rule_id: string;
-  slot_start: string;
-  slot_end: string;
-  modality: string;
-  max_participants: number;
-  booked: number;
 };
 
 const STEPS = ["Servicio", "Modalidad", "Fecha", "Horario", "Confirmar", "Listo"];

@@ -65,7 +65,7 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <AnimatePresence mode="popLayout">
                             {upcoming.map((appt) => {
-                                const apt = appt as Appointment & { modality?: string; availability_slots?: { slot_date: string; start_time: string; end_time: string; modality: string } | null };
+                                const apt = appt as Appointment & { modality?: string };
                                 return (
                                 <motion.div
                                     key={appt.id}

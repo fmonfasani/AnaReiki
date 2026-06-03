@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
+import React, { useState, useEffect } from "react";
 import { format, addDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { rescheduleAppointment } from "@/actions/appointments";
 import { motion, AnimatePresence } from "framer-motion";
+import type { Slot } from "@/types/appointments";
 
 interface RescheduleModalProps {
   appointmentId: string;
@@ -22,122 +22,45 @@ export default function RescheduleModal({
 }: RescheduleModalProps) {
   const [step, setStep] = useState<"date" | "time" | "confirm">("date");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(currentDate));
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+  const [availableSlots, setAvailableSlots] = useState<Slot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
-
-  const [adminProfile, setAdminProfile] = useState<{
-    id: string;
-  } | null>(null);
 
   useEffect(() => {
-    const fetchAdmin = async () => {
-      const { data } = await supabase
-        .from("availability_rules")
-        .select("consultant_id")
-        .eq("is_active", true)
-        .limit(1);
+    if (!selectedDate) return;
+    let cancelled = false;
+    setLoadingSlots(true);
+    setSelectedSlot(null);
 
-      if (data?.[0]) {
-        setAdminProfile({ id: data[0].consultant_id });
-      }
-    };
-    fetchAdmin();
-  }, [supabase]);
-
-  const fetchSlots = useCallback(
-    async (date: Date) => {
-      if (!adminProfile) return;
-      setLoadingSlots(true);
-      setSelectedTime(null);
-
-      const dateString = format(date, "yyyy-MM-dd");
-      const dayOfWeek = date.getDay();
-
-      const { data: specificAvailability } = await supabase
-        .from("availability_exceptions")
-        .select("start_time, end_time, is_available")
-        .eq("consultant_id", adminProfile.id)
-        .eq("exception_date", dateString);
-
-      let activeWindows: { start_time: string; end_time: string }[] = [];
-
-      if (specificAvailability && specificAvailability.length > 0) {
-        activeWindows = specificAvailability.filter((s) => s.is_available);
-      } else {
-        const { data: recurring } = await supabase
-          .from("availability_rules")
-          .select("start_time, end_time")
-          .eq("day_of_week", dayOfWeek)
-          .eq("consultant_id", adminProfile.id)
-          .eq("is_active", true);
-
-        if (recurring) activeWindows = recurring;
-      }
-
-      if (activeWindows.length === 0) {
-        setAvailableSlots([]);
-        setLoadingSlots(false);
-        return;
-      }
-
-      const { data: appointments } = await supabase
-        .from("appointments")
-        .select("start_time, end_time")
-        .eq("consultant_id", adminProfile.id)
-        .in("status", ["pending", "confirmed"])
-        .gte("start_time", `${dateString}T00:00:00`)
-        .lte("end_time", `${dateString}T23:59:59`);
-
-      const slots: string[] = [];
-      const duration = 60;
-
-      activeWindows.forEach((window) => {
-        let current = new Date(`${dateString}T${window.start_time}`);
-        const windowEnd = new Date(`${dateString}T${window.end_time}`);
-
-        while (true) {
-          const slotEnd = new Date(current.getTime() + duration * 60000);
-          if (slotEnd > windowEnd) break;
-
-          const timeString = format(current, "HH:mm");
-          const isBooked = appointments?.some((app) => {
-            const appStart = new Date(app.start_time);
-            const appEnd = new Date(app.end_time);
-            return current < appEnd && slotEnd > appStart;
-          });
-
-          if (!isBooked) slots.push(timeString);
-          current = new Date(slotEnd.getTime());
+    const dateStr = format(selectedDate, "yyyy-MM-dd");
+    fetch(`/api/availability?date=${dateStr}`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (!cancelled) {
+          setAvailableSlots(json.data || []);
+          setLoadingSlots(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAvailableSlots([]);
+          setLoadingSlots(false);
         }
       });
 
-      setAvailableSlots(slots);
-      setLoadingSlots(false);
-    },
-    [supabase, adminProfile],
-  );
-
-  useEffect(() => {
-    if (adminProfile && selectedDate) {
-      fetchSlots(selectedDate);
-    }
-  }, [selectedDate, adminProfile, fetchSlots]);
+    return () => { cancelled = true; };
+  }, [selectedDate]);
 
   const handleSubmit = async () => {
-    if (!selectedDate || !selectedTime) return;
+    if (!selectedDate || !selectedSlot) return;
     setSubmitting(true);
     setError(null);
 
-    const dateString = format(selectedDate, "yyyy-MM-dd");
-    const newStartTime = new Date(`${dateString}T${selectedTime}:00`);
-
     const result = await rescheduleAppointment({
       appointmentId,
-      newStartTime: newStartTime.toISOString(),
+      newStartTime: selectedSlot.slot_start,
     });
 
     setSubmitting(false);
@@ -254,17 +177,17 @@ export default function RescheduleModal({
                   </div>
                 ) : availableSlots.length > 0 ? (
                   <div className="grid grid-cols-3 gap-2">
-                    {availableSlots.map((time) => (
+                    {availableSlots.map((slot) => (
                       <button
-                        key={time}
+                        key={slot.slot_start}
                         onClick={() => {
-                          setSelectedTime(time);
+                          setSelectedSlot(slot);
                           setStep("confirm");
                         }}
                         disabled={loadingSlots}
                         className="px-3 py-2 text-sm font-medium text-pink-700 bg-pink-50 hover:bg-pink-100 rounded-lg transition-colors border border-pink-100"
                       >
-                        {time} hs
+                        {format(new Date(slot.slot_start), "HH:mm")} hs
                       </button>
                     ))}
                   </div>
@@ -289,7 +212,7 @@ export default function RescheduleModal({
                     {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
                   </p>
                   <p className="text-2xl font-bold text-pink-600">
-                    {selectedTime} hs
+                    {selectedSlot ? format(new Date(selectedSlot.slot_start), "HH:mm") : ""} hs
                   </p>
                 </div>
                 <div className="flex gap-3">
