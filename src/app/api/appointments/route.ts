@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
 import { sendAppointmentEmail, notifyAdminNewAppointment } from "@/lib/email";
 
@@ -7,6 +8,7 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
+      console.warn("POST /api/appointments – no autorizado (no user)");
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
@@ -20,8 +22,10 @@ export async function POST(request: Request) {
       );
     }
 
+    const svc = createServiceClient();
+
     const slotDate = slot_start.slice(0, 10);
-    const { data: slotCheck, error: checkError } = await supabase
+    const { data: slotCheck, error: checkError } = await svc
       .rpc("get_available_slots_v2", {
         p_date: slotDate,
         p_modality: modality,
@@ -46,7 +50,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Ya no hay cupo disponible para este horario" }, { status: 409 });
     }
 
-    const { data: service, error: serviceError } = await supabase
+    const { data: service, error: serviceError } = await svc
       .from("services")
       .select("name, duration_minutes, allowed_modalities")
       .eq("id", service_id)
@@ -63,7 +67,7 @@ export async function POST(request: Request) {
 
     let consultant_id: string | null = null;
     if (rule_id) {
-      const { data: rule } = await supabase
+      const { data: rule } = await svc
         .from("availability_rules_v2")
         .select("created_by")
         .eq("id", rule_id)
@@ -72,7 +76,7 @@ export async function POST(request: Request) {
     }
 
     if (!consultant_id) {
-      const { data: owner } = await supabase
+      const { data: owner } = await svc
         .from("profiles")
         .select("id")
         .eq("role", "owner")
@@ -85,7 +89,7 @@ export async function POST(request: Request) {
     const startDate = new Date(startTime);
     const endDate = new Date(startDate.getTime() + service.duration_minutes * 60000);
 
-    const { data: appointment, error: insertError } = await supabase
+    const { data: appointment, error: insertError } = await svc
       .from("appointments")
       .insert({
         service_id,
