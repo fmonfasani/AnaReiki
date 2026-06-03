@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 
 type Promotion = {
   id: string;
@@ -49,15 +48,12 @@ export default function PromosPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<PromoForm>(emptyForm);
   const [saving, setSaving] = useState(false);
-  const supabase = createClient();
 
   const fetchPromos = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("promotions")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (data) setPromos(data);
+    const res = await fetch("/api/admin/promos");
+    const json = await res.json();
+    if (json.data) setPromos(json.data);
     setLoading(false);
   };
 
@@ -81,20 +77,24 @@ export default function PromosPage() {
     const discountFixed = form.discount_type === "fixed" ? discountValue : null;
     const priceOverride = form.discount_type === "override" ? discountValue : null;
 
-    const { error } = await supabase.from("promotions").insert({
-      name: form.name,
-      description: form.description || null,
-      discount_percent: discountPercent,
-      discount_fixed: discountFixed,
-      price_override: priceOverride,
-      allowed_tiers: form.allowed_tiers.length > 0 ? form.allowed_tiers : null,
-      max_purchases: form.max_purchases ? parseInt(form.max_purchases) : null,
-      is_active: form.is_active,
-      expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
+    const res = await fetch("/api/admin/promos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: form.name,
+        description: form.description || null,
+        discount_percent: discountPercent,
+        discount_fixed: discountFixed,
+        price_override: priceOverride,
+        allowed_tiers: form.allowed_tiers.length > 0 ? form.allowed_tiers : null,
+        max_purchases: form.max_purchases ? parseInt(form.max_purchases) : null,
+        is_active: form.is_active,
+        expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
+      }),
     });
 
     setSaving(false);
-    if (!error) {
+    if (res.ok) {
       setForm(emptyForm);
       setShowForm(false);
       fetchPromos();
@@ -102,7 +102,11 @@ export default function PromosPage() {
   };
 
   const toggleActive = async (id: string, current: boolean) => {
-    await supabase.from("promotions").update({ is_active: !current }).eq("id", id);
+    await fetch("/api/admin/promos", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, is_active: !current }),
+    });
     fetchPromos();
   };
 
