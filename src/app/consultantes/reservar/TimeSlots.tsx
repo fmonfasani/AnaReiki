@@ -5,12 +5,12 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 type Slot = {
-  id: string;
-  start_time: string;
-  end_time: string;
+  rule_id: string;
+  slot_start: string;
+  slot_end: string;
   modality: string;
-  capacity: number;
-  booked_count: number;
+  max_participants: number;
+  booked: number;
 };
 
 type Props = {
@@ -36,7 +36,7 @@ export default function TimeSlots({ date, modality, serviceId, selected, onSelec
         const res = await fetch(`/api/availability?${params}`);
         const json = await res.json();
         const available = (json.data || []).filter(
-          (s: Slot) => s.booked_count < s.capacity,
+          (s: Slot) => s.booked < s.max_participants,
         );
         setSlots(available);
       } catch {
@@ -48,6 +48,16 @@ export default function TimeSlots({ date, modality, serviceId, selected, onSelec
 
     fetchSlots();
   }, [date, modality, serviceId]);
+
+  const startLabel = (s: Slot) => {
+    const d = new Date(s.slot_start);
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  };
+
+  const endLabel = (s: Slot) => {
+    const d = new Date(s.slot_end);
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  };
 
   return (
     <div className="space-y-4">
@@ -77,22 +87,22 @@ export default function TimeSlots({ date, modality, serviceId, selected, onSelec
       {!loading && slots.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-lg mx-auto">
           {slots.map((slot) => {
-            const spotsLeft = slot.capacity - slot.booked_count;
+            const spotsLeft = slot.max_participants - slot.booked;
             return (
               <button
-                key={slot.id}
+                key={slot.rule_id + slot.slot_start}
                 onClick={() => onSelect(slot)}
                 className={`p-4 rounded-2xl border-2 transition-all duration-200 text-center ${
-                  selected?.id === slot.id
+                  selected?.slot_start === slot.slot_start
                     ? "border-[var(--color-primary-dark)] bg-[var(--color-primary)]/20 shadow-md"
                     : "border-gray-100 bg-white hover:border-[var(--color-primary)] hover:shadow-sm"
                 }`}
               >
                 <p className="font-semibold text-[var(--color-text-main)] text-lg">
-                  {slot.start_time.slice(0, 5)}
+                  {startLabel(slot)}
                 </p>
                 <p className="text-xs text-[var(--color-text-light)] mt-1">
-                  {slot.end_time.slice(0, 5)}
+                  {endLabel(slot)}
                 </p>
                 {spotsLeft <= 2 && (
                   <p className="text-xs text-[var(--color-terracotta)] mt-1 font-medium">

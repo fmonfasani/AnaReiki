@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 type Service = { id: string; name: string; duration_minutes: number };
-type Slot = { id: string; start_time: string; end_time: string; modality: string };
+type Slot = { rule_id: string; slot_start: string; slot_end: string; modality: string };
 
 type Props = {
   service: Service;
@@ -15,6 +15,16 @@ type Props = {
   onConfirm: (notes?: string) => Promise<void>;
   loading: boolean;
   error: string | null;
+};
+
+const startLabel = (s: Slot) => {
+  const d = new Date(s.slot_start);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+};
+
+const endLabel = (s: Slot) => {
+  const d = new Date(s.slot_end);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 };
 
 export default function BookingConfirm({
@@ -56,7 +66,7 @@ export default function BookingConfirm({
         <div className="flex justify-between items-center">
           <span className="text-sm text-[var(--color-text-light)]">Horario</span>
           <span className="font-medium text-[var(--color-text-main)]">
-            {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
+            {startLabel(slot)} - {endLabel(slot)}
           </span>
         </div>
         <div className="flex justify-between items-center">

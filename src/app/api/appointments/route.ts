@@ -6,34 +6,41 @@ export async function POST(request: Request) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-
     if (!user) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
     const body = await request.json();
-    const { service_id, slot_id, modality, date: slotDate, time: slotTime, notes } = body;
+    const { service_id, modality, slot_start, rule_id, notes } = body;
 
-    if (!service_id || !slot_id || !modality || !slotDate || !slotTime) {
+    if (!service_id || !modality || !slot_start) {
       return NextResponse.json(
-        { error: "Faltan campos requeridos: service_id, slot_id, modality, date, time" },
+        { error: "Faltan campos requeridos: service_id, modality, slot_start" },
         { status: 400 },
       );
     }
 
-    const { data: slot, error: slotError } = await supabase
-      .from("availability_slots")
-      .select("id, booked_count, capacity, modality, service_id, owner_id")
-      .eq("id", slot_id)
-      .eq("is_available", true)
-      .single();
+    const slotDate = slot_start.slice(0, 10);
+    const { data: slotCheck, error: checkError } = await supabase
+      .rpc("get_available_slots_v2", {
+        p_date: slotDate,
+        p_modality: modality,
+      });
 
-    if (slotError || !slot) {
-      return NextResponse.json({ error: "Slot no disponible" }, { status: 404 });
+    if (checkError) {
+      return NextResponse.json({ error: checkError.message }, { status: 500 });
     }
 
-    if (slot.booked_count >= slot.capacity) {
-      return NextResponse.json({ error: "El slot ya no tiene cupo disponible" }, { status: 409 });
+    const slot = (slotCheck || []).find(
+      (s: { slot_start: string }) => s.slot_start === slot_start,
+    );
+
+    if (!slot) {
+      return NextResponse.json({ error: "El horario seleccionado ya no está disponible" }, { status: 409 });
+    }
+
+    if ((slot.booked || 0) >= (slot.max_participants || 1)) {
+      return NextResponse.json({ error: "Ya no hay cupo disponible para este horario" }, { status: 409 });
     }
 
     const { data: service, error: serviceError } = await supabase
@@ -47,13 +54,30 @@ export async function POST(request: Request) {
     }
 
     if (!service.allowed_modalities?.includes(modality)) {
-      return NextResponse.json(
-        { error: "Modalidad no permitida para este servicio" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Modalidad no permitida para este servicio" }, { status: 400 });
     }
 
-    const startTime = `${slotDate}T${slotTime}:00`;
+    let consultant_id: string | null = null;
+    if (rule_id) {
+      const { data: rule } = await supabase
+        .from("availability_rules_v2")
+        .select("created_by")
+        .eq("id", rule_id)
+        .single();
+      if (rule) consultant_id = rule.created_by;
+    }
+
+    if (!consultant_id) {
+      const { data: owner } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("role", "owner")
+        .limit(1)
+        .maybeSingle();
+      if (owner) consultant_id = owner.id;
+    }
+
+    const startTime = slot_start;
     const startDate = new Date(startTime);
     const endDate = new Date(startDate.getTime() + service.duration_minutes * 60000);
 
@@ -61,12 +85,11 @@ export async function POST(request: Request) {
       .from("appointments")
       .insert({
         service_id,
-        consultant_id: slot.owner_id,
+        consultant_id,
         client_id: user.id,
         start_time: startDate.toISOString(),
         end_time: endDate.toISOString(),
         modality,
-        slot_id,
         notes: notes || null,
         status: "pending",
       })
@@ -75,15 +98,6 @@ export async function POST(request: Request) {
 
     if (insertError) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });
-    }
-
-    const { error: updateError } = await supabase
-      .from("availability_slots")
-      .update({ booked_count: slot.booked_count + 1 })
-      .eq("id", slot_id);
-
-    if (updateError) {
-      console.error("Failed to update slot count:", updateError.message);
     }
 
     const dateStr = startDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });

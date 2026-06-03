@@ -7,16 +7,13 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const { segment, subject, content } = await request.json();
+    const { segment, subject, content, tags } = await request.json();
 
     if (!subject || !content) {
       return NextResponse.json(
@@ -33,6 +30,10 @@ export async function POST(request: Request) {
       query = query.eq("is_premium", false);
     }
 
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+      query = query.overlaps("tags", tags);
+    }
+
     const { data: profiles, error } = await query;
 
     if (error) {
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const fromAddr = process.env.RESEND_FROM || "Ana Reiki <onboarding@resend.dev>";
+    const fromAddr = process.env.RESEND_FROM || "Ana Reiki <reservas@anamurat.online>";
 
     const emailPromises = profiles.map((profile) =>
       resend.emails.send({
@@ -74,12 +75,26 @@ export async function POST(request: Request) {
     const failedResults = results.filter((r) => r.status === "rejected");
     const firstError = failedResults[0]?.reason;
 
+    const { error: saveError } = await supabase.from("email_campaigns").insert({
+      created_by: user.id,
+      subject,
+      segment,
+      tags: tags || null,
+      recipient_count: profiles.length,
+      sent_count: sent,
+      failed_count: failedResults.length,
+    });
+
+    if (saveError) {
+      console.error("Failed to save campaign record:", saveError.message);
+    }
+
     if (firstError) {
       const msg = firstError?.message || String(firstError);
       if (msg.includes("1010")) {
         return NextResponse.json({
           success: true, sent, failed: failedResults.length, total: profiles.length,
-          warning: "Resend requiere verificar el dominio. Los emails no se entregarán hasta que configures los registros DNS en resend.com/domains.",
+          warning: "Resend requiere verificar el dominio. Los emails no se entregarán hasta que configures los registros DNS.",
         });
       }
     }
@@ -90,6 +105,34 @@ export async function POST(request: Request) {
       failed: failedResults.length,
       total: profiles.length,
     });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Error interno" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function GET() {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    const { data: campaigns, error } = await supabase
+      .from("email_campaigns")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ data: campaigns });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Error interno" },

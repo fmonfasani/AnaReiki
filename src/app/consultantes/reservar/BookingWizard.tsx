@@ -19,12 +19,12 @@ type Service = {
 };
 
 type Slot = {
-  id: string;
-  start_time: string;
-  end_time: string;
+  rule_id: string;
+  slot_start: string;
+  slot_end: string;
   modality: string;
-  capacity: number;
-  booked_count: number;
+  max_participants: number;
+  booked: number;
 };
 
 const STEPS = ["Servicio", "Modalidad", "Fecha", "Horario", "Confirmar", "Listo"];
@@ -85,18 +85,14 @@ export default function BookingWizard() {
     setBookingError(null);
 
     try {
-      const dateStr = selectedDate.toISOString().split("T")[0];
-      const timeStr = selectedSlot.start_time.slice(0, 5);
-
       const res = await fetch("/api/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           service_id: selectedService.id,
-          slot_id: selectedSlot.id,
+          rule_id: selectedSlot.rule_id,
           modality: selectedModality,
-          date: dateStr,
-          time: timeStr,
+          slot_start: selectedSlot.slot_start,
           notes,
         }),
       });

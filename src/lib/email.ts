@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const RESEND_FROM = process.env.RESEND_FROM || "Ana Reiki <onboarding@resend.dev>";
+const RESEND_FROM = process.env.RESEND_FROM || "Ana Reiki <reservas@anamurat.online>";
 
 const modalityLabel = (m: string) => m === "online" ? "Online (Zoom/Meet)" : "Presencial";
 

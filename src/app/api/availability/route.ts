@@ -5,25 +5,34 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date");
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
     const modality = searchParams.get("modality");
 
     const supabase = await createClient();
 
-    let query = supabase
-      .from("availability_slots")
-      .select("id, owner_id, service_id, modality, slot_date, start_time, end_time, capacity, booked_count, is_available, notes")
-      .eq("is_available", true);
+    if (from && to) {
+      const { data: dates, error } = await supabase
+        .rpc("get_available_dates_v2", {
+          p_from: from,
+          p_to: to,
+          p_modality: modality || null,
+        });
 
-    if (date) {
-      query = query.eq("slot_date", date);
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json({ data: dates.map((d: { slot_date: string }) => ({ slot_date: d.slot_date })) });
     }
-    if (modality) {
-      query = query.eq("modality", modality);
-    }
 
-    query = query.order("slot_date").order("start_time");
+    const targetDate = date || new Date().toISOString().split("T")[0];
 
-    const { data: slots, error } = await query;
+    const { data: slots, error } = await supabase
+      .rpc("get_available_slots_v2", {
+        p_date: targetDate,
+        p_modality: modality || null,
+      });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

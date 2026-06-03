@@ -15,7 +15,7 @@ export async function sendEmail(formData: FormData) {
 
   try {
     const { data, error } = await resend.emails.send({
-      from: "Ana Reiki Contacto <onboarding@resend.dev>",
+      from: "Ana Reiki Contacto <reservas@anamurat.online>",
       to: ["murat.anaj@gmail.com"],
       subject: `Nuevo mensaje de ${nombre} - Ana Reiki`,
       replyTo: email,

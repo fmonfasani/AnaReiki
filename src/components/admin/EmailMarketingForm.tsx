@@ -1,12 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function EmailMarketingForm() {
   const [segment, setSegment] = useState("all");
   const [subject, setSubject] = useState("");
   const [content, setContent] = useState("");
   const [sending, setSending] = useState(false);
+  const [allTags, setAllTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [result, setResult] = useState<{
     sent?: number;
     failed?: number;
@@ -14,6 +17,28 @@ export default function EmailMarketingForm() {
     error?: string;
     warning?: string;
   } | null>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    const fetchTags = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("tags");
+      if (!data) return;
+      const tagSet = new Set<string>();
+      data.forEach((p) => (p.tags || []).forEach((t: string) => tagSet.add(t)));
+      setAllTags(Array.from(tagSet).sort());
+    };
+    fetchTags();
+  }, [supabase]);
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag)
+        ? prev.filter((t) => t !== tag)
+        : [...prev, tag],
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +49,7 @@ export default function EmailMarketingForm() {
       const res = await fetch("/api/email-marketing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ segment, subject, content }),
+        body: JSON.stringify({ segment, subject, content, tags: selectedTags.length > 0 ? selectedTags : undefined }),
       });
 
       const data = await res.json();
@@ -47,6 +72,9 @@ export default function EmailMarketingForm() {
     }
   };
 
+  const segmentLabel =
+    segment === "all" ? "todos" : segment === "premium" ? "Premium" : "Gratuitos";
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -66,6 +94,36 @@ export default function EmailMarketingForm() {
           <option value="free">Solo Gratuitos</option>
         </select>
       </div>
+
+      {allTags.length > 0 && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Filtrar por tags (opcional)
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {allTags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => toggleTag(tag)}
+                className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                  selectedTags.includes(tag)
+                    ? "bg-pink-100 border-pink-300 text-pink-700"
+                    : "bg-gray-50 border-gray-200 text-gray-600 hover:border-gray-300"
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+          {selectedTags.length > 0 && (
+            <p className="text-xs text-gray-400 mt-1">
+              Solo se enviará a consultantes con{" "}
+              <strong>{selectedTags.join(", ")}</strong>
+            </p>
+          )}
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -122,7 +180,7 @@ export default function EmailMarketingForm() {
       >
         {sending
           ? "Enviando..."
-          : `Enviar a ${segment === "all" ? "todos" : segment === "premium" ? "Premium" : "Gratuitos"}`}
+          : `Enviar a ${segmentLabel}${selectedTags.length > 0 ? ` (${selectedTags.join(", ")})` : ""}`}
       </button>
     </form>
   );

@@ -28,6 +28,7 @@ export default function AdminLayoutUI({
     { name: "Comunidad", href: "/admin/comunidad", icon: "forum" },
     { name: "Pagos", href: "/admin/pagos", icon: "payments" },
     { name: "Email Marketing", href: "/admin/email-marketing", icon: "mail" },
+    { name: "Promos", href: "/admin/promos", icon: "local_offer" },
   ];
 
   return (

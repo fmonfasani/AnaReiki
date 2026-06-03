@@ -9,8 +9,18 @@ type Props = {
   service: { name: string; duration_minutes: number };
   modality: string;
   date: Date;
-  slot: { start_time: string; end_time: string };
+  slot: { slot_start: string; slot_end: string };
   appointmentId: string;
+};
+
+const startLabel = (s: { slot_start: string }) => {
+  const d = new Date(s.slot_start);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+};
+
+const endLabel = (s: { slot_end: string }) => {
+  const d = new Date(s.slot_end);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 };
 
 export default function BookingConfirmation({
@@ -52,7 +62,7 @@ export default function BookingConfirmation({
         <div className="flex justify-between">
           <span className="text-sm text-[var(--color-text-light)]">Horario</span>
           <span className="font-medium text-[var(--color-text-main)]">
-            {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
+            {startLabel(slot)} - {endLabel(slot)}
           </span>
         </div>
         <div className="flex justify-between">
