@@ -98,6 +98,9 @@ export default function PromosPage() {
       setForm(emptyForm);
       setShowForm(false);
       fetchPromos();
+    } else {
+      const err = await res.json();
+      alert("Error: " + (err.error || "desconocido"));
     }
   };
 
