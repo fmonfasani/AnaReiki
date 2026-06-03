@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
+import { isAdmin } from "@/lib/auth/roles";
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
@@ -9,7 +11,7 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!user || !(await isAdmin(user, supabase))) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
@@ -22,7 +24,8 @@ export async function POST(request: Request) {
       );
     }
 
-    let query = supabase.from("profiles").select("email, full_name");
+    const svc = createServiceClient();
+    let query = svc.from("profiles").select("email, full_name");
 
     if (segment === "premium") {
       query = query.eq("is_premium", true);
@@ -118,11 +121,12 @@ export async function GET() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!user || !(await isAdmin(user, supabase))) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const { data: campaigns, error } = await supabase
+    const svc = createServiceClient();
+    const { data: campaigns, error } = await svc
       .from("email_campaigns")
       .select("*")
       .order("created_at", { ascending: false })

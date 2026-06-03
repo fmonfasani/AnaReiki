@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
 
 export default function EmailMarketingForm() {
   const [segment, setSegment] = useState("all");
@@ -17,20 +16,15 @@ export default function EmailMarketingForm() {
     error?: string;
     warning?: string;
   } | null>(null);
-  const supabase = createClient();
 
   useEffect(() => {
     const fetchTags = async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("tags");
-      if (!data) return;
-      const tagSet = new Set<string>();
-      data.forEach((p) => (p.tags || []).forEach((t: string) => tagSet.add(t)));
-      setAllTags(Array.from(tagSet).sort());
+      const res = await fetch("/api/admin/tags");
+      const json = await res.json();
+      if (json.tags) setAllTags(json.tags);
     };
     fetchTags();
-  }, [supabase]);
+  }, []);
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>

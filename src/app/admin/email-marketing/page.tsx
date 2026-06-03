@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/auth/roles";
 import EmailMarketingForm from "@/components/admin/EmailMarketingForm";
@@ -11,16 +12,18 @@ export default async function EmailMarketingPage() {
     redirect("/login");
   }
 
-  const { count: totalUsers } = await supabase
+  const svc = createServiceClient();
+
+  const { count: totalUsers } = await svc
     .from("profiles")
     .select("*", { count: "exact", head: true });
 
-  const { count: premiumUsers } = await supabase
+  const { count: premiumUsers } = await svc
     .from("profiles")
     .select("*", { count: "exact", head: true })
     .eq("is_premium", true);
 
-  const { data: campaigns } = await supabase
+  const { data: campaigns } = await svc
     .from("email_campaigns")
     .select("*")
     .order("created_at", { ascending: false })
