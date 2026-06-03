@@ -12,6 +12,7 @@ export async function PUT(
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
+      console.warn("Reschedule - no autorizado (no user)");
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
@@ -33,14 +34,17 @@ export async function PUT(
       .single();
 
     if (fetchError || !appointment) {
+      console.warn("Reschedule - turno no encontrado", { id, error: fetchError?.message });
       return NextResponse.json({ error: "Turno no encontrado" }, { status: 404 });
     }
 
     if (appointment.client_id !== user.id) {
+      console.warn("Reschedule - cliente no autorizado", { appointmentClientId: appointment.client_id, userId: user.id });
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
     if (appointment.status === "cancelled") {
+      console.warn("Reschedule - turno cancelado", { id });
       return NextResponse.json({ error: "No se puede reprogramar un turno cancelado" }, { status: 409 });
     }
 
@@ -51,6 +55,7 @@ export async function PUT(
       .single();
 
     if (serviceError || !service) {
+      console.error("Reschedule - servicio no encontrado", { serviceId: appointment.service_id, error: serviceError?.message });
       return NextResponse.json({ error: "Servicio no encontrado" }, { status: 404 });
     }
 
@@ -67,9 +72,11 @@ export async function PUT(
         .single();
 
       if (slotError || !newSlot) {
+        console.error("Reschedule - v1 slot no encontrado", { new_slot_id, error: slotError?.message });
         return NextResponse.json({ error: "Nuevo slot no encontrado" }, { status: 404 });
       }
       if (!newSlot.is_available || newSlot.booked_count >= newSlot.capacity) {
+        console.warn("Reschedule - v1 slot no disponible", { new_slot_id, is_available: newSlot.is_available, booked_count: newSlot.booked_count, capacity: newSlot.capacity });
         return NextResponse.json({ error: "El nuevo slot no está disponible" }, { status: 409 });
       }
 
@@ -104,11 +111,12 @@ export async function PUT(
         .eq("id", id);
     } else {
       const { data: slots, error: slotsError } = await serviceSb.rpc("get_available_slots_v2", {
-        p_rule_id: new_rule_id,
         p_date: new Date(new_slot_start).toISOString().split("T")[0],
+        p_modality: null,
       });
 
       if (slotsError || !Array.isArray(slots)) {
+        console.error("Reschedule - get_available_slots_v2 error", { new_slot_start, new_rule_id, error: slotsError?.message });
         return NextResponse.json({ error: "Error al validar disponibilidad" }, { status: 500 });
       }
 
@@ -117,6 +125,7 @@ export async function PUT(
       );
 
       if (!target) {
+        console.warn("Reschedule - slot no disponible en v2", { new_slot_start });
         return NextResponse.json({ error: "El horario seleccionado ya no está disponible" }, { status: 409 });
       }
 
@@ -154,6 +163,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true });
   } catch (err) {
+    console.error("Reschedule error", err instanceof Error ? { message: err.message, stack: err.stack } : err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Error interno" },
       { status: 500 },

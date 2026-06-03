@@ -28,6 +28,7 @@ export async function POST(request: Request) {
       });
 
     if (checkError) {
+      console.error("get_available_slots_v2 check error", { slotDate, modality, error: checkError.message });
       return NextResponse.json({ error: checkError.message }, { status: 500 });
     }
 
@@ -36,10 +37,12 @@ export async function POST(request: Request) {
     );
 
     if (!slot) {
+      console.warn("Slot not found in availability", { slotDate, slot_start, modality });
       return NextResponse.json({ error: "El horario seleccionado ya no está disponible" }, { status: 409 });
     }
 
     if ((slot.booked || 0) >= (slot.max_participants || 1)) {
+      console.warn("Slot fully booked", { slotDate, slot_start, booked: slot.booked, max: slot.max_participants });
       return NextResponse.json({ error: "Ya no hay cupo disponible para este horario" }, { status: 409 });
     }
 
@@ -50,6 +53,7 @@ export async function POST(request: Request) {
       .single();
 
     if (serviceError || !service) {
+      console.error("Service not found", { service_id, error: serviceError?.message });
       return NextResponse.json({ error: "Servicio no encontrado" }, { status: 404 });
     }
 
@@ -97,6 +101,7 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError) {
+      console.error("Appointment insert error", { user: user.id, service_id, slot_start, error: insertError.message });
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
@@ -125,6 +130,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ data: appointment }, { status: 201 });
   } catch (err) {
+    console.error("POST /api/appointments error", err instanceof Error ? { message: err.message, stack: err.stack } : err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Error interno" },
       { status: 500 },

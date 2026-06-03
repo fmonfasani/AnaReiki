@@ -8,6 +8,7 @@ export async function GET(request: Request) {
     const from = searchParams.get("from");
     const to = searchParams.get("to");
     const modality = searchParams.get("modality");
+    const serviceId = searchParams.get("service_id");
 
     const supabase = await createClient();
 
@@ -20,10 +21,12 @@ export async function GET(request: Request) {
         });
 
       if (error) {
+        console.error("get_available_dates_v2 error", { from, to, modality, error: error.message });
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
 
-      return NextResponse.json({ data: dates.map((d: { slot_date: string }) => ({ slot_date: d.slot_date })) });
+      let result = dates.map((d: { slot_date: string }) => ({ slot_date: d.slot_date }));
+      return NextResponse.json({ data: result });
     }
 
     const targetDate = date || new Date().toISOString().split("T")[0];
@@ -35,11 +38,17 @@ export async function GET(request: Request) {
       });
 
     if (error) {
+      console.error("get_available_slots_v2 error", { date: targetDate, modality, error: error.message });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ data: slots });
+    let result = slots;
+    if (serviceId && Array.isArray(slots)) {
+      result = slots.filter((s: { service_id: string | null }) => !s.service_id || s.service_id === serviceId);
+    }
+    return NextResponse.json({ data: result });
   } catch (err) {
+    console.error("Availability API error", err instanceof Error ? { message: err.message, stack: err.stack } : err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Error interno" },
       { status: 500 },
