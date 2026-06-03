@@ -1,25 +1,28 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { Database } from "@/types/database.types";
 
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+interface Profile {
+  id: string;
+  email: string;
+  full_name: string | null;
+  is_premium: boolean;
+  role: string | null;
+  created_at: string;
+  tags?: string[];
+}
 
 export default function ConsultantesPage() {
   const [consultantes, setConsultantes] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
-  const supabase = createClient();
 
   async function fetchConsultantes() {
     setLoading(true);
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (data) setConsultantes(data);
+    const res = await fetch("/api/admin/consultantes");
+    const json = await res.json();
+    if (json.data) setConsultantes(json.data);
     setLoading(false);
   }
 
@@ -77,11 +80,12 @@ export default function ConsultantesPage() {
   }, [consultantes, selected]);
 
   const togglePremium = async (id: string, currentStatus: boolean) => {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_premium: !currentStatus })
-      .eq("id", id);
-    if (!error) {
+    const res = await fetch("/api/admin/consultantes", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, is_premium: !currentStatus }),
+    });
+    if (res.ok) {
       setConsultantes(
         consultantes.map((c) =>
           c.id === id ? { ...c, is_premium: !currentStatus } : c,
