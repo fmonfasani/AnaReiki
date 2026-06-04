@@ -6,6 +6,8 @@ services:
     restart: unless-stopped
     expose:
       - "3000"
+    environment:
+      - HOSTNAME=0.0.0.0
     env_file: .env.production
     volumes:
       - anareiki_uploads:/app/public/uploads
