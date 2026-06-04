@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/auth/roles";
 import ClientProfile from "@/components/admin/ClientProfile";
@@ -20,20 +21,22 @@ export default async function ClientDetailPage({
     redirect("/login");
   }
 
+  const svc = createServiceClient();
+
   const [profileResult, appointmentsResult, notesResult, reflectionsResult] =
     await Promise.all([
-      supabase.from("profiles").select("*").eq("id", id).single(),
-      supabase
+      svc.from("profiles").select("*").eq("id", id).single(),
+      svc
         .from("appointments")
         .select("*, services(name)")
         .eq("client_id", id)
         .order("start_time", { ascending: false }),
-      supabase
+      svc
         .from("session_notes")
         .select("*")
         .eq("user_id", id)
         .order("created_at", { ascending: false }),
-      supabase
+      svc
         .from("daily_reflections")
         .select("*")
         .eq("user_id", id)

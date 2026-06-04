@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
 
 async function checkAdmin(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
@@ -27,9 +28,10 @@ export async function GET(
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
+    const svc = createServiceClient();
     const { id } = await params;
 
-    const { data: appointment, error } = await supabase
+    const { data: appointment, error } = await svc
       .from("appointments")
       .select(`
         *,
@@ -69,6 +71,7 @@ export async function PUT(
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
+    const svc = createServiceClient();
     const { id } = await params;
     const body = await request.json();
     const { action, reason } = body;
@@ -104,7 +107,7 @@ export async function PUT(
         break;
     }
 
-    const { error } = await supabase
+    const { error } = await svc
       .from("appointments")
       .update(updates)
       .eq("id", id);

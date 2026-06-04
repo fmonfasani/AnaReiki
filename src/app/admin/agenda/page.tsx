@@ -1,5 +1,6 @@
 import React from "react";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { redirect } from "next/navigation";
 import RuleManager from "@/components/admin/agenda/RuleManager";
 import CalendarView from "@/components/admin/agenda/CalendarView";
@@ -22,13 +23,15 @@ export default async function AgendaPage() {
     redirect("/consultantes");
   }
 
-  const { data: rulesV2 } = await supabase
+  const svc = createServiceClient();
+
+  const { data: rulesV2 } = await svc
     .from("availability_rules_v2")
     .select("*, services:service_id(name, slug)")
     .order("day_of_week")
     .order("start_time");
 
-  const { data: allAppointments } = await supabase
+  const { data: allAppointments } = await svc
     .from("appointments")
     .select("*, profiles:client_id(full_name), services:service_id(name)")
     .order("start_time", { ascending: false });

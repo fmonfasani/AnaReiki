@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
 
 async function checkAdmin(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
@@ -24,11 +25,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
+    const svc = createServiceClient();
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const date = searchParams.get("date");
 
-    let query = supabase
+    let query = svc
       .from("appointments")
       .select(`
         *,

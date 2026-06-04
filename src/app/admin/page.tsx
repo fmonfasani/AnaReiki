@@ -1,8 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
+  const svc = createServiceClient();
 
   const now = new Date();
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -15,31 +17,31 @@ export default async function AdminDashboardPage() {
     { count: appointmentsThisMonth },
     moodResult,
   ] = await Promise.all([
-    supabase.from("profiles").select("*", { count: "exact", head: true }),
-    supabase
+    svc.from("profiles").select("*", { count: "exact", head: true }),
+    svc
       .from("profiles")
       .select("*", { count: "exact", head: true })
       .eq("is_premium", true),
-    supabase
+    svc
       .from("appointments")
       .select("*", { count: "exact", head: true })
       .eq("status", "pending"),
-    supabase
+    svc
       .from("appointments")
       .select("*", { count: "exact", head: true })
       .gte("start_time", firstOfMonth.toISOString()),
-    supabase
+    svc
       .from("daily_reflections")
       .select("mood_score")
       .gte("created_at", thirtyDaysAgo.toISOString()),
   ]);
 
-  const { count: activeThisMonth } = await supabase
+  const { count: activeThisMonth } = await svc
     .from("daily_reflections")
     .select("user_id", { count: "exact", head: true })
     .gte("created_at", thirtyDaysAgo.toISOString());
 
-  const { count: recentSignups } = await supabase
+  const { count: recentSignups } = await svc
     .from("profiles")
     .select("*", { count: "exact", head: true })
     .gte("created_at", thirtyDaysAgo.toISOString());

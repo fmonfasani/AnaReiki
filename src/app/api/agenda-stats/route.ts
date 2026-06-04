@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -13,7 +14,8 @@ export async function GET() {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const { data, error } = await supabase.rpc("get_agenda_stats", {
+    const svc = createServiceClient();
+    const { data, error } = await svc.rpc("get_agenda_stats", {
       p_consultant_id: user.id,
       p_days: 30,
     });
