@@ -1,5 +1,6 @@
 import React from "react";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { redirect } from "next/navigation";
 import MisCitasClient from "@/components/consultantes/MisCitasClient";
 import Link from "next/link";
@@ -19,18 +20,19 @@ export default async function MisCitasPage() {
         redirect("/login");
     }
 
-    const { data: appointments, error } = await supabase
+    const svc = createServiceClient();
+
+    const { data: raw, error } = await svc
         .from("appointments")
-        .select(`
-      *,
-      services (id, name, slug, duration_minutes, allowed_modalities)
-    `)
+        .select("*, services!service_id(id, name, slug, duration_minutes, allowed_modalities)")
         .eq("client_id", user.id)
         .order("start_time", { ascending: false });
 
     if (error) {
         console.error("Error fetching appointments:", error);
     }
+
+    const appointments = raw || [];
 
     return (
         <div className="max-w-5xl mx-auto space-y-12 animate-in fade-in duration-700">
