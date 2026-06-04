@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { redirect, notFound } from "next/navigation";
 import TopicDetail from "./TopicDetail";
 
@@ -15,7 +16,9 @@ export default async function TopicPage({
 
   const { id } = await params;
 
-  const { data: topic } = await supabase
+  const svc = createServiceClient();
+
+  const { data: topic } = await svc
     .from("discussion_topics")
     .select("*, profiles:author_id(full_name, avatar_url)")
     .eq("id", id)
@@ -23,7 +26,7 @@ export default async function TopicPage({
 
   if (!topic) return notFound();
 
-  const { data: replies } = await supabase
+  const { data: replies } = await svc
     .from("discussion_replies")
     .select("*, profiles:author_id(full_name, avatar_url)")
     .eq("topic_id", id)

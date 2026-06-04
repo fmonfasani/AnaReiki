@@ -58,7 +58,10 @@ export default function TopicDetail({ topic, replies, userId }: TopicDetailProps
     setError(null);
     const result = await createReply({ topicId: topic.id, content: replyContent });
     if (result.error) setError(result.error);
-    else setReplyContent("");
+    else {
+      setReplyContent("");
+      router.refresh();
+    }
     setSubmitting(false);
   };
 

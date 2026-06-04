@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
 type ActionResult = { success?: true; error?: string };
 
@@ -14,7 +15,8 @@ export async function createTopic(input: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "No autorizado" };
 
-  const { error } = await supabase.from("discussion_topics").insert({
+  const svc = createServiceClient();
+  const { error } = await svc.from("discussion_topics").insert({
     title: input.title,
     content: input.content,
     author_id: user.id,
@@ -35,7 +37,8 @@ export async function createReply(input: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "No autorizado" };
 
-  const { error } = await supabase.from("discussion_replies").insert({
+  const svc = createServiceClient();
+  const { error } = await svc.from("discussion_replies").insert({
     topic_id: input.topicId,
     parent_id: input.parentId || null,
     author_id: user.id,

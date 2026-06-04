@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { createTopic } from "@/actions/community";
@@ -42,6 +43,7 @@ const CATEGORY_ICONS: Record<string, string> = Object.fromEntries(
 );
 
 export default function CommunityForum({ topics, userId }: CommunityForumProps) {
+  const router = useRouter();
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [showNewTopic, setShowNewTopic] = useState(false);
   const [title, setTitle] = useState("");
@@ -68,6 +70,7 @@ export default function CommunityForum({ topics, userId }: CommunityForumProps) 
       setCategory("general");
       setShowNewTopic(false);
       setSubmitting(false);
+      router.refresh();
     }
   };
 
