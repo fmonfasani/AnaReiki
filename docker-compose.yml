@@ -4,10 +4,8 @@ services:
     image: 0008-anareiki-web:latest
     container_name: anareiki-web
     restart: unless-stopped
-    expose:
-      - "3000"
-    environment:
-      - HOSTNAME=0.0.0.0
+    ports:
+      - 127.0.0.1:31008:3000
     env_file: .env.production
     volumes:
       - anareiki_uploads:/app/public/uploads
