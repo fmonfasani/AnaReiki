@@ -31,10 +31,28 @@ export default async function AgendaPage() {
     .order("day_of_week")
     .order("start_time");
 
-  const { data: allAppointments } = await svc
+  const { data: rawAppointments } = await svc
     .from("appointments")
-    .select("*, profiles:client_id(full_name), services:service_id(name)")
+    .select("*, services!service_id(id, name, slug)")
     .order("start_time", { ascending: false });
+
+  const ids = new Set<string>();
+  for (const a of rawAppointments || []) {
+    if (a.client_id) ids.add(a.client_id);
+    if (a.consultant_id) ids.add(a.consultant_id);
+  }
+  const allAppointments = rawAppointments || [];
+  if (ids.size > 0) {
+    const { data: profiles } = await svc
+      .from("profiles")
+      .select("id, email, full_name")
+      .in("id", [...ids]);
+    const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+    for (const a of allAppointments) {
+      (a as Record<string, unknown>).client = profileMap[a.client_id] || null;
+      (a as Record<string, unknown>).consultant = profileMap[a.consultant_id] || null;
+    }
+  }
 
   const pendingCount = allAppointments?.filter(a => a.status === 'pending').length || 0;
 

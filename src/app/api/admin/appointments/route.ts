@@ -32,12 +32,7 @@ export async function GET(request: Request) {
 
     let query = svc
       .from("appointments")
-      .select(`
-        *,
-        services (id, name, slug, duration_minutes),
-        client:client_id (id, email, full_name),
-        consultant:consultant_id (id, email, full_name)
-      `)
+      .select(`*, services!service_id(id, name, slug)`)
       .order("start_time", { ascending: false });
 
     if (status) {
@@ -54,7 +49,25 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ data: appointments });
+    const ids = new Set<string>();
+    for (const a of appointments || []) {
+      if (a.client_id) ids.add(a.client_id);
+      if (a.consultant_id) ids.add(a.consultant_id);
+    }
+    const enriched = appointments || [];
+    if (ids.size > 0) {
+      const { data: profiles } = await svc
+        .from("profiles")
+        .select("id, email, full_name")
+        .in("id", [...ids]);
+      const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+      for (const a of enriched) {
+        (a as Record<string, unknown>).client = profileMap[a.client_id] || null;
+        (a as Record<string, unknown>).consultant = profileMap[a.consultant_id] || null;
+      }
+    }
+
+    return NextResponse.json({ data: enriched });
   } catch (err) {
     console.error("GET /api/admin/appointments error", err instanceof Error ? { message: err.message, stack: err.stack } : err);
     return NextResponse.json(

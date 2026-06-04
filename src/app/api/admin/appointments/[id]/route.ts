@@ -33,18 +33,22 @@ export async function GET(
 
     const { data: appointment, error } = await svc
       .from("appointments")
-      .select(`
-        *,
-        services (id, name, slug, duration_minutes, allowed_modalities),
-        client:client_id (id, email, full_name),
-        consultant:consultant_id (id, email, full_name)
-      `)
+      .select("*, services!service_id(id, name, slug)")
       .eq("id", id)
       .single();
 
     if (error || !appointment) {
       return NextResponse.json({ error: "Turno no encontrado" }, { status: 404 });
     }
+
+    const { data: profiles } = await svc
+      .from("profiles")
+      .select("id, email, full_name")
+      .in("id", [appointment.client_id, appointment.consultant_id].filter(Boolean));
+
+    const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+    (appointment as Record<string, unknown>).client = profileMap[appointment.client_id] || null;
+    (appointment as Record<string, unknown>).consultant = profileMap[appointment.consultant_id] || null;
 
     return NextResponse.json({ data: appointment });
   } catch (err) {
