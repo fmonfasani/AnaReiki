@@ -56,6 +56,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ data: appointments });
   } catch (err) {
+    console.error("GET /api/admin/appointments error", err instanceof Error ? { message: err.message, stack: err.stack } : err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Error interno" },
       { status: 500 },

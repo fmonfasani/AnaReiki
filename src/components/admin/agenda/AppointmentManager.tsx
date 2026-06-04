@@ -23,8 +23,15 @@ export default function AppointmentManager() {
 
   useEffect(() => {
     fetch("/api/admin/appointments")
-      .then((r) => r.json())
-      .then((j) => setAppointments(j.data || []))
+      .then(async (r) => {
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
+        setAppointments(j.data || []);
+      })
+      .catch((err) => {
+        console.error("AppointmentManager fetch error:", err);
+        setActionMsg({ type: "error", text: "Error al cargar turnos: " + err.message });
+      })
       .finally(() => setLoading(false));
   }, []);
 
