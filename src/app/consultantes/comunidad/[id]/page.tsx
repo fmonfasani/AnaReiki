@@ -20,7 +20,7 @@ export default async function TopicPage({
 
   const { data: topic } = await svc
     .from("discussion_topics")
-    .select("*, profiles:author_id(full_name, avatar_url)")
+    .select("*")
     .eq("id", id)
     .single();
 
@@ -28,9 +28,26 @@ export default async function TopicPage({
 
   const { data: replies } = await svc
     .from("discussion_replies")
-    .select("*, profiles:author_id(full_name, avatar_url)")
+    .select("*")
     .eq("topic_id", id)
     .order("created_at", { ascending: true });
+
+  const authorIds = new Set<string>();
+  if (topic.author_id) authorIds.add(topic.author_id);
+  for (const r of replies || []) {
+    if (r.author_id) authorIds.add(r.author_id);
+  }
+  if (authorIds.size > 0) {
+    const { data: profiles } = await svc
+      .from("profiles")
+      .select("id, full_name, avatar_url")
+      .in("id", [...authorIds]);
+    const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+    (topic as Record<string, unknown>).profiles = profileMap[topic.author_id] || null;
+    for (const r of replies || []) {
+      (r as Record<string, unknown>).profiles = profileMap[r.author_id] || null;
+    }
+  }
 
   return (
     <TopicDetail
