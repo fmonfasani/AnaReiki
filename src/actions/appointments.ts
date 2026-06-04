@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
 type ActionResult<T = unknown> = {
   success?: true;
@@ -119,17 +120,57 @@ export async function rescheduleAppointment(input: {
     return { error: "Unauthorized" };
   }
 
-  const { data, error } = await supabase.rpc("reschedule_appointment", {
-    p_appointment_id: input.appointmentId,
-    p_new_start_time: newStartIso,
-  });
+  const svc = createServiceClient();
 
-  if (error) {
-    return { error: error.message };
+  const { data: appointment, error: fetchError } = await svc
+    .from("appointments")
+    .select("id, client_id, service_id, start_time, status")
+    .eq("id", input.appointmentId)
+    .single();
+
+  if (fetchError || !appointment) {
+    return { error: "Turno no encontrado" };
+  }
+
+  if (appointment.client_id !== user.id) {
+    return { error: "No autorizado" };
+  }
+
+  if (appointment.status === "cancelled") {
+    return { error: "No se puede reprogramar un turno cancelado" };
+  }
+
+  if (new Date(appointment.start_time) <= new Date()) {
+    return { error: "No se puede reprogramar un turno pasado" };
+  }
+
+  const { data: service } = await svc
+    .from("services")
+    .select("duration_minutes")
+    .eq("id", appointment.service_id)
+    .single();
+
+  if (!service) {
+    return { error: "Servicio no encontrado" };
+  }
+
+  const newEndTime = new Date(new Date(newStartIso).getTime() + service.duration_minutes * 60000).toISOString();
+
+  const { error: updateError } = await svc
+    .from("appointments")
+    .update({
+      slot_id: null,
+      start_time: newStartIso,
+      end_time: newEndTime,
+    })
+    .eq("id", input.appointmentId);
+
+  if (updateError) {
+    return { error: updateError.message };
   }
 
   revalidateAppointmentsViews();
-  return { success: true, data };
+  return { success: true };
 }
 
 export async function adminConfirmAppointment(input: {
