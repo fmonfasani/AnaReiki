@@ -49,11 +49,19 @@ export default async function TopicPage({
     }
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  const isAdmin = profile?.role === "admin" || profile?.role === "owner";
+
   return (
     <TopicDetail
       topic={topic as any}
       replies={(replies || []) as any[]}
       userId={user.id}
+      isAdmin={isAdmin}
     />
   );
 }

@@ -55,15 +55,42 @@ export async function closeTopic(topicId: string): Promise<ActionResult> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "No autorizado" };
 
-  const { error } = await supabase
+  const svc = createServiceClient();
+  const { data: topic } = await svc
+    .from("discussion_topics")
+    .select("author_id")
+    .eq("id", topicId)
+    .single();
+  if (!topic) return { error: "Tema no encontrado" };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  const isAdmin = profile?.role === "admin" || profile?.role === "owner";
+
+  if (topic.author_id !== user.id && !isAdmin) {
+    return { error: "No tenés permiso para cerrar este tema" };
+  }
+
+  const { error } = await svc
     .from("discussion_topics")
     .update({ is_closed: true })
-    .eq("id", topicId)
-    .eq("author_id", user.id);
+    .eq("id", topicId);
 
   if (error) return { error: error.message };
   revalidatePath(`/consultantes/comunidad/${topicId}`);
   return { success: true };
+}
+
+async function getUserRole(userId: string, supabase: ReturnType<typeof createClient>) {
+  const { data } = await supabase.from("profiles").select("role").eq("id", userId).single();
+  return data?.role || null;
+}
+
+function isAdminRole(role: string | null) {
+  return role === "admin" || role === "owner";
 }
 
 export async function pinTopic(topicId: string, isPinned: boolean): Promise<ActionResult> {
@@ -71,7 +98,11 @@ export async function pinTopic(topicId: string, isPinned: boolean): Promise<Acti
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "No autorizado" };
 
-  const { error } = await supabase
+  const role = await getUserRole(user.id, supabase);
+  if (!isAdminRole(role)) return { error: "Solo administradores pueden fijar temas" };
+
+  const svc = createServiceClient();
+  const { error } = await svc
     .from("discussion_topics")
     .update({ is_pinned: isPinned })
     .eq("id", topicId);
@@ -83,7 +114,23 @@ export async function pinTopic(topicId: string, isPinned: boolean): Promise<Acti
 
 export async function deleteTopic(topicId: string): Promise<ActionResult> {
   const supabase = await createClient();
-  const { error } = await supabase.from("discussion_topics").delete().eq("id", topicId);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "No autorizado" };
+
+  const svc = createServiceClient();
+  const { data: topic } = await svc
+    .from("discussion_topics")
+    .select("author_id")
+    .eq("id", topicId)
+    .single();
+  if (!topic) return { error: "Tema no encontrado" };
+
+  const role = await getUserRole(user.id, supabase);
+  if (topic.author_id !== user.id && !isAdminRole(role)) {
+    return { error: "No tenés permiso para eliminar este tema" };
+  }
+
+  const { error } = await svc.from("discussion_topics").delete().eq("id", topicId);
   if (error) return { error: error.message };
   revalidatePath("/consultantes/comunidad");
   return { success: true };
@@ -91,17 +138,26 @@ export async function deleteTopic(topicId: string): Promise<ActionResult> {
 
 export async function deleteReply(replyId: string): Promise<ActionResult> {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "No autorizado" };
 
-  const { data: reply } = await supabase
+  const svc = createServiceClient();
+  const { data: reply } = await svc
     .from("discussion_replies")
-    .select("topic_id")
+    .select("topic_id, author_id")
     .eq("id", replyId)
     .single();
+  if (!reply) return { error: "Respuesta no encontrada" };
 
-  const { error } = await supabase.from("discussion_replies").delete().eq("id", replyId);
+  const role = await getUserRole(user.id, supabase);
+  if (reply.author_id !== user.id && !isAdminRole(role)) {
+    return { error: "No tenés permiso para eliminar esta respuesta" };
+  }
+
+  const { error } = await svc.from("discussion_replies").delete().eq("id", replyId);
   if (error) return { error: error.message };
 
-  if (reply?.topic_id) {
+  if (reply.topic_id) {
     revalidatePath(`/consultantes/comunidad/${reply.topic_id}`);
   }
   revalidatePath("/consultantes/comunidad");

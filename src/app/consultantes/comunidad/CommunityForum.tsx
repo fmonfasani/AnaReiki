@@ -26,12 +26,12 @@ interface CommunityForumProps {
 }
 
 const CATEGORIES = [
-  { value: "general", label: "General", icon: "forum" },
-  { value: "reiki", label: "Reiki", icon: "self_improvement" },
-  { value: "meditacion", label: "Meditación", icon: "auto_awesome" },
-  { value: "yoga", label: "Yoga", icon: "sunny" },
-  { value: "experiencias", label: "Experiencias", icon: "diversity_3" },
-  { value: "consultas", label: "Consultas", icon: "help" },
+  { value: "general",     label: "General",     icon: "forum",            color: "bg-gray-100 text-gray-700 hover:bg-gray-200" },
+  { value: "reiki",       label: "Reiki",       icon: "self_improvement", color: "bg-purple-100 text-purple-700 hover:bg-purple-200" },
+  { value: "meditacion",  label: "Meditación",  icon: "auto_awesome",     color: "bg-blue-100 text-blue-700 hover:bg-blue-200" },
+  { value: "yoga",        label: "Yoga",        icon: "sunny",            color: "bg-amber-100 text-amber-700 hover:bg-amber-200" },
+  { value: "experiencias",label: "Experiencias", icon: "diversity_3",     color: "bg-green-100 text-green-700 hover:bg-green-200" },
+  { value: "consultas",   label: "Consultas",   icon: "help",             color: "bg-pink-100 text-pink-700 hover:bg-pink-200" },
 ];
 
 const CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
@@ -40,6 +40,10 @@ const CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
 
 const CATEGORY_ICONS: Record<string, string> = Object.fromEntries(
   CATEGORIES.map((c) => [c.value, c.icon]),
+);
+
+const CATEGORY_COLORS: Record<string, string> = Object.fromEntries(
+  CATEGORIES.map((c) => [c.value, c.color]),
 );
 
 export default function CommunityForum({ topics, userId }: CommunityForumProps) {
@@ -148,20 +152,23 @@ export default function CommunityForum({ topics, userId }: CommunityForumProps) 
         >
           Todos
         </button>
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat.value}
-            onClick={() => setActiveCategory(cat.value)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
-              activeCategory === cat.value
-                ? "bg-pink-600 text-white shadow-md"
-                : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-            }`}
-          >
-            <span className="material-symbols-outlined text-sm">{cat.icon}</span>
-            {cat.label}
-          </button>
-        ))}
+        {CATEGORIES.map((cat) => {
+          const isActive = activeCategory === cat.value;
+          return (
+            <button
+              key={cat.value}
+              onClick={() => setActiveCategory(cat.value)}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
+                isActive
+                  ? `${cat.color} shadow-md border border-transparent`
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+              }`}
+            >
+              <span className="material-symbols-outlined text-sm">{cat.icon}</span>
+              {cat.label}
+            </button>
+          );
+        })}
       </div>
 
       <div className="space-y-3">
@@ -175,10 +182,10 @@ export default function CommunityForum({ topics, userId }: CommunityForumProps) 
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="material-symbols-outlined text-sm text-gray-400">
-                      {CATEGORY_ICONS[topic.category] || "forum"}
-                    </span>
-                    <span className="text-xs font-medium text-pink-600 uppercase tracking-wider">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${
+                      CATEGORY_COLORS[topic.category] || "bg-gray-100 text-gray-700"
+                    }`}>
+                      <span className="material-symbols-outlined text-xs">{CATEGORY_ICONS[topic.category] || "forum"}</span>
                       {CATEGORY_LABELS[topic.category] || topic.category}
                     </span>
                     {topic.is_pinned && (
