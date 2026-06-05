@@ -58,6 +58,7 @@ export default function AppointmentManager() {
 
   const statusColors: Record<string, string> = {
     pending: "bg-yellow-50 text-yellow-600",
+    pending_payment: "bg-amber-50 text-amber-600",
     confirmed: "bg-blue-50 text-blue-600",
     completed: "bg-green-50 text-green-600",
     cancelled: "bg-red-50 text-red-600",
@@ -66,6 +67,7 @@ export default function AppointmentManager() {
 
   const statusLabels: Record<string, string> = {
     pending: "Pendiente",
+    pending_payment: "Pendiente de pago",
     confirmed: "Confirmado",
     completed: "Completado",
     cancelled: "Cancelado",

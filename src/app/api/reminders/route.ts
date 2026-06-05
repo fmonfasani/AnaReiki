@@ -17,6 +17,27 @@ export async function POST(request: Request) {
 
     await svc.rpc("expire_old_approvals").maybeSingle();
 
+    // Liberar appointments en pending_payment con más de 30 min de antigüedad
+    const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    const { data: expiredPayments, error: expireError } = await svc
+      .from("appointments")
+      .update({
+        status: "cancelled",
+        payment_status: "failed",
+        cancelled_reason: "Pago no completado en el tiempo límite",
+        cancelled_at: now,
+        updated_at: now,
+      })
+      .eq("status", "pending_payment")
+      .lt("created_at", thirtyMinAgo)
+      .select("id");
+
+    if (expireError) {
+      console.error("Error liberando pending_payment expirados:", expireError.message);
+    } else if (expiredPayments && expiredPayments.length > 0) {
+      console.log(`Liberados ${expiredPayments.length} appointments pending_payment expirados`);
+    }
+
     const { data: pending, error } = await svc
       .from("appointment_reminders")
       .select("*, appointments!inner(*, profiles!client_id(email, full_name))")

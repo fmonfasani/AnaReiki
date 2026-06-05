@@ -127,6 +127,7 @@ export async function POST(request: Request) {
         }],
         payerEmail: user.email || "",
         backUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://anamurat.online"}/consultantes/reservar/confirmacion`,
+        notificationUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://anamurat.online"}/api/mercadopago/webhook`,
         externalReference: JSON.stringify({ userId: user.id, appointmentId: appointment.id }),
         autoReturn: "approved",
       });

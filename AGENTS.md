@@ -32,8 +32,8 @@ Construir y deployar plataforma SaaS completa de Ana Reiki: landing, CRM terapé
 - **Email Marketing mejorado**: Filtro por tags en formulario de envío, historial de campañas con dashboard de estadísticas en `/admin/email-marketing`.
 - **Sistema de Promos**: Migration 023 (`promotions`, `promotion_sessions`, `promo_purchases`, `email_campaigns`). Admin UI en `/admin/promos` con CRUD, activar/desactivar, filtro por tiers. Sidebar actualizado.
 
-### Blocked
-- **MP OAuth connect**: El endpoint `/api/mercadopago/oauth/link` devuelve error "MP OAuth no configurado" a pesar de que `MP_CLIENT_ID` está set en el container. Pendiente debuggear.
+### Resolved (prev. Blocked)
+- ~~**MP OAuth connect**: El endpoint `/api/mercadopago/oauth/link` devuelve error "MP OAuth no configurado".~~ → **Resuelto**. Era del build anterior (commit pre-`809f968`). Verificado: `MP_CLIENT_ID` y `MP_CLIENT_SECRET` seteados, 5 tokens activos en DB, expiración Dic 2026, auth URL generada correctamente. El owner (Ana) ya conectó con éxito.
 
 ## Key Decisions
 - **OAuth sobre token directo**: Escalable multi-cliente. Una app developer, cada cliente autoriza vía link. Token refrescable (180 días).
@@ -44,11 +44,115 @@ Construir y deployar plataforma SaaS completa de Ana Reiki: landing, CRM terapé
 - **Promos**: Tablas `promotions` + `promotion_sessions` + `promo_purchases`. Pago único vía MP preference. Filtro por `allowed_tiers`.
 
 ## Next Steps
-1. Debuggear MP OAuth: por qué `/api/mercadopago/oauth/link` falla con vars set en container.
-2. Agenda reingeniería Fase 5: Admin RuleManager UI (componente de gestión visual de `availability_rules_v2`).
-3. Agenda reingeniería Fase 6: Cleanup — renombrar/dropear tablas viejas (solo cuando todo el código migró).
-4. User: verificar dominio Resend en Namecheap.
-5. User: testear checkout MP con cuenta diferente.
+1. Separar DM de Comunidad (tablas + API + migración de datos existentes).
+2. Sistema de Foros (categorías, temas, posts, likes, bookmarks).
+3. Sistema de Comentarios polimórfico (biblioteca, podcast, videos, clases).
+4. Sidebar Admin y Consultante reorganizados.
+5. Agenda reingeniería Fase 5: Admin RuleManager UI.
+6. Agenda reingeniería Fase 6: Cleanup tablas viejas.
+7. User: verificar dominio Resend en Namecheap.
+8. User: testear checkout MP con cuenta diferente.
+
+## Deploy — VPS Hetzner
+
+### Conexión SSH
+```bash
+Host/IP: 89.167.96.239
+User: root
+Port: 22
+Key (local): C:\Users\fmonfasani\.ssh\id_ed25519_anareiki
+Connect: ssh root@89.167.96.239
+Config local (C:\Users\fmonfasani\.ssh\config):
+  Host 89.167.96.239
+    IdentityFile ~/.ssh/id_ed25519_anareiki
+    User root
+```
+
+### Repositorio en VPS
+```bash
+Path: /infra/projects/0008-anareiki
+Origin: https://github.com/fmonfasani/AnaReiki.git
+Branch: main
+```
+
+### Containers (Docker Compose)
+```bash
+Compose file: /infra/projects/0008-anareiki/docker-compose.yml
+Network: anareiki-network (bridge)
+
+Services:
+  web:   anareiki-web (0008-anareiki-web:latest)
+         Port: 127.0.0.1:31008 → 3000
+         Limits: 0.5 CPU / 256M
+         Env: .env.production
+  nginx: anareiki-nginx (nginx:alpine)
+         Port: 80:80, 443:443
+         NOTA: Actualmente lo maneja Coolify, no este compose.
+         Si hay que deployar cambios de nginx, ver Coolify primero.
+  certbot: anareiki-certbot (certbot/certbot)
+         NOTA: También lo maneja Coolify.
+```
+
+### Ambiente
+- **Dominio**: anamurat.online
+- **SSL**: Let's Encrypt (vía Coolify)
+- **DB**: Supabase (no local)
+- **Uploads**: Docker volume `anareiki_uploads`
+- **Coolify**: Corre en el mismo VPS (puerto 8080) y maneja nginx+SSL global
+
+### Comando de deploy manual
+```bash
+cd /infra/projects/0008-anareiki
+git pull origin main
+docker compose build web
+docker compose up -d --no-deps web
+sleep 10
+curl -sf http://localhost:3000/api/health
+```
+
+### Deploy automático (GitHub Actions)
+- **Workflow**: `.github/workflows/deploy.yml`
+- **Trigger**: Push a `main`
+- **Action**: appleboy/ssh-action con secrets:
+  - `SSH_HOST`: 89.167.96.239
+  - `SSH_USER`: root
+  - `SSH_PRIVATE_KEY`: clave github-actions en authorized_keys
+- **Script remoto**: git pull → build web → up -d --no-deps web
+
+### Variables de entorno (producción)
+Archivo: `/infra/projects/0008-anareiki/.env.production`
+```env
+NEXT_PUBLIC_SUPABASE_URL=<set>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<set>
+SUPABASE_SERVICE_ROLE_KEY=<set>
+RESEND_API_KEY=<set>
+MERCADO_PAGO_ACCESS_TOKEN=<set>
+MP_CLIENT_ID=8753327212563967
+MP_CLIENT_SECRET=2ZIeh15jCv05t3X5NlLTPZ3zLU7PDtPz
+OPENAI_API_KEY=<set>
+NEXT_PUBLIC_SITE_URL=https://anamurat.online
+CRON_SECRET=<set>
+```
+
+### Health check
+```bash
+curl -sI https://anamurat.online/api/health
+curl -sI http://localhost:31008/api/health
+```
+
+### Logs
+```bash
+docker compose logs web --tail 50 -f
+docker compose logs nginx --tail 50
+```
+
+### Procedimiento rápido (decime "deployalo")
+Cuando el usuario pida deployar:
+1. Verificar que los cambios están commiteados y pusheados a `origin/main`
+2. SSH a la VPS
+3. Ejecutar el deploy manual
+4. Verificar health endpoint
+5. Confirmar al usuario
 
 ## Relevant Files
 - `supabase/migrations/022_availability_rules.sql`: Tabla `availability_rules_v2`, enums extendidos, funciones de slot generation, data migration desde v1.

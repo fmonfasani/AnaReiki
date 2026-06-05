@@ -74,6 +74,7 @@ export async function createPaymentPreference(input: {
   items: PreferenceItem[];
   payerEmail: string;
   backUrl: string;
+  notificationUrl?: string;
   externalReference: string;
   autoReturn?: string;
 }): Promise<{ id: string; init_point: string; sandbox_init_point?: string } | { error: string }> {
@@ -98,6 +99,7 @@ export async function createPaymentPreference(input: {
       },
       external_reference: input.externalReference,
       auto_return: input.autoReturn || "approved",
+      ...(input.notificationUrl ? { notification_url: input.notificationUrl } : {}),
     };
 
     const res = await fetch(`${MP_API_BASE}/checkout/preferences`, {

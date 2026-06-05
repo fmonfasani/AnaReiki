@@ -8,11 +8,17 @@ import { cancelAppointment } from "@/actions/appointments";
 import RescheduleModal from "./RescheduleModal";
 import Link from "next/link";
 
+function formatPrice(cents: number): string {
+  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(cents / 100);
+}
+
 interface Appointment {
     id: string;
     start_time: string;
     end_time: string;
-    status: "pending" | "confirmed" | "cancelled" | "completed" | "no_show";
+    status: "pending" | "pending_payment" | "confirmed" | "cancelled" | "completed" | "no_show";
+    payment_status?: string;
+    price_cents?: number;
     notes: string | null;
     services: {
         name: string;
@@ -28,6 +34,26 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
     const [appointments, setAppointments] = useState(initialAppointments);
     const [loadingId, setLoadingId] = useState<string | null>(null);
     const [reschedulingId, setReschedulingId] = useState<string | null>(null);
+
+    const handleRetryPayment = async (id: string) => {
+        setLoadingId(id);
+        try {
+            const res = await fetch("/api/appointments/retry-payment", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ appointmentId: id }),
+            });
+            const json = await res.json();
+            if (json.mp_init_point) {
+                window.location.href = json.mp_init_point;
+            } else {
+                alert("Error: " + (json.error || "No se pudo iniciar el pago"));
+            }
+        } catch {
+            alert("Error de conexión");
+        }
+        setLoadingId(null);
+    };
 
     const handleCancel = async (id: string) => {
         if (!confirm("¿Estás segura de que deseas cancelar esta cita?")) return;
@@ -84,12 +110,17 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
                                                 {format(parseISO(appt.start_time), "EEEE d 'de' MMMM", { locale: es })}
                                             </h3>
                                         </div>
-                                        <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${appt.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                                        <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${appt.status === 'confirmed' ? 'bg-green-100 text-green-700' : appt.status === 'pending_payment' ? 'bg-amber-100 text-amber-700' : 'bg-orange-100 text-orange-700'
                                             }`}>
-                                            {appt.status === 'confirmed' ? 'Confirmada' : 'Pendiente'}
+                                            {appt.status === 'confirmed' ? 'Confirmada' : appt.status === 'pending_payment' ? 'Pendiente de pago' : 'Pendiente'}
                                         </div>
                                     </div>
 
+                                    {appt.status === "pending_payment" && (
+                                        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3 text-xs text-amber-700">
+                                            Reserva pendiente de pago. Completá el pago para confirmar la sesión.
+                                        </div>
+                                    )}
                                     <div className="flex flex-wrap items-center gap-3 text-gray-500 text-sm mb-6">
                                         <div className="flex items-center gap-1">
                                             <span className="text-sm text-gray-400">🕐</span>
@@ -106,19 +137,31 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
                                     </div>
 
                                     <div className="flex gap-3">
-                                        <button
-                                            onClick={() => handleCancel(appt.id)}
-                                            disabled={loadingId === appt.id}
-                                            className="flex-1 py-2 text-sm font-bold text-red-500 hover:bg-red-50 rounded-xl border border-transparent hover:border-red-100 transition-all disabled:opacity-50"
-                                        >
-                                            {loadingId === appt.id ? "Cancelando..." : "Cancelar"}
-                                        </button>
-                                        <button
-                                            onClick={() => setReschedulingId(appt.id)}
-                                            className="flex-1 py-2 text-sm font-bold text-[var(--color-terracotta)] hover:bg-orange-50 rounded-xl border border-transparent hover:border-orange-100 transition-all"
-                                        >
-                                            Reprogramar
-                                        </button>
+                                        {appt.status === "pending_payment" ? (
+                                            <button
+                                                onClick={() => handleRetryPayment(appt.id)}
+                                                disabled={loadingId === appt.id}
+                                                className="flex-1 py-2 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-all disabled:opacity-50"
+                                            >
+                                                {loadingId === appt.id ? "Redirigiendo..." : `Pagar ahora ${appt.price_cents ? formatPrice(appt.price_cents) : ""}`}
+                                            </button>
+                                        ) : (
+                                            <>
+                                                <button
+                                                    onClick={() => handleCancel(appt.id)}
+                                                    disabled={loadingId === appt.id}
+                                                    className="flex-1 py-2 text-sm font-bold text-red-500 hover:bg-red-50 rounded-xl border border-transparent hover:border-red-100 transition-all disabled:opacity-50"
+                                                >
+                                                    {loadingId === appt.id ? "Cancelando..." : "Cancelar"}
+                                                </button>
+                                                <button
+                                                    onClick={() => setReschedulingId(appt.id)}
+                                                    className="flex-1 py-2 text-sm font-bold text-[var(--color-terracotta)] hover:bg-orange-50 rounded-xl border border-transparent hover:border-orange-100 transition-all"
+                                                >
+                                                    Reprogramar
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 </motion.div>
                                 );
