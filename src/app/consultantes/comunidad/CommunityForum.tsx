@@ -26,12 +26,12 @@ interface CommunityForumProps {
 }
 
 const CATEGORIES = [
-  { value: "general",     label: "General",     icon: "forum",            color: "bg-gray-100 text-gray-700 hover:bg-gray-200" },
-  { value: "reiki",       label: "Reiki",       icon: "self_improvement", color: "bg-purple-100 text-purple-700 hover:bg-purple-200" },
-  { value: "meditacion",  label: "Meditación",  icon: "auto_awesome",     color: "bg-blue-100 text-blue-700 hover:bg-blue-200" },
-  { value: "yoga",        label: "Yoga",        icon: "sunny",            color: "bg-amber-100 text-amber-700 hover:bg-amber-200" },
-  { value: "experiencias",label: "Experiencias", icon: "diversity_3",     color: "bg-green-100 text-green-700 hover:bg-green-200" },
-  { value: "consultas",   label: "Consultas",   icon: "help",             color: "bg-pink-100 text-pink-700 hover:bg-pink-200" },
+  { value: "general",     label: "General",     icon: "forum",            active: "bg-gray-800 text-white",              inactive: "bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200" },
+  { value: "reiki",       label: "Reiki",       icon: "self_improvement", active: "bg-purple-600 text-white",             inactive: "bg-purple-100 text-purple-700 hover:bg-purple-200 border border-purple-200" },
+  { value: "meditacion",  label: "Meditación",  icon: "auto_awesome",     active: "bg-blue-600 text-white",              inactive: "bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200" },
+  { value: "yoga",        label: "Yoga",        icon: "sunny",            active: "bg-amber-500 text-white",             inactive: "bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-200" },
+  { value: "experiencias",label: "Experiencias", icon: "diversity_3",     active: "bg-green-600 text-white",             inactive: "bg-green-100 text-green-700 hover:bg-green-200 border border-green-200" },
+  { value: "consultas",   label: "Consultas",   icon: "help",             active: "bg-pink-600 text-white",              inactive: "bg-pink-100 text-pink-700 hover:bg-pink-200 border border-pink-200" },
 ];
 
 const CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
@@ -43,7 +43,7 @@ const CATEGORY_ICONS: Record<string, string> = Object.fromEntries(
 );
 
 const CATEGORY_COLORS: Record<string, string> = Object.fromEntries(
-  CATEGORIES.map((c) => [c.value, c.color]),
+  CATEGORIES.map((c) => [c.value, c.inactive]),
 );
 
 export default function CommunityForum({ topics, userId }: CommunityForumProps) {
@@ -158,10 +158,8 @@ export default function CommunityForum({ topics, userId }: CommunityForumProps) 
             <button
               key={cat.value}
               onClick={() => setActiveCategory(cat.value)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
-                isActive
-                  ? `${cat.color} shadow-md border border-transparent`
-                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 shadow-sm ${
+                isActive ? cat.active : cat.inactive
               }`}
             >
               <span className="material-symbols-outlined text-sm">{cat.icon}</span>
