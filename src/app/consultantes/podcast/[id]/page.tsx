@@ -29,12 +29,11 @@ export default async function PodcastDetailPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_premium")
+    .select("plan_tier")
     .eq("id", user.id)
     .single();
 
-  const isPremium = profile?.is_premium || false;
-  const isLocked = episode.is_premium && !isPremium;
+  const userTier = profile?.plan_tier || "prana";
 
   const { data: progress } = await supabase
     .from("content_progress")
@@ -67,7 +66,7 @@ export default async function PodcastDetailPage({
       </nav>
 
       <div className="max-w-4xl mx-auto space-y-6">
-        <PremiumGate isPremium={!isLocked}>
+        <PremiumGate requiredTier="ananda" userTier={userTier}>
           <PodcastPlayer
             url={episode.external_id}
             contentId={episode.id}

@@ -150,7 +150,7 @@ export default function BibliotecaClient({
                   isFav={favorites.has(item.id)}
                   onToggleFav={handleToggleFav}
                   progress={progressPercent(item.id)}
-                  isPremium={isPremium}
+                  planTier={planTier}
                   reason={rec.reason}
                 />
               );
@@ -243,7 +243,7 @@ export default function BibliotecaClient({
                 isFav={favorites.has(item.id)}
                 onToggleFav={handleToggleFav}
                 progress={progressPercent(item.id)}
-                isPremium={isPremium}
+                planTier={planTier}
               />
             ))}
           </div>
@@ -260,7 +260,7 @@ export default function BibliotecaClient({
                 isFav={favorites.has(item.id)}
                 onToggleFav={handleToggleFav}
                 progress={progressPercent(item.id)}
-                isPremium={isPremium}
+                planTier={planTier}
               />
             ))
           ) : (
@@ -280,14 +280,14 @@ function ContentCard({
   isFav,
   onToggleFav,
   progress,
-  isPremium,
+  planTier,
   reason,
 }: {
   item: ContentItem;
   isFav: boolean;
   onToggleFav: (id: string) => void;
   progress: number;
-  isPremium: boolean;
+  planTier: string;
   reason?: string;
 }) {
   const href = item.type === "video"
@@ -378,7 +378,7 @@ function ContentCard({
   );
 
   if (item.is_premium) {
-    return <PremiumGate isPremium={isPremium}>{card}</PremiumGate>;
+    return <PremiumGate requiredTier="ananda" userTier={planTier}>{card}</PremiumGate>;
   }
 
   return card;

@@ -15,8 +15,10 @@ vi.mock("@/actions/library", () => ({
 }));
 
 vi.mock("@/components/PremiumGate", () => ({
-  default: ({ children, isPremium }: { children: React.ReactNode; isPremium: boolean }) =>
-    isPremium ? <>{children}</> : <div data-testid="premium-gate">{children}</div>,
+  default: ({ requiredTier, userTier, children }: { requiredTier: string; userTier: string; children: React.ReactNode }) => {
+    const order = ["prana", "shakti", "ananda"];
+    return order.indexOf(userTier) >= order.indexOf(requiredTier) ? <>{children}</> : <div>PremiumGate</div>;
+  },
 }));
 
 // Mock fetch for AI recommendations

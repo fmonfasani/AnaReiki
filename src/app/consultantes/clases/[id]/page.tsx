@@ -30,12 +30,11 @@ export default async function ClaseDetailPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_premium")
+    .select("plan_tier")
     .eq("id", user.id)
     .single();
 
-  const isPremium = profile?.is_premium || false;
-  const isLocked = video.is_premium && !isPremium;
+  const userTier = profile?.plan_tier || "prana";
 
   const { data: progress } = await supabase
     .from("content_progress")
@@ -65,7 +64,7 @@ export default async function ClaseDetailPage({
       </nav>
 
       <div className="max-w-5xl mx-auto space-y-6">
-        <PremiumGate isPremium={!isLocked}>
+        <PremiumGate requiredTier="ananda" userTier={userTier}>
           <VideoPlayer
             publicId={video.external_id}
             contentId={video.id}
