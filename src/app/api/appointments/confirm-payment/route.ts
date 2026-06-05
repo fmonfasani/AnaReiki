@@ -5,18 +5,14 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const topic = body.topic || body.type;
-    const id = body.data?.id || body.id;
-
-    if (!id || topic !== "payment") {
-      return NextResponse.json({ received: true });
+    const { payment_id } = await request.json();
+    if (!payment_id) {
+      return NextResponse.json({ error: "payment_id requerido" }, { status: 400 });
     }
 
-    const paymentResult = await getPayment(String(id));
+    const paymentResult = await getPayment(String(payment_id));
     if ("error" in paymentResult) {
-      console.error("Webhook: error fetching payment", paymentResult.error);
-      return NextResponse.json({ received: true });
+      return NextResponse.json({ error: paymentResult.error }, { status: 500 });
     }
 
     const mpStatus = paymentResult.status;
@@ -39,7 +35,7 @@ export async function POST(request: Request) {
     if (appointmentId) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, payment_status")
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, client_id")
         .eq("id", appointmentId)
         .single();
       appointment = data;
@@ -48,24 +44,25 @@ export async function POST(request: Request) {
     if (!appointment) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, payment_status")
-        .eq("mp_payment_id", String(id))
-        .maybeSingle();
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, client_id")
+        .eq("payment_status", "pending_payment")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
       appointment = data;
     }
 
     if (!appointment) {
-      console.warn("Webhook: no appointment found for payment", id);
-      return NextResponse.json({ received: true });
+      return NextResponse.json({ error: "Turno no encontrado" }, { status: 404 });
     }
 
-    if (mpStatus === "approved" && appointment.payment_status !== "paid") {
+    if (mpStatus === "approved") {
       await svc
         .from("appointments")
         .update({
           status: "pending",
           payment_status: "paid",
-          mp_payment_id: String(id),
+          mp_payment_id: String(payment_id),
         })
         .eq("id", appointment.id);
 
@@ -79,7 +76,9 @@ export async function POST(request: Request) {
         .eq("id", appointment.service_id)
         .single();
 
-      sendAppointmentEmail("confirmacion", payerEmail, payerEmail, {
+      const payerName = payerEmail;
+
+      sendAppointmentEmail("confirmacion", payerEmail, payerName, {
         serviceName: service?.name || "Servicio",
         modality: appointment.modality,
         date: dateStr,
@@ -98,6 +97,8 @@ export async function POST(request: Request) {
         time: timeStr,
         duration: service?.duration_minutes || 60,
       });
+
+      return NextResponse.json({ success: true });
     }
 
     if (mpStatus === "rejected" || mpStatus === "cancelled") {
@@ -105,11 +106,15 @@ export async function POST(request: Request) {
         .from("appointments")
         .update({ payment_status: "failed" })
         .eq("id", appointment.id);
+
+      return NextResponse.json({ success: true, status: "rejected" });
     }
 
-    return NextResponse.json({ received: true });
+    return NextResponse.json({ success: true, status: mpStatus });
   } catch (err) {
-    console.error("Webhook error", err);
-    return NextResponse.json({ received: true });
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Error interno" },
+      { status: 500 },
+    );
   }
 }

@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
     const { data: service, error: serviceError } = await svc
       .from("services")
-      .select("name, duration_minutes, allowed_modalities")
+      .select("name, duration_minutes, allowed_modalities, price_cents")
       .eq("id", service_id)
       .single();
 
@@ -88,7 +88,9 @@ export async function POST(request: Request) {
     const startTime = slot_start;
     const startDate = new Date(startTime);
     const endDate = new Date(startDate.getTime() + service.duration_minutes * 60000);
+    const priceCents = service.price_cents || 0;
 
+    // Crear appointment primero (status pending_payment si tiene precio)
     const { data: appointment, error: insertError } = await svc
       .from("appointments")
       .insert({
@@ -99,9 +101,11 @@ export async function POST(request: Request) {
         end_time: endDate.toISOString(),
         modality,
         notes: notes || null,
-        status: "pending",
+        status: priceCents > 0 ? "pending_payment" : "pending",
+        price_cents: priceCents,
+        payment_status: priceCents > 0 ? "pending_payment" : "pending",
       })
-      .select("id, status, start_time, end_time, modality")
+      .select("id, status, start_time, end_time, modality, price_cents, payment_status")
       .single();
 
     if (insertError) {
@@ -109,30 +113,66 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
-    const dateStr = startDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
-    const timeStr = startDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+    // Crear preferencia MP si el servicio tiene precio
+    let mpInitPoint: string | null = null;
 
-    sendAppointmentEmail("confirmacion", user.email!, user.user_metadata?.full_name || "", {
-      serviceName: service.name,
-      modality,
-      date: dateStr,
-      time: timeStr,
-      duration: service.duration_minutes,
-      notes: notes || null,
-      appointmentId: appointment.id,
-    });
+    if (priceCents > 0) {
+      const { createPaymentPreference } = await import("@/lib/mercadopago");
+      const result = await createPaymentPreference({
+        items: [{
+          title: service.name,
+          quantity: 1,
+          unit_price: priceCents / 100,
+          currency_id: "ARS",
+        }],
+        payerEmail: user.email || "",
+        backUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://anamurat.online"}/consultantes/reservar/confirmacion`,
+        externalReference: JSON.stringify({ userId: user.id, appointmentId: appointment.id }),
+        autoReturn: "approved",
+      });
 
-    notifyAdminNewAppointment({
-      clientName: user.user_metadata?.full_name || user.email || "Consultante",
-      clientEmail: user.email!,
-      serviceName: service.name,
-      modality,
-      date: dateStr,
-      time: timeStr,
-      duration: service.duration_minutes,
-    });
+      if ("error" in result) {
+        console.error("MP preference error", result.error);
+        return NextResponse.json({ error: "Error al crear el pago" }, { status: 500 });
+      }
 
-    return NextResponse.json({ data: appointment }, { status: 201 });
+      mpInitPoint = result.init_point || result.sandbox_init_point || null;
+
+      // Guardar mp_preference_id en el appointment
+      await svc.from("appointments").update({ mp_preference_id: result.id }).eq("id", appointment.id);
+    }
+
+    // Si no requiere pago, enviar emails de confirmación
+    if (priceCents === 0) {
+      const dateStr = startDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
+      const timeStr = startDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+
+      sendAppointmentEmail("confirmacion", user.email!, user.user_metadata?.full_name || "", {
+        serviceName: service.name,
+        modality,
+        date: dateStr,
+        time: timeStr,
+        duration: service.duration_minutes,
+        notes: notes || null,
+        appointmentId: appointment.id,
+      });
+
+      notifyAdminNewAppointment({
+        clientName: user.user_metadata?.full_name || user.email || "Consultante",
+        clientEmail: user.email!,
+        serviceName: service.name,
+        modality,
+        date: dateStr,
+        time: timeStr,
+        duration: service.duration_minutes,
+      });
+    }
+
+    return NextResponse.json({
+      data: appointment,
+      mp_init_point: mpInitPoint,
+      requires_payment: priceCents > 0,
+    }, { status: 201 });
   } catch (err) {
     console.error("POST /api/appointments error", err instanceof Error ? { message: err.message, stack: err.stack } : err);
     return NextResponse.json(

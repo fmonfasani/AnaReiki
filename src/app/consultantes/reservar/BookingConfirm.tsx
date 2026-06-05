@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import type { Slot } from "@/types/appointments";
 
-type Service = { id: string; name: string; duration_minutes: number };
+type Service = { id: string; name: string; duration_minutes: number; price_cents?: number };
 
 type Props = {
   service: Service;
@@ -27,6 +27,9 @@ const endLabel = (s: Slot) => {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 };
 
+const formatPrice = (cents: number) =>
+  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(cents / 100);
+
 export default function BookingConfirm({
   service,
   modality,
@@ -37,6 +40,7 @@ export default function BookingConfirm({
   error,
 }: Props) {
   const [notes, setNotes] = useState("");
+  const hasPrice = (service.price_cents || 0) > 0;
 
   return (
     <div className="space-y-6">
@@ -51,6 +55,16 @@ export default function BookingConfirm({
           <span className="text-sm text-[var(--color-text-light)]">Servicio</span>
           <span className="font-semibold text-[var(--color-text-main)]">{service.name}</span>
         </div>
+
+        {hasPrice && (
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-[var(--color-text-light)]">Precio</span>
+            <span className="font-bold text-lg text-[var(--color-terracotta)]">
+              {formatPrice(service.price_cents!)}
+            </span>
+          </div>
+        )}
+
         <div className="flex justify-between items-center">
           <span className="text-sm text-[var(--color-text-light)]">Modalidad</span>
           <span className="font-medium text-[var(--color-text-main)] capitalize">
@@ -98,13 +112,24 @@ export default function BookingConfirm({
         </div>
       )}
 
+      {hasPrice && (
+        <p className="text-xs text-[var(--color-text-light)] text-center">
+          Al confirmar serás redirigido a Mercado Pago para realizar el pago de forma segura.
+          Tu turno se reservará una vez confirmado el pago.
+        </p>
+      )}
+
       <div className="flex justify-center">
         <button
           onClick={() => onConfirm(notes || undefined)}
           disabled={loading}
           className="px-8 py-3 bg-[var(--color-terracotta)] text-white font-semibold rounded-2xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? "Reservando..." : "Confirmar Reserva"}
+          {loading
+            ? "Reservando..."
+            : hasPrice
+              ? `Pagar y reservar (${formatPrice(service.price_cents!)})`
+              : "Confirmar Reserva"}
         </button>
       </div>
     </div>

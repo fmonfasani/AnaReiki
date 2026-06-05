@@ -9,6 +9,7 @@ type Service = {
   description: string | null;
   duration_minutes: number;
   allowed_modalities: string[] | null;
+  price_cents?: number;
 };
 
 type Props = {
@@ -51,9 +52,20 @@ export default function ServiceSelector({ services, selected, onSelect }: Props)
                   </p>
                 )}
               </div>
-              <span className="text-xs font-medium text-[var(--color-primary-dark)] bg-[var(--color-primary)]/30 px-2 py-1 rounded-full whitespace-nowrap">
-                {service.duration_minutes} min
-              </span>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                {(service.price_cents || 0) > 0 ? (
+                  <span className="text-xs font-bold text-[var(--color-terracotta)] whitespace-nowrap">
+                    ${(service.price_cents! / 100).toLocaleString("es-AR")}
+                  </span>
+                ) : (
+                  <span className="text-xs font-medium text-green-600 whitespace-nowrap">
+                    Gratuito
+                  </span>
+                )}
+                <span className="text-xs font-medium text-[var(--color-primary-dark)] bg-[var(--color-primary)]/30 px-2 py-1 rounded-full whitespace-nowrap">
+                  {service.duration_minutes} min
+                </span>
+              </div>
             </div>
           </button>
         ))}

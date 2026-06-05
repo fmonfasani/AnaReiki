@@ -18,6 +18,7 @@ type Service = {
   description: string | null;
   duration_minutes: number;
   allowed_modalities: string[] | null;
+  price_cents?: number;
 };
 
 const STEPS = ["Servicio", "Modalidad", "Fecha", "Horario", "Confirmar", "Listo"];
@@ -94,6 +95,11 @@ export default function BookingWizard() {
 
       if (!res.ok) {
         setBookingError(json.error || "Error al reservar");
+        return;
+      }
+
+      if (json.requires_payment && json.mp_init_point) {
+        window.location.href = json.mp_init_point;
         return;
       }
 

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
 
 async function checkAdmin(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
@@ -7,8 +8,16 @@ async function checkAdmin(supabase: Awaited<ReturnType<typeof createClient>>, us
     .select("role")
     .eq("id", userId)
     .single();
-
   return profile?.role === "admin" || profile?.role === "owner";
+}
+
+async function isOwner(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .single();
+  return profile?.role === "owner";
 }
 
 export async function PUT(
@@ -30,6 +39,12 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
+    // price_cents solo puede setearlo el owner
+    if (body.price_cents !== undefined && !(await isOwner(supabase, user.id))) {
+      return NextResponse.json({ error: "Solo el owner puede modificar precios" }, { status: 403 });
+    }
+
+    const svc = createServiceClient();
     const updates: Record<string, unknown> = {};
     if (body.name !== undefined) updates.name = body.name;
     if (body.slug !== undefined) updates.slug = body.slug;
@@ -37,12 +52,13 @@ export async function PUT(
     if (body.duration_minutes !== undefined) updates.duration_minutes = body.duration_minutes;
     if (body.allowed_modalities !== undefined) updates.allowed_modalities = body.allowed_modalities;
     if (body.is_active !== undefined) updates.is_active = body.is_active;
+    if (body.price_cents !== undefined) updates.price_cents = body.price_cents;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "No hay campos para actualizar" }, { status: 400 });
     }
 
-    const { data: service, error } = await supabase
+    const { data: service, error } = await svc
       .from("services")
       .update(updates)
       .eq("id", id)

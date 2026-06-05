@@ -4,6 +4,13 @@ function getAccessToken(): string {
   return process.env.MERCADO_PAGO_ACCESS_TOKEN || "";
 }
 
+type PreferenceItem = {
+  title: string;
+  quantity: number;
+  unit_price: number;
+  currency_id?: string;
+};
+
 export async function createPreference(input: {
   planId: string;
   planName: string;
@@ -55,6 +62,60 @@ export async function createPreference(input: {
     }
 
     return { id: data.id, init_point: data.init_point };
+  } catch (err) {
+    return {
+      error:
+        err instanceof Error ? err.message : "Error de conexión con Mercado Pago",
+    };
+  }
+}
+
+export async function createPaymentPreference(input: {
+  items: PreferenceItem[];
+  payerEmail: string;
+  backUrl: string;
+  externalReference: string;
+  autoReturn?: string;
+}): Promise<{ id: string; init_point: string; sandbox_init_point?: string } | { error: string }> {
+  const accessToken = getAccessToken();
+  if (!accessToken) {
+    return { error: "Mercado Pago no configurado" };
+  }
+
+  try {
+    const body: Record<string, unknown> = {
+      items: input.items.map((item) => ({
+        title: item.title,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        currency_id: item.currency_id || "ARS",
+      })),
+      payer: { email: input.payerEmail },
+      back_urls: {
+        success: `${input.backUrl}?status=success`,
+        failure: `${input.backUrl}?status=failure`,
+        pending: `${input.backUrl}?status=pending`,
+      },
+      external_reference: input.externalReference,
+      auto_return: input.autoReturn || "approved",
+    };
+
+    const res = await fetch(`${MP_API_BASE}/checkout/preferences`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      return { error: data.message || "Error al crear preferencia de pago" };
+    }
+
+    return { id: data.id, init_point: data.init_point, sandbox_init_point: data.sandbox_init_point };
   } catch (err) {
     return {
       error:
@@ -204,6 +265,7 @@ export async function getPayment(paymentId: string): Promise<{
   payer: { email: string };
   transaction_amount: number;
   payment_method_id: string;
+  external_reference: string | null;
 } | { error: string }> {
   const accessToken = getAccessToken();
   if (!accessToken) return { error: "No configurado" };
@@ -225,6 +287,7 @@ export async function getPayment(paymentId: string): Promise<{
       payer: { email: data.payer?.email || "" },
       transaction_amount: data.transaction_amount,
       payment_method_id: data.payment_method_id,
+      external_reference: data.external_reference || null,
     };
   } catch (err) {
     return {
