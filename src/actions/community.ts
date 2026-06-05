@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 type ActionResult = { success?: true; error?: string };
 
@@ -84,7 +85,7 @@ export async function closeTopic(topicId: string): Promise<ActionResult> {
   return { success: true };
 }
 
-async function getUserRole(userId: string, supabase: ReturnType<typeof createClient>) {
+async function getUserRole(userId: string, supabase: SupabaseClient) {
   const { data } = await supabase.from("profiles").select("role").eq("id", userId).single();
   return data?.role || null;
 }
