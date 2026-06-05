@@ -42,10 +42,18 @@ export default async function ConsultantesLayout({
 
   const [userIsAdmin, profileResult] = await Promise.all([
     isAdmin(user, supabase),
-    supabase.from("profiles").select("plan_tier").eq("id", user.id).single(),
+    supabase.from("profiles").select("plan_tier, is_premium").eq("id", user.id).single(),
   ]);
 
-  const planTier = profileResult.data?.plan_tier || "prana";
+  let planTier = profileResult.data?.plan_tier || "prana";
+  const isPremium = profileResult.data?.is_premium ?? true;
+
+  // Si plan_tier no es prana pero is_premium es false, algo quedó inconsistente
+  // (ej: cancel_subscription no reseteó plan_tier). Forzar a prana.
+  if (planTier !== "prana" && !isPremium) {
+    planTier = "prana";
+  }
+
   const accessibleModules = PLAN_ACCESS[planTier] || PLAN_ACCESS.prana;
 
   let navItems = NAV_ITEMS.map((item) => ({
