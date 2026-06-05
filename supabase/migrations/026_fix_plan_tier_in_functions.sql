@@ -11,8 +11,7 @@ BEGIN;
 -- 1. Renombrar planes viejos "premium" a "shakti"
 UPDATE public.pricing_plans
 SET slug = REPLACE(slug, 'premium', 'shakti'),
-    name = 'Shakti',
-    updated_at = timezone('utc'::text, now())
+    name = 'Shakti'
 WHERE slug LIKE 'premium%';
 
 -- 2. Fix handle_payment_success: también setear plan_tier

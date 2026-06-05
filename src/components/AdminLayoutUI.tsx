@@ -30,6 +30,7 @@ export default function AdminLayoutUI({
     { name: "Pagos", href: "/admin/pagos", icon: "payments" },
     { name: "Email Marketing", href: "/admin/email-marketing", icon: "mail" },
     { name: "Promos", href: "/admin/promos", icon: "local_offer" },
+    { name: "Frases", href: "/admin/frases", icon: "format_quote" },
   ];
 
   return (

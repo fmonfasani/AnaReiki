@@ -3,10 +3,10 @@ Construir y deployar plataforma SaaS completa de Ana Reiki: landing, CRM terapé
 
 ## Constraints & Preferences
 - UX en español (es-AR).
-- DB migrations numeradas (001→022, próxima 023).
+- DB migrations numeradas (001→029).
 - Sin SDK externo de pagos — MP vía API directa.
 - 3 tiers: Prana (free), Shakti ($99/mes), Ananda ($199/mes).
-- Roles actuales: `owner`, `admin`, `gerente`, `consultante`.
+- Roles: `owner`, `admin`, `gerente`, `consultante`.
 - RLS con `is_admin_user()` (admin+owner) e `is_owner_user()` (solo owner) SECURITY DEFINER.
 - Deploy: VPS Hetzner, Docker + nginx host + Let's Encrypt, `anamurat.online`.
 - OAuth MP para multi-cliente escalable (única app developer, cada cliente autoriza).
@@ -31,6 +31,12 @@ Construir y deployar plataforma SaaS completa de Ana Reiki: landing, CRM terapé
 - **Directorio consultantes mejorado**: Checkboxes para selección múltiple, botón "Copiar emails" al portapapeles, "Exportar CSV", columna de tags y rol visibles.
 - **Email Marketing mejorado**: Filtro por tags en formulario de envío, historial de campañas con dashboard de estadísticas en `/admin/email-marketing`.
 - **Sistema de Promos**: Migration 023 (`promotions`, `promotion_sessions`, `promo_purchases`, `email_campaigns`). Admin UI en `/admin/promos` con CRUD, activar/desactivar, filtro por tiers. Sidebar actualizado.
+- **Comunidad**: Categorías con colores (General=gris, Reiki=púrpura, Meditación=azul, Yoga=ámbar, Experiencias=verde, Consultas=rosa). Consultante puede eliminar posts propios, admin elimina cualquier cosa. Admin puede responder público o privado (mensaje directo). Filtros con color activo/inactivo.
+- **Service pricing + MP payment flow**: Migration 027 (`price_cents` en services, `payment_status`/`mp_preference_id`/`mp_payment_id` en appointments). `POST /api/appointments` crea preferencia MP si tiene precio, devuelve `mp_init_point`. `POST /api/appointments/confirm-payment` verifica pago post-redirect. Webhook MP actualiza turno. BookingWizard redirige a MP. BookingConfirm muestra precio. ServiceSelector muestra precio/gratuito.
+- **PremiumGate refactorizado**: Ahora acepta `requiredTier`/`userTier` en vez de `isPremium` boolean. BibliotecaClient, podcast, clases actualizados.
+- **Layout fallback `is_premium`**: Si `plan_tier !== 'prana'` pero `is_premium === false`, fuerza a `prana`. Migration 026 corrige funciones de pago para actualizar `plan_tier`.
+- **Fix cancel_appointment overload**: Migration 028 — dropea función vieja (2 params) y reemplaza la de 3 params para que retorne `appointments` row y no sea ambigua.
+- **Dashboard Enhancement**: Migration 029 — tablas `oracle_quotes` (20 frases seed), `session_history` (bitácora del consultante), `streak_milestones` (hitos de racha con trigger automático). Admin CRUD en `/admin/frases`. Dashboard muestra oráculo desde DB, hitos de racha (🌱7, 🌿30, 🌳60...), y entradas de bitácora. Evolución agrega tab "Bitácora" con formulario self-journal (título, notas, mood antes/después, privacidad) integrado en línea de tiempo.
 
 ### Resolved (prev. Blocked)
 - ~~**MP OAuth connect**: El endpoint `/api/mercadopago/oauth/link` devuelve error "MP OAuth no configurado".~~ → **Resuelto**. Era del build anterior (commit pre-`809f968`). Verificado: `MP_CLIENT_ID` y `MP_CLIENT_SECRET` seteados, 5 tokens activos en DB, expiración Dic 2026, auth URL generada correctamente. El owner (Ana) ya conectó con éxito.
@@ -44,14 +50,15 @@ Construir y deployar plataforma SaaS completa de Ana Reiki: landing, CRM terapé
 - **Promos**: Tablas `promotions` + `promotion_sessions` + `promo_purchases`. Pago único vía MP preference. Filtro por `allowed_tiers`.
 
 ## Next Steps
-1. Separar DM de Comunidad (tablas + API + migración de datos existentes).
-2. Sistema de Foros (categorías, temas, posts, likes, bookmarks).
-3. Sistema de Comentarios polimórfico (biblioteca, podcast, videos, clases).
-4. Sidebar Admin y Consultante reorganizados.
-5. Agenda reingeniería Fase 5: Admin RuleManager UI.
-6. Agenda reingeniería Fase 6: Cleanup tablas viejas.
-7. User: verificar dominio Resend en Namecheap.
-8. User: testear checkout MP con cuenta diferente.
+1. Debuggear MP OAuth: por qué `/api/mercadopago/oauth/link` falla con vars set en container.
+2. Separar DM de Comunidad (tablas + API + migración de datos existentes).
+3. Sistema de Foros (categorías, temas, posts, likes, bookmarks).
+4. Sistema de Comentarios polimórfico (biblioteca, podcast, videos, clases).
+5. Sidebar Admin y Consultante reorganizados.
+6. Agenda reingeniería Fase 5: Admin RuleManager UI.
+7. Agenda reingeniería Fase 6: Cleanup tablas viejas.
+8. User: verificar dominio Resend en Namecheap.
+9. User: testear checkout MP con cuenta diferente.
 
 ## Deploy — VPS Hetzner
 
