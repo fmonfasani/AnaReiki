@@ -73,7 +73,7 @@ export default function DatePicker({ modality, serviceId, selected, onSelect }: 
           modifiersStyles={{
             available: {
               backgroundColor: "var(--color-primary)",
-              color: "var(--color-text-main)",
+              color: "#fff",
               fontWeight: "bold",
               borderRadius: "50%",
             },
@@ -81,6 +81,8 @@ export default function DatePicker({ modality, serviceId, selected, onSelect }: 
           styles={{
             caption: { color: "var(--color-text-main)", fontWeight: "bold" },
             head_cell: { color: "var(--color-text-light)", fontSize: "0.8rem" },
+            day: { color: "var(--color-text-light)" },
+            day_disabled: { color: "#d1d5db", cursor: "not-allowed", opacity: 1 },
           }}
         />
       </div>
