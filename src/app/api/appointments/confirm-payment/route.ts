@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     if (appointmentId) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, client_id, payment_status, status")
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, client_id, payment_status, status, mp_payment_id")
         .eq("id", appointmentId)
         .single();
       appointment = data;
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     if (!appointment && payment_id) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, client_id, payment_status, status")
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, client_id, payment_status, status, mp_payment_id")
         .eq("mp_payment_id", String(payment_id))
         .maybeSingle();
       appointment = data;
