@@ -14,12 +14,17 @@ export default function ConfirmacionPage() {
   useEffect(() => {
     const mpStatus = searchParams.get("status");
     const paymentId = searchParams.get("payment_id");
+    const externalRef = searchParams.get("external_reference");
+    const collectionId = searchParams.get("collection_id");
 
-    if (mpStatus === "success" && paymentId) {
+    if (mpStatus === "success" && (paymentId || collectionId)) {
       fetch("/api/appointments/confirm-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ payment_id: paymentId }),
+        body: JSON.stringify({
+          payment_id: paymentId || collectionId,
+          external_reference: externalRef,
+        }),
       })
         .then((res) => res.json())
         .then((json) => {

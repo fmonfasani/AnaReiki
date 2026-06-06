@@ -5,27 +5,32 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const { payment_id } = await request.json();
-    if (!payment_id) {
-      return NextResponse.json({ error: "payment_id requerido" }, { status: 400 });
-    }
+    const body = await request.json();
+    const { payment_id, appointment_id, external_reference } = body;
 
-    const paymentResult = await getPayment(String(payment_id));
-    if ("error" in paymentResult) {
-      return NextResponse.json({ error: paymentResult.error }, { status: 500 });
-    }
+    let appointmentId = appointment_id || null;
 
-    const mpStatus = paymentResult.status;
-    const externalRef = paymentResult.external_reference;
-    const payerEmail = paymentResult.payer.email;
-
-    let appointmentId: string | null = null;
-    if (externalRef) {
+    if (!appointmentId && external_reference) {
       try {
-        const parsed = JSON.parse(externalRef);
+        const parsed = JSON.parse(external_reference);
         appointmentId = parsed.appointmentId || null;
       } catch {
-        appointmentId = externalRef;
+        appointmentId = external_reference;
+      }
+    }
+
+    if (!appointmentId && payment_id) {
+      const paymentResult = await getPayment(String(payment_id));
+      if (!("error" in paymentResult)) {
+        const extRef = paymentResult.external_reference;
+        if (extRef) {
+          try {
+            const parsed = JSON.parse(extRef);
+            appointmentId = parsed.appointmentId || null;
+          } catch {
+            appointmentId = extRef;
+          }
+        }
       }
     }
 
@@ -35,20 +40,18 @@ export async function POST(request: Request) {
     if (appointmentId) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, client_id")
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, client_id, payment_status, status")
         .eq("id", appointmentId)
         .single();
       appointment = data;
     }
 
-    if (!appointment) {
+    if (!appointment && payment_id) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, client_id")
-        .eq("payment_status", "pending_payment")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, client_id, payment_status, status")
+        .eq("mp_payment_id", String(payment_id))
+        .maybeSingle();
       appointment = data;
     }
 
@@ -56,61 +59,59 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Turno no encontrado" }, { status: 404 });
     }
 
-    if (mpStatus === "approved") {
-      await svc
-        .from("appointments")
-        .update({
-          status: "pending",
-          payment_status: "paid",
-          mp_payment_id: String(payment_id),
-        })
-        .eq("id", appointment.id);
-
-      const startDate = new Date(appointment.start_time);
-      const dateStr = startDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
-      const timeStr = startDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
-
-      const { data: service } = await svc
-        .from("services")
-        .select("name, duration_minutes")
-        .eq("id", appointment.service_id)
-        .single();
-
-      const payerName = payerEmail;
-
-      sendAppointmentEmail("confirmacion", payerEmail, payerName, {
-        serviceName: service?.name || "Servicio",
-        modality: appointment.modality,
-        date: dateStr,
-        time: timeStr,
-        duration: service?.duration_minutes || 60,
-        notes: appointment.notes,
-        appointmentId: appointment.id,
-      });
-
-      notifyAdminNewAppointment({
-        clientName: payerEmail,
-        clientEmail: payerEmail,
-        serviceName: service?.name || "Servicio",
-        modality: appointment.modality,
-        date: dateStr,
-        time: timeStr,
-        duration: service?.duration_minutes || 60,
-      });
-
-      return NextResponse.json({ success: true });
+    if (appointment.payment_status === "paid") {
+      return NextResponse.json({ success: true, status: "already_paid" });
     }
 
-    if (mpStatus === "rejected" || mpStatus === "cancelled") {
-      await svc
-        .from("appointments")
-        .update({ payment_status: "failed" })
-        .eq("id", appointment.id);
+    await svc
+      .from("appointments")
+      .update({
+        status: "pending",
+        payment_status: "paid",
+        mp_payment_id: payment_id ? String(payment_id) : appointment.mp_payment_id,
+      })
+      .eq("id", appointment.id);
 
-      return NextResponse.json({ success: true, status: "rejected" });
-    }
+    const startDate = new Date(appointment.start_time);
+    const dateStr = startDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
+    const timeStr = startDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
 
-    return NextResponse.json({ success: true, status: mpStatus });
+    const { data: service } = await svc
+      .from("services")
+      .select("name, duration_minutes")
+      .eq("id", appointment.service_id)
+      .single();
+
+    const { data: profile } = await svc
+      .from("profiles")
+      .select("email, full_name")
+      .eq("id", appointment.client_id)
+      .single();
+
+    const payerEmail = profile?.email || "";
+    const payerName = profile?.full_name || payerEmail;
+
+    sendAppointmentEmail("confirmacion", payerEmail, payerName, {
+      serviceName: service?.name || "Servicio",
+      modality: appointment.modality,
+      date: dateStr,
+      time: timeStr,
+      duration: service?.duration_minutes || 60,
+      notes: appointment.notes,
+      appointmentId: appointment.id,
+    });
+
+    notifyAdminNewAppointment({
+      clientName: payerName,
+      clientEmail: payerEmail,
+      serviceName: service?.name || "Servicio",
+      modality: appointment.modality,
+      date: dateStr,
+      time: timeStr,
+      duration: service?.duration_minutes || 60,
+    });
+
+    return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Error interno" },
