@@ -1,6 +1,21 @@
 const MP_API_BASE = "https://api.mercadopago.com";
 
-function getAccessToken(): string {
+let cachedOauthToken: string | null = null;
+
+async function getAccessToken(): Promise<string> {
+  if (cachedOauthToken) return cachedOauthToken;
+
+  try {
+    const { getMpCredentials } = await import("@/lib/mercadopago-oauth");
+    const creds = await getMpCredentials();
+    if (creds?.access_token) {
+      cachedOauthToken = creds.access_token;
+      return creds.access_token;
+    }
+  } catch {
+    // Fallback a env var si OAuth no está disponible
+  }
+
   return process.env.MERCADO_PAGO_ACCESS_TOKEN || "";
 }
 
@@ -21,7 +36,7 @@ export async function createPreference(input: {
   payerEmail: string;
   externalReference: string;
 }): Promise<{ id: string; init_point: string } | { error: string }> {
-  const accessToken = getAccessToken();
+  const accessToken = await getAccessToken();
   if (!accessToken) {
     return { error: "Mercado Pago no configurado" };
   }
@@ -78,7 +93,7 @@ export async function createPaymentPreference(input: {
   externalReference: string;
   autoReturn?: string;
 }): Promise<{ id: string; init_point: string; sandbox_init_point?: string } | { error: string }> {
-  const accessToken = getAccessToken();
+  const accessToken = await getAccessToken();
   if (!accessToken) {
     return { error: "Mercado Pago no configurado" };
   }
@@ -136,7 +151,7 @@ export async function createPreapproval(input: {
   externalReference: string;
   backUrl: string;
 }): Promise<{ id: string; init_point: string } | { error: string }> {
-  const accessToken = getAccessToken();
+  const accessToken = await getAccessToken();
   if (!accessToken) return { error: "Mercado Pago no configurado" };
 
   if (!input.payerEmail) {
@@ -209,7 +224,7 @@ export async function getPreapproval(preapprovalId: string): Promise<{
     frequency_type: string;
   };
 } | { error: string }> {
-  const accessToken = getAccessToken();
+  const accessToken = await getAccessToken();
   if (!accessToken) return { error: "No configurado" };
 
   try {
@@ -234,7 +249,7 @@ export async function getPreapproval(preapprovalId: string): Promise<{
 export async function cancelPreapproval(
   preapprovalId: string,
 ): Promise<{ success: true } | { error: string }> {
-  const accessToken = getAccessToken();
+  const accessToken = await getAccessToken();
   if (!accessToken) return { error: "Mercado Pago no configurado" };
 
   try {
@@ -269,7 +284,7 @@ export async function getPayment(paymentId: string): Promise<{
   payment_method_id: string;
   external_reference: string | null;
 } | { error: string }> {
-  const accessToken = getAccessToken();
+  const accessToken = await getAccessToken();
   if (!accessToken) return { error: "No configurado" };
 
   try {
