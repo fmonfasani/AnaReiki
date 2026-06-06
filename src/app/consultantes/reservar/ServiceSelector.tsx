@@ -9,7 +9,8 @@ type Service = {
   description: string | null;
   duration_minutes: number;
   allowed_modalities: string[] | null;
-  price_cents?: number;
+  price_cents_online?: number;
+  price_cents_presencial?: number;
 };
 
 type Props = {
@@ -53,10 +54,19 @@ export default function ServiceSelector({ services, selected, onSelect }: Props)
                 )}
               </div>
               <div className="flex flex-col items-end gap-1 shrink-0">
-                {(service.price_cents || 0) > 0 ? (
-                  <span className="text-xs font-bold text-[var(--color-terracotta)] whitespace-nowrap">
-                    ${(service.price_cents! / 100).toLocaleString("es-AR")}
-                  </span>
+                {(service.price_cents_online || service.price_cents_presencial || 0) > 0 ? (
+                  <div className="text-right">
+                    {service.price_cents_online ? (
+                      <span className="text-xs font-bold text-[var(--color-terracotta)] whitespace-nowrap block">
+                        Online: ${(service.price_cents_online! / 100).toLocaleString("es-AR")}
+                      </span>
+                    ) : null}
+                    {service.price_cents_presencial ? (
+                      <span className="text-xs font-bold text-[var(--color-terracotta)] whitespace-nowrap block">
+                        Presencial: ${(service.price_cents_presencial! / 100).toLocaleString("es-AR")}
+                      </span>
+                    ) : null}
+                  </div>
                 ) : (
                   <span className="text-xs font-medium text-green-600 whitespace-nowrap">
                     Gratuito

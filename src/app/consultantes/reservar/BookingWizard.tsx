@@ -18,7 +18,8 @@ type Service = {
   description: string | null;
   duration_minutes: number;
   allowed_modalities: string[] | null;
-  price_cents?: number;
+  price_cents_online?: number;
+  price_cents_presencial?: number;
 };
 
 const STEPS = ["Servicio", "Modalidad", "Fecha", "Horario", "Confirmar", "Listo"];

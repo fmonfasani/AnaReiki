@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
     const { data: service, error: serviceError } = await svc
       .from("services")
-      .select("name, duration_minutes, allowed_modalities, price_cents")
+      .select("name, duration_minutes, allowed_modalities, price_cents_online, price_cents_presencial")
       .eq("id", service_id)
       .single();
 
@@ -88,7 +88,9 @@ export async function POST(request: Request) {
     const startTime = slot_start;
     const startDate = new Date(startTime);
     const endDate = new Date(startDate.getTime() + service.duration_minutes * 60000);
-    const priceCents = service.price_cents || 0;
+    const priceCents = modality === "online"
+      ? (service.price_cents_online || 0)
+      : (service.price_cents_presencial || 0);
 
     // Crear appointment primero (status pending_payment si tiene precio)
     const { data: appointment, error: insertError } = await svc

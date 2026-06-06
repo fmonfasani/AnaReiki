@@ -3,7 +3,7 @@ Construir y deployar plataforma SaaS completa de Ana Reiki: landing, CRM terapé
 
 ## Constraints & Preferences
 - UX en español (es-AR).
-- DB migrations numeradas (001→029).
+- DB migrations numeradas (001→031).
 - Sin SDK externo de pagos — MP vía API directa.
 - 3 tiers: Prana (free), Shakti ($99/mes), Ananda ($199/mes).
 - Roles: `owner`, `admin`, `gerente`, `consultante`.
@@ -37,6 +37,8 @@ Construir y deployar plataforma SaaS completa de Ana Reiki: landing, CRM terapé
 - **Layout fallback `is_premium`**: Si `plan_tier !== 'prana'` pero `is_premium === false`, fuerza a `prana`. Migration 026 corrige funciones de pago para actualizar `plan_tier`.
 - **Fix cancel_appointment overload**: Migration 028 — dropea función vieja (2 params) y reemplaza la de 3 params para que retorne `appointments` row y no sea ambigua.
 - **Dashboard Enhancement**: Migration 029 — tablas `oracle_quotes` (20 frases seed), `session_history` (bitácora del consultante), `streak_milestones` (hitos de racha con trigger automático). Admin CRUD en `/admin/frases`. Dashboard muestra oráculo desde DB, hitos de racha (🌱7, 🌿30, 🌳60...), y entradas de bitácora. Evolución agrega tab "Bitácora" con formulario self-journal (título, notas, mood antes/después, privacidad) integrado en línea de tiempo.
+- **Migration 030** (`complete_payment_fix`): Confirm-payment endpoint refactorizado — usa `external_reference` de URL, no depende de `getPayment()` contra API MP. OAuth fallback con `getAccessToken()` async.
+- **Migration 031** (`services_pricing_v2`): `services` ahora tiene `price_cents_online` y `price_cents_presencial` independientes. `availability_rules_v2` cambia de `service_id` único a `service_ids uuid[]` — permite múltiples servicios por regla. `get_available_slots_v2()` actualizada para emitir un slot por servicio del array. Admin servicios: precios online/presencial editables por Owner, duración editable por Admin/Owner. RuleManager: checkboxes multi-servicio con select all/deselect all.
 
 ### Resolved (prev. Blocked)
 - ~~**MP OAuth connect**: El endpoint `/api/mercadopago/oauth/link` devuelve error "MP OAuth no configurado".~~ → **Resuelto**. Era del build anterior (commit pre-`809f968`). Verificado: `MP_CLIENT_ID` y `MP_CLIENT_SECRET` seteados, 5 tokens activos en DB, expiración Dic 2026, auth URL generada correctamente. El owner (Ana) ya conectó con éxito.
@@ -55,10 +57,9 @@ Construir y deployar plataforma SaaS completa de Ana Reiki: landing, CRM terapé
 3. Sistema de Foros (categorías, temas, posts, likes, bookmarks).
 4. Sistema de Comentarios polimórfico (biblioteca, podcast, videos, clases).
 5. Sidebar Admin y Consultante reorganizados.
-6. Agenda reingeniería Fase 5: Admin RuleManager UI.
-7. Agenda reingeniería Fase 6: Cleanup tablas viejas.
-8. User: verificar dominio Resend en Namecheap.
-9. User: testear checkout MP con cuenta diferente.
+6. Agenda reingeniería Fase 6: Cleanup tablas viejas (availability_slots, availability_rules v1, availability_exceptions, availability, columna service_id obsoleta).
+7. User: verificar dominio Resend en Namecheap.
+8. User: testear checkout MP con cuenta diferente.
 
 ## Deploy — VPS Hetzner
 

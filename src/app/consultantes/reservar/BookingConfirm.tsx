@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import type { Slot } from "@/types/appointments";
 
-type Service = { id: string; name: string; duration_minutes: number; price_cents?: number };
+type Service = { id: string; name: string; duration_minutes: number; price_cents_online?: number; price_cents_presencial?: number };
 
 type Props = {
   service: Service;
@@ -40,7 +40,8 @@ export default function BookingConfirm({
   error,
 }: Props) {
   const [notes, setNotes] = useState("");
-  const hasPrice = (service.price_cents || 0) > 0;
+  const priceCents = modality === "online" ? (service.price_cents_online || 0) : (service.price_cents_presencial || 0);
+  const hasPrice = priceCents > 0;
 
   return (
     <div className="space-y-6">
@@ -60,7 +61,7 @@ export default function BookingConfirm({
           <div className="flex justify-between items-center">
             <span className="text-sm text-[var(--color-text-light)]">Precio</span>
             <span className="font-bold text-lg text-[var(--color-terracotta)]">
-              {formatPrice(service.price_cents!)}
+              {formatPrice(priceCents)}
             </span>
           </div>
         )}
@@ -128,7 +129,7 @@ export default function BookingConfirm({
           {loading
             ? "Reservando..."
             : hasPrice
-              ? `Pagar y reservar (${formatPrice(service.price_cents!)})`
+              ? `Pagar y reservar (${formatPrice(priceCents)})`
               : "Confirmar Reserva"}
         </button>
       </div>

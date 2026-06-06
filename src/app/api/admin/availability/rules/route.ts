@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 
     let query = serviceSb
       .from("availability_rules_v2")
-      .select("*, services(id, name, slug)")
+      .select("*")
       .order("day_of_week")
       .order("start_time");
 
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
       max_participants,
       max_online,
       max_presencial,
-      service_id,
+      service_ids,
       is_active,
     } = body;
 
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
         max_participants: max_participants ?? 1,
         max_online: max_online ?? null,
         max_presencial: max_presencial ?? null,
-        service_id: service_id || null,
+        service_ids: service_ids || [],
         is_active: is_active ?? true,
         created_by: user.id,
       })

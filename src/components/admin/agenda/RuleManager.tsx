@@ -14,9 +14,8 @@ type Rule = {
   max_participants: number;
   max_online: number | null;
   max_presencial: number | null;
-  service_id: string | null;
+  service_ids: string[];
   is_active: boolean;
-  services?: { id: string; name: string; slug: string } | null;
   created_at: string;
 };
 
@@ -38,7 +37,7 @@ const emptyForm = {
   modality: "both",
   session_type: "individual",
   max_participants: 1,
-  service_id: "",
+  service_ids: [] as string[],
   is_active: true,
 };
 
@@ -85,7 +84,7 @@ export default function RuleManager() {
       modality: rule.modality,
       session_type: rule.session_type,
       max_participants: rule.max_participants,
-      service_id: rule.service_id || "",
+      service_ids: rule.service_ids || [],
       is_active: rule.is_active,
     });
     setEditingId(rule.id);
@@ -105,7 +104,7 @@ export default function RuleManager() {
       modality: form.modality,
       session_type: form.session_type,
       max_participants: form.max_participants || 1,
-      service_id: form.service_id || null,
+      service_ids: form.service_ids,
       is_active: form.is_active,
     };
 
@@ -233,14 +232,32 @@ export default function RuleManager() {
               </div>
             )}
             <div>
-              <label className="block text-sm text-gray-500 mb-1">Servicio (opcional)</label>
-              <select value={form.service_id} onChange={(e) => setForm({ ...form, service_id: e.target.value })}
-                className="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
-                <option value="">Todos los servicios</option>
+              <label className="block text-sm text-gray-500 mb-1">Servicios (opcional)</label>
+              <div className="space-y-1.5 max-h-48 overflow-y-auto p-2 border border-gray-200 rounded-xl">
                 {services.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
+                  <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 px-1 py-0.5 rounded">
+                    <input type="checkbox" checked={form.service_ids.includes(s.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setForm({ ...form, service_ids: [...form.service_ids, s.id] });
+                        } else {
+                          setForm({ ...form, service_ids: form.service_ids.filter((id) => id !== s.id) });
+                        }
+                      }}
+                      className="rounded border-gray-300 text-pink-600" />
+                    {s.name}
+                  </label>
                 ))}
-              </select>
+                {services.length > 0 && (
+                  <div className="flex gap-2 pt-1 border-t border-gray-100 mt-1">
+                    <button type="button" onClick={() => setForm({ ...form, service_ids: services.map((s) => s.id) })}
+                      className="text-xs text-pink-600 hover:text-pink-700 font-medium">Seleccionar todos</button>
+                    <button type="button" onClick={() => setForm({ ...form, service_ids: [] })}
+                      className="text-xs text-gray-400 hover:text-gray-600 font-medium">Deseleccionar todos</button>
+                  </div>
+                )}
+              </div>
+              {form.service_ids.length === 0 && <p className="text-xs text-gray-400 mt-1">Si no seleccionás ninguno, la regla aplica a todos los servicios.</p>}
             </div>
             <div>
               <label className="block text-sm text-gray-500 mb-1">Desde</label>
@@ -346,8 +363,18 @@ export default function RuleManager() {
                             <div className="flex flex-wrap gap-1 mb-1">
                               <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px]">{rule.duration_minutes}min</span>
                               <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px]">{rule.modality}</span>
-                              {rule.services?.name && (
-                                <span className="px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded text-[10px]">{rule.services.name}</span>
+                              {rule.service_ids && rule.service_ids.length > 0 ? (
+                                rule.service_ids.slice(0, 2).map((sid) => {
+                                  const svc = services.find((s) => s.id === sid);
+                                  return svc ? (
+                                    <span key={sid} className="px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded text-[10px]">{svc.name}</span>
+                                  ) : null;
+                                })
+                              ) : (
+                                <span className="px-1.5 py-0.5 bg-gray-100 text-gray-400 rounded text-[10px]">Todos</span>
+                              )}
+                              {rule.service_ids && rule.service_ids.length > 2 && (
+                                <span className="text-[10px] text-gray-400">+{rule.service_ids.length - 2}</span>
                               )}
                             </div>
                             <div className="flex items-center justify-between">
@@ -384,8 +411,15 @@ export default function RuleManager() {
                         <span className="text-gray-600">{rule.start_time.slice(0, 5)} - {rule.end_time.slice(0, 5)}</span>
                         <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">{rule.duration_minutes}min</span>
                         <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs">{rule.modality}</span>
-                        {rule.services?.name && (
-                          <span className="text-gray-400 text-xs">{rule.services.name}</span>
+                        {rule.service_ids && rule.service_ids.length > 0 ? (
+                          rule.service_ids.map((sid) => {
+                            const svc = services.find((s) => s.id === sid);
+                            return svc ? (
+                              <span key={sid} className="px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded text-xs">{svc.name}</span>
+                            ) : null;
+                          })
+                        ) : (
+                          <span className="text-gray-400 text-xs">Todos los servicios</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2">

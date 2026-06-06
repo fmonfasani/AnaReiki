@@ -46,6 +46,15 @@ export async function GET(request: Request) {
     if (serviceId && Array.isArray(slots)) {
       result = slots.filter((s: { service_id: string | null }) => !s.service_id || s.service_id === serviceId);
     }
+    if (Array.isArray(result)) {
+      const seen = new Set<string>();
+      result = result.filter((s: { slot_start: string; service_id: string | null }) => {
+        const key = `${s.slot_start}-${s.service_id || "null"}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
     return NextResponse.json({ data: result });
   } catch (err) {
     console.error("Availability API error", err instanceof Error ? { message: err.message, stack: err.stack } : err);

@@ -39,9 +39,16 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
-    // price_cents solo puede setearlo el owner
-    if (body.price_cents !== undefined && !(await isOwner(supabase, user.id))) {
+    const isOwnerUser = await isOwner(supabase, user.id);
+
+    // price_cents_online y price_cents_presencial solo puede setearlos el owner
+    if ((body.price_cents_online !== undefined || body.price_cents_presencial !== undefined) && !isOwnerUser) {
       return NextResponse.json({ error: "Solo el owner puede modificar precios" }, { status: 403 });
+    }
+
+    // duration_minutes puede modificarlo admin/owner (no gerente)
+    if (body.duration_minutes !== undefined && !(await checkAdmin(supabase, user.id))) {
+      return NextResponse.json({ error: "No autorizado para modificar duración" }, { status: 403 });
     }
 
     const svc = createServiceClient();
@@ -52,7 +59,8 @@ export async function PUT(
     if (body.duration_minutes !== undefined) updates.duration_minutes = body.duration_minutes;
     if (body.allowed_modalities !== undefined) updates.allowed_modalities = body.allowed_modalities;
     if (body.is_active !== undefined) updates.is_active = body.is_active;
-    if (body.price_cents !== undefined) updates.price_cents = body.price_cents;
+    if (body.price_cents_online !== undefined) updates.price_cents_online = body.price_cents_online;
+    if (body.price_cents_presencial !== undefined) updates.price_cents_presencial = body.price_cents_presencial;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "No hay campos para actualizar" }, { status: 400 });

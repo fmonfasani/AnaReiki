@@ -26,7 +26,7 @@ export async function PUT(
       "day_of_week", "specific_date", "start_time", "end_time",
       "duration_minutes", "modality", "session_type",
       "max_participants", "max_online", "max_presencial",
-      "service_id", "is_active",
+      "service_ids", "is_active",
     ] as const;
 
     const updates: Record<string, unknown> = {};
