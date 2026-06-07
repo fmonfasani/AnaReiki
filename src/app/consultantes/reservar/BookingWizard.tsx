@@ -22,11 +22,20 @@ type Service = {
   price_cents_presencial?: number;
 };
 
+type Promo = {
+  id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  service_ids: string[];
+};
+
 const STEPS = ["Servicio", "Modalidad", "Fecha", "Horario", "Confirmar", "Listo"];
 
 export default function BookingWizard() {
   const [step, setStep] = useState(0);
   const [services, setServices] = useState<Service[]>([]);
+  const [promos, setPromos] = useState<Promo[]>([]);
   const [loadingServices, setLoadingServices] = useState(true);
 
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -44,6 +53,7 @@ export default function BookingWizard() {
         const res = await fetch("/api/services");
         const json = await res.json();
         setServices(json.data || []);
+        setPromos(json.promos || []);
       } catch {
         setServices([]);
       } finally {
@@ -177,6 +187,7 @@ export default function BookingWizard() {
         {step === 0 && (
           <ServiceSelector
             services={services}
+            promos={promos}
             selected={selectedService}
             onSelect={handleServiceSelect}
           />

@@ -18,6 +18,14 @@ type Service = {
   price_cents_presencial?: number;
 };
 
+type Promo = {
+  id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  service_ids: string[];
+};
+
 const SIMPLE_STEPS = ["Servicio", "Modalidad", "Fecha", "Horario", "Confirmar"];
 
 const formatPrice = (cents: number) =>
@@ -26,6 +34,7 @@ const formatPrice = (cents: number) =>
 export default function SimpleBookingWizard() {
   const [step, setStep] = useState(0);
   const [services, setServices] = useState<Service[]>([]);
+  const [promos, setPromos] = useState<Promo[]>([]);
   const [loadingServices, setLoadingServices] = useState(true);
 
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -36,6 +45,7 @@ export default function SimpleBookingWizard() {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [appointmentId, setAppointmentId] = useState<string | null>(null);
+  const [expandedPromo, setExpandedPromo] = useState<string | null>(null);
 
   const [availableDates, setAvailableDates] = useState<Set<string>>(new Set());
   const [loadingDates, setLoadingDates] = useState(false);
@@ -51,6 +61,7 @@ export default function SimpleBookingWizard() {
         const json = await res.json();
         const svcs = json.data || [];
         setServices(svcs);
+        setPromos(json.promos || []);
         if (svcs.length === 1) {
           setSelectedService(svcs[0]);
           setStep(1);
@@ -231,7 +242,39 @@ export default function SimpleBookingWizard() {
         <div className="space-y-4">
           <p className="text-3xl font-bold text-gray-800 text-center mb-6">¿Qué servicio querés?</p>
           <div className="space-y-3">
-            {services.map((s) => (
+            {promos.map((promo) => (
+              <React.Fragment key={promo.id}>
+                <button onClick={() => setExpandedPromo(expandedPromo === promo.id ? null : promo.id)}
+                  className={`w-full text-left p-5 rounded-2xl border-2 transition-all ${
+                    expandedPromo === promo.id
+                      ? "border-amber-400 bg-amber-50 shadow-md"
+                      : "border-amber-200 bg-amber-50/50 hover:border-amber-400 hover:shadow-md"
+                  }`}>
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-amber-500 text-2xl">local_offer</span>
+                    <div className="flex-1">
+                      <span className="text-xl font-semibold text-gray-800">{promo.name}</span>
+                      <span className="block text-base font-normal text-gray-400 mt-0.5">{promo.service_ids.length} servicios</span>
+                    </div>
+                    <span className={`material-symbols-outlined text-amber-400 transition-transform ${
+                      expandedPromo === promo.id ? "rotate-180" : ""
+                    }`}>expand_more</span>
+                  </div>
+                </button>
+                {expandedPromo === promo.id && promo.service_ids.map((sid) => {
+                  const svc = services.find((s) => s.id === sid);
+                  if (!svc) return null;
+                  return (
+                    <button key={svc.id} onClick={() => handleServiceSelect(svc)}
+                      className="w-full text-left p-5 rounded-2xl border-2 border-gray-100 bg-white text-lg font-semibold text-gray-800 hover:border-[var(--color-primary-dark)] hover:shadow-md transition-all ml-4 active:scale-[0.98]">
+                      {svc.name}
+                      <span className="block text-base font-normal text-gray-400 mt-1">{svc.duration_minutes} min</span>
+                    </button>
+                  );
+                })}
+              </React.Fragment>
+            ))}
+            {services.filter((s) => !promos.some((p) => p.service_ids.includes(s.id))).map((s) => (
               <button key={s.id} onClick={() => handleServiceSelect(s)}
                 className="w-full text-left p-6 rounded-2xl border-2 border-gray-100 bg-white text-xl font-semibold text-gray-800 hover:border-[var(--color-primary-dark)] hover:shadow-md transition-all active:scale-[0.98]">
                 {s.name}
