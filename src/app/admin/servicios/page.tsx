@@ -16,12 +16,21 @@ type Service = {
   created_at: string;
 };
 
+type Promo = {
+  id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  service_ids: string[];
+};
+
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(cents / 100);
 }
 
 export default function ServiciosPage() {
   const [services, setServices] = useState<Service[]>([]);
+  const [promos, setPromos] = useState<Promo[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [editingDuration, setEditingDuration] = useState<string | null>(null);
@@ -35,9 +44,14 @@ export default function ServiciosPage() {
 
   const fetchServices = async () => {
     setLoading(true);
-    const res = await fetch("/api/admin/services");
-    const json = await res.json();
-    if (json.data) setServices(json.data);
+    const [svcRes, promosRes] = await Promise.all([
+      fetch("/api/admin/services"),
+      fetch("/api/admin/promos"),
+    ]);
+    const svcJson = await svcRes.json();
+    if (svcJson.data) setServices(svcJson.data);
+    const promosJson = await promosRes.json();
+    if (promosJson.data) setPromos(promosJson.data.filter((p: Promo) => p.service_ids?.length > 0));
     setLoading(false);
   };
 
@@ -117,6 +131,142 @@ export default function ServiciosPage() {
   const isOwner = userRole === "owner";
   const isAdmin = isOwner || userRole === "admin";
 
+  const serviceIdsInPromos = new Set(promos.flatMap((p) => p.service_ids));
+  const standaloneServices = services.filter((s) => !serviceIdsInPromos.has(s.id));
+
+  function ServiceRow({ s, isChild }: { s: Service; isChild?: boolean }) {
+    return (
+      <tr className="hover:bg-gray-50/50 transition-colors">
+        <td className={`px-6 py-4 ${isChild ? "pl-12" : ""}`}>
+          <div className="flex items-center gap-2">
+            {isChild && <span className="text-gray-300 material-symbols-outlined text-sm">subdirectory_arrow_right</span>}
+            <div>
+              <p className="font-medium text-gray-900">{s.name}</p>
+              {s.description && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{s.description}</p>}
+            </div>
+          </div>
+        </td>
+        <td className="px-6 py-4 text-sm text-gray-500">
+          {editingDuration === s.id ? (
+            <div className="flex items-center gap-1">
+              <input type="number" min={15} step={15} value={editDuration}
+                onChange={(e) => setEditDuration(e.target.value)}
+                className="w-16 border border-gray-300 rounded px-1 py-0.5 text-sm text-center" autoFocus />
+              <button onClick={() => handleSaveDuration(s.id)} disabled={saving}
+                className="text-xs font-semibold px-1.5 py-0.5 bg-pink-600 text-white rounded hover:bg-pink-700">OK</button>
+              <button onClick={() => setEditingDuration(null)} className="text-xs text-gray-400">&times;</button>
+            </div>
+          ) : (
+            <span className="flex items-center gap-1">
+              {s.duration_minutes} min
+              {isAdmin && (
+                <button onClick={() => { setEditingDuration(s.id); setEditDuration(String(s.duration_minutes)); }}
+                  className="text-gray-300 hover:text-pink-600 transition-colors">
+                  <span className="material-symbols-outlined text-sm">edit</span>
+                </button>
+              )}
+            </span>
+          )}
+        </td>
+        <td className="px-6 py-4">
+          {editingPrice === s.id ? (
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-gray-400">$</span>
+              <input type="number" step="0.01" value={editOnline}
+                onChange={(e) => setEditOnline(e.target.value)}
+                className="w-20 border border-gray-300 rounded px-1 py-0.5 text-sm" />
+            </div>
+          ) : (
+            <span className="text-sm font-semibold text-gray-900">
+              {s.price_cents_online > 0 ? formatPrice(s.price_cents_online) : <span className="text-gray-300 font-normal">&mdash;</span>}
+            </span>
+          )}
+        </td>
+        <td className="px-6 py-4">
+          {editingPrice === s.id ? (
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-gray-400">$</span>
+              <input type="number" step="0.01" value={editPresencial}
+                onChange={(e) => setEditPresencial(e.target.value)}
+                className="w-20 border border-gray-300 rounded px-1 py-0.5 text-sm" />
+              <button onClick={() => handleSavePrices(s.id)} disabled={saving}
+                className="text-xs font-semibold px-2 py-1 bg-pink-600 text-white rounded hover:bg-pink-700 disabled:bg-gray-300">
+                {saving ? "..." : "OK"}
+              </button>
+              <button onClick={() => setEditingPrice(null)}
+                className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
+            </div>
+          ) : (
+            <span className="text-sm font-semibold text-gray-900">
+              {s.price_cents_presencial > 0 ? formatPrice(s.price_cents_presencial) : <span className="text-gray-300 font-normal">&mdash;</span>}
+            </span>
+          )}
+        </td>
+        <td className="px-6 py-4">
+          {editingDeposit === s.id ? (
+            <div className="flex items-center gap-1">
+              <input type="number" min={0} max={100} value={editDeposit}
+                onChange={(e) => setEditDeposit(e.target.value)}
+                className="w-14 border border-gray-300 rounded px-1 py-0.5 text-sm text-center" autoFocus />
+              <span className="text-xs text-gray-400">%</span>
+              <button onClick={() => handleSaveDeposit(s.id)} disabled={saving}
+                className="text-xs font-semibold px-1.5 py-0.5 bg-pink-600 text-white rounded hover:bg-pink-700">OK</button>
+              <button onClick={() => setEditingDeposit(null)} className="text-xs text-gray-400">&times;</button>
+            </div>
+          ) : (
+            <span className="flex items-center gap-1 text-sm text-gray-700">
+              {s.deposit_percentage > 0 ? `${s.deposit_percentage}%` : <span className="text-gray-300 font-normal">&mdash;</span>}
+              {isOwner && (
+                <button onClick={() => { setEditingDeposit(s.id); setEditDeposit(String(s.deposit_percentage)); }}
+                  className="text-gray-300 hover:text-pink-600 transition-colors">
+                  <span className="material-symbols-outlined text-sm">edit</span>
+                </button>
+              )}
+            </span>
+          )}
+        </td>
+        <td className="px-6 py-4">
+          <div className="flex gap-1">
+            {s.allowed_modalities.map((m) => (
+              <span key={m} className="inline-block px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs capitalize">{m}</span>
+            ))}
+          </div>
+        </td>
+        <td className="px-6 py-4">
+          <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+            s.is_active ? "bg-green-50 text-green-700 border-green-100" : "bg-gray-50 text-gray-400 border-gray-200"
+          }`}>
+            {s.is_active ? "Activo" : "Inactivo"}
+          </span>
+        </td>
+        <td className="px-6 py-4 text-right">
+          <div className="flex items-center justify-end gap-2">
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  setEditingPrice(s.id);
+                  setEditOnline((s.price_cents_online / 100).toString());
+                  setEditPresencial((s.price_cents_presencial / 100).toString());
+                }}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-all"
+              >
+                Editar precios
+              </button>
+            )}
+            <button
+              onClick={() => toggleActive(s.id, s.is_active)}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all ${
+                s.is_active ? "border-gray-200 text-gray-500 hover:bg-gray-50" : "border-pink-200 text-pink-600 hover:bg-pink-50"
+              }`}
+            >
+              {s.is_active ? "Desactivar" : "Activar"}
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <header>
@@ -151,138 +301,55 @@ export default function ServiciosPage() {
                   <td className="px-6 py-4 text-right"><div className="h-4 bg-gray-100 rounded w-8 inline-block" /></td>
                 </tr>
               ))
-            ) : services.length === 0 ? (
+            ) : services.length === 0 && promos.length === 0 ? (
               <tr>
                 <td colSpan={8} className="p-12 text-center text-gray-400">
                   <span className="material-symbols-outlined text-4xl mb-2">spa</span>
                   <p>No hay servicios todavía.</p>
                 </td>
               </tr>
-            ) : services.map((s) => (
-              <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
-                <td className="px-6 py-4">
-                  <p className="font-medium text-gray-900">{s.name}</p>
-                  {s.description && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{s.description}</p>}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500">
-                  {editingDuration === s.id ? (
-                    <div className="flex items-center gap-1">
-                      <input type="number" min={15} step={15} value={editDuration}
-                        onChange={(e) => setEditDuration(e.target.value)}
-                        className="w-16 border border-gray-300 rounded px-1 py-0.5 text-sm text-center" autoFocus />
-                      <button onClick={() => handleSaveDuration(s.id)} disabled={saving}
-                        className="text-xs font-semibold px-1.5 py-0.5 bg-pink-600 text-white rounded hover:bg-pink-700">OK</button>
-                      <button onClick={() => setEditingDuration(null)} className="text-xs text-gray-400">×</button>
-                    </div>
-                  ) : (
-                    <span className="flex items-center gap-1">
-                      {s.duration_minutes} min
-                      {isAdmin && (
-                        <button onClick={() => { setEditingDuration(s.id); setEditDuration(String(s.duration_minutes)); }}
-                          className="text-gray-300 hover:text-pink-600 transition-colors">
-                          <span className="material-symbols-outlined text-sm">edit</span>
-                        </button>
-                      )}
-                    </span>
-                  )}
-                </td>
-                <td className="px-6 py-4">
-                  {editingPrice === s.id ? (
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs text-gray-400">$</span>
-                      <input type="number" step="0.01" value={editOnline}
-                        onChange={(e) => setEditOnline(e.target.value)}
-                        className="w-20 border border-gray-300 rounded px-1 py-0.5 text-sm" />
-                    </div>
-                  ) : (
-                    <span className="text-sm font-semibold text-gray-900">
-                      {s.price_cents_online > 0 ? formatPrice(s.price_cents_online) : <span className="text-gray-300 font-normal">—</span>}
-                    </span>
-                  )}
-                </td>
-                <td className="px-6 py-4">
-                  {editingPrice === s.id ? (
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs text-gray-400">$</span>
-                      <input type="number" step="0.01" value={editPresencial}
-                        onChange={(e) => setEditPresencial(e.target.value)}
-                        className="w-20 border border-gray-300 rounded px-1 py-0.5 text-sm" />
-                      <button onClick={() => handleSavePrices(s.id)} disabled={saving}
-                        className="text-xs font-semibold px-2 py-1 bg-pink-600 text-white rounded hover:bg-pink-700 disabled:bg-gray-300">
-                        {saving ? "..." : "OK"}
-                      </button>
-                      <button onClick={() => setEditingPrice(null)}
-                        className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
-                    </div>
-                  ) : (
-                    <span className="text-sm font-semibold text-gray-900">
-                      {s.price_cents_presencial > 0 ? formatPrice(s.price_cents_presencial) : <span className="text-gray-300 font-normal">—</span>}
-                    </span>
-                  )}
-                </td>
-                <td className="px-6 py-4">
-                  {editingDeposit === s.id ? (
-                    <div className="flex items-center gap-1">
-                      <input type="number" min={0} max={100} value={editDeposit}
-                        onChange={(e) => setEditDeposit(e.target.value)}
-                        className="w-14 border border-gray-300 rounded px-1 py-0.5 text-sm text-center" autoFocus />
-                      <span className="text-xs text-gray-400">%</span>
-                      <button onClick={() => handleSaveDeposit(s.id)} disabled={saving}
-                        className="text-xs font-semibold px-1.5 py-0.5 bg-pink-600 text-white rounded hover:bg-pink-700">OK</button>
-                      <button onClick={() => setEditingDeposit(null)} className="text-xs text-gray-400">×</button>
-                    </div>
-                  ) : (
-                    <span className="flex items-center gap-1 text-sm text-gray-700">
-                      {s.deposit_percentage > 0 ? `${s.deposit_percentage}%` : <span className="text-gray-300 font-normal">—</span>}
-                      {isOwner && (
-                        <button onClick={() => { setEditingDeposit(s.id); setEditDeposit(String(s.deposit_percentage)); }}
-                          className="text-gray-300 hover:text-pink-600 transition-colors">
-                          <span className="material-symbols-outlined text-sm">edit</span>
-                        </button>
-                      )}
-                    </span>
-                  )}
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex gap-1">
-                    {s.allowed_modalities.map((m) => (
-                      <span key={m} className="inline-block px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs capitalize">{m}</span>
-                    ))}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                    s.is_active ? "bg-green-50 text-green-700 border-green-100" : "bg-gray-50 text-gray-400 border-gray-200"
-                  }`}>
-                    {s.is_active ? "Activo" : "Inactivo"}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    {isAdmin && (
-                      <button
-                        onClick={() => {
-                          setEditingPrice(s.id);
-                          setEditOnline((s.price_cents_online / 100).toString());
-                          setEditPresencial((s.price_cents_presencial / 100).toString());
-                        }}
-                        className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-all"
-                      >
-                        Editar precios
-                      </button>
+            ) : (
+              <>
+                {promos.map((promo) => {
+                  const promoServiceIds = new Set(promo.service_ids);
+                  const childServices = services.filter((s) => promoServiceIds.has(s.id));
+                  return (
+                    <React.Fragment key={promo.id}>
+                      <tr className="bg-amber-50/80 border-b border-amber-100">
+                        <td colSpan={8} className="px-6 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-amber-500 text-sm">local_offer</span>
+                            <span className="font-semibold text-amber-800 text-sm">{promo.name}</span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full border ${
+                              promo.is_active ? "bg-green-50 text-green-700 border-green-100" : "bg-gray-50 text-gray-400 border-gray-200"
+                            }`}>
+                              {promo.is_active ? "Activa" : "Inactiva"}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                      {childServices.map((s) => (
+                        <ServiceRow key={s.id} s={s} isChild />
+                      ))}
+                    </React.Fragment>
+                  );
+                })}
+                {standaloneServices.length > 0 && (
+                  <>
+                    {promos.length > 0 && (
+                      <tr className="bg-gray-50 border-b border-gray-100">
+                        <td colSpan={8} className="px-6 py-2">
+                          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Servicios individuales</span>
+                        </td>
+                      </tr>
                     )}
-                    <button
-                      onClick={() => toggleActive(s.id, s.is_active)}
-                      className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all ${
-                        s.is_active ? "border-gray-200 text-gray-500 hover:bg-gray-50" : "border-pink-200 text-pink-600 hover:bg-pink-50"
-                      }`}
-                    >
-                      {s.is_active ? "Desactivar" : "Activar"}
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                    {standaloneServices.map((s) => (
+                      <ServiceRow key={s.id} s={s} />
+                    ))}
+                  </>
+                )}
+              </>
+            )}
           </tbody>
         </table>
       </div>

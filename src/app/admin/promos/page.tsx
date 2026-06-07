@@ -16,6 +16,13 @@ type Promotion = {
   starts_at: string | null;
   expires_at: string | null;
   created_at: string;
+  service_ids: string[];
+};
+
+type Service = {
+  id: string;
+  name: string;
+  slug: string;
 };
 
 type PromoForm = {
@@ -27,6 +34,7 @@ type PromoForm = {
   max_purchases: string;
   is_active: boolean;
   expires_at: string;
+  service_ids: string[];
 };
 
 const emptyForm: PromoForm = {
@@ -38,12 +46,14 @@ const emptyForm: PromoForm = {
   max_purchases: "",
   is_active: true,
   expires_at: "",
+  service_ids: [],
 };
 
 const ALL_TIERS = ["prana", "shakti", "ananda"];
 
 export default function PromosPage() {
   const [promos, setPromos] = useState<Promotion[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<PromoForm>(emptyForm);
@@ -57,7 +67,13 @@ export default function PromosPage() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchPromos(); }, []);
+  const fetchServices = async () => {
+    const res = await fetch("/api/admin/services");
+    const json = await res.json();
+    if (json.data) setServices(json.data);
+  };
+
+  useEffect(() => { fetchPromos(); fetchServices(); }, []);
 
   const toggleTier = (tier: string) => {
     setForm((f) => ({
@@ -65,6 +81,15 @@ export default function PromosPage() {
       allowed_tiers: f.allowed_tiers.includes(tier)
         ? f.allowed_tiers.filter((t) => t !== tier)
         : [...f.allowed_tiers, tier],
+    }));
+  };
+
+  const toggleService = (id: string) => {
+    setForm((f) => ({
+      ...f,
+      service_ids: f.service_ids.includes(id)
+        ? f.service_ids.filter((s) => s !== id)
+        : [...f.service_ids, id],
     }));
   };
 
@@ -90,6 +115,7 @@ export default function PromosPage() {
         max_purchases: form.max_purchases ? parseInt(form.max_purchases) : null,
         is_active: form.is_active,
         expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
+        service_ids: form.service_ids,
       }),
     });
 
@@ -181,6 +207,20 @@ export default function PromosPage() {
                   {tier}
                 </button>
               ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Servicios incluidos</label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+              {services.map((s) => (
+                <label key={s.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:text-pink-700">
+                  <input type="checkbox" checked={form.service_ids.includes(s.id)}
+                    onChange={() => toggleService(s.id)}
+                    className="rounded border-gray-300 text-pink-600" />
+                  {s.name}
+                </label>
+              ))}
+              {services.length === 0 && <p className="text-gray-400 text-sm col-span-full">Cargando servicios...</p>}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
