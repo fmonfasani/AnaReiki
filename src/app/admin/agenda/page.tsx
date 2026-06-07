@@ -34,7 +34,8 @@ export default async function AgendaPage() {
   const { data: rawAppointments } = await svc
     .from("appointments")
     .select("*, services!service_id(id, name, slug)")
-    .order("start_time", { ascending: false });
+    .order("start_time", { ascending: false })
+    .in("status", ["pending", "pending_approval", "approved", "confirmed", "completed", "cancelled", "no_show"]);
 
   const ids = new Set<string>();
   for (const a of rawAppointments || []) {
@@ -54,7 +55,8 @@ export default async function AgendaPage() {
     }
   }
 
-  const pendingCount = allAppointments?.filter(a => a.status === 'pending').length || 0;
+  const pendingCount = allAppointments?.filter(a => a.status === 'pending' || a.status === 'pending_approval').length || 0;
+  const pendingApprovalCount = allAppointments?.filter(a => a.status === 'pending_approval').length || 0;
 
   return (
     <div className="space-y-8">

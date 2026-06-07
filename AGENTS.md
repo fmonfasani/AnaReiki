@@ -3,7 +3,7 @@ Construir y deployar plataforma SaaS completa de Ana Reiki: landing, CRM terapé
 
 ## Constraints & Preferences
 - UX en español (es-AR).
-- DB migrations numeradas (001→031).
+- DB migrations numeradas (001→032).
 - Sin SDK externo de pagos — MP vía API directa.
 - 3 tiers: Prana (free), Shakti ($99/mes), Ananda ($199/mes).
 - Roles: `owner`, `admin`, `gerente`, `consultante`.
@@ -39,6 +39,8 @@ Construir y deployar plataforma SaaS completa de Ana Reiki: landing, CRM terapé
 - **Dashboard Enhancement**: Migration 029 — tablas `oracle_quotes` (20 frases seed), `session_history` (bitácora del consultante), `streak_milestones` (hitos de racha con trigger automático). Admin CRUD en `/admin/frases`. Dashboard muestra oráculo desde DB, hitos de racha (🌱7, 🌿30, 🌳60...), y entradas de bitácora. Evolución agrega tab "Bitácora" con formulario self-journal (título, notas, mood antes/después, privacidad) integrado en línea de tiempo.
 - **Migration 030** (`complete_payment_fix`): Confirm-payment endpoint refactorizado — usa `external_reference` de URL, no depende de `getPayment()` contra API MP. OAuth fallback con `getAccessToken()` async.
 - **Migration 031** (`services_pricing_v2`): `services` ahora tiene `price_cents_online` y `price_cents_presencial` independientes. `availability_rules_v2` cambia de `service_id` único a `service_ids uuid[]` — permite múltiples servicios por regla. `get_available_slots_v2()` actualizada para emitir un slot por servicio del array. Admin servicios: precios online/presencial editables por Owner, duración editable por Admin/Owner. RuleManager: checkboxes multi-servicio con select all/deselect all.
+- **DatePicker fix**: Días sin oferta se muestran con letra gris (no blanca) para que sean legibles. Solo los días con disponibilidad tienen highlight terracota.
+- **Migration 032** (`deposit_approval_flow`): `services.deposit_percentage` (porcentaje de seña opcional, 0=pago completo). `appointments` nuevas columnas: `deposit_cents`, `balance_cents`, `approval_status` (enum), `approved_at`, `rejected_at`, `rejection_action`, `cutoff_at`. `appointments.status` ampliado con `pending_approval` y `approved`. Funciones: `approve_appointment()`, `reject_appointment()`, `get_pending_approvals_count()`, `expire_old_approvals()` actualizada para cutoff. Endpoints: `POST /api/admin/appointments/[id]/approve`, `POST /api/admin/appointments/[id]/reject`, `POST /api/appointments/pay-balance`, `POST /api/admin/appointments/[id]/mark-refunded`. Frontend: `PendingAppointments` modificado para mostrar aprobación/rechazo con modal, `MisCitasClient` muestra badges/acciones según status. Cutoff automático vía reminders cron.
 
 ### Resolved (prev. Blocked)
 - ~~**MP OAuth connect**: El endpoint `/api/mercadopago/oauth/link` devuelve error "MP OAuth no configurado".~~ → **Resuelto**. Era del build anterior (commit pre-`809f968`). Verificado: `MP_CLIENT_ID` y `MP_CLIENT_SECRET` seteados, 5 tokens activos en DB, expiración Dic 2026, auth URL generada correctamente. El owner (Ana) ya conectó con éxito.

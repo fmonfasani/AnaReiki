@@ -20,7 +20,7 @@ export async function POST(request: Request) {
 
     const { data: appointment, error: apptError } = await svc
       .from("appointments")
-      .select("id, status, payment_status, price_cents, mp_preference_id, service_id")
+      .select("id, status, payment_status, price_cents, deposit_cents, balance_cents, approval_status, mp_preference_id, service_id")
       .eq("id", appointmentId)
       .eq("client_id", user.id)
       .single();
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Turno no encontrado" }, { status: 404 });
     }
 
-    if (appointment.status !== "pending_payment") {
+    if (appointment.status !== "pending_payment" && appointment.status !== "pending_approval") {
       return NextResponse.json({ error: "Este turno no requiere pago" }, { status: 400 });
     }
 
@@ -39,12 +39,15 @@ export async function POST(request: Request) {
       .eq("id", appointment.service_id)
       .single();
 
+    const needsDeposit = appointment.approval_status === "pending_approval";
+    const mpAmount = needsDeposit ? (appointment.deposit_cents || 0) : (appointment.price_cents || 0);
+
     const { createPaymentPreference } = await import("@/lib/mercadopago");
     const result = await createPaymentPreference({
       items: [{
-        title: service?.name || "Sesión",
+        title: needsDeposit ? `${service?.name || "Sesión"} (seña)` : (service?.name || "Sesión"),
         quantity: 1,
-        unit_price: (appointment.price_cents || 0) / 100,
+        unit_price: mpAmount / 100,
         currency_id: "ARS",
       }],
       payerEmail: user.email || "",

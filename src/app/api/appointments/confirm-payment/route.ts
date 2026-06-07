@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     if (appointmentId) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, client_id, payment_status, status, mp_payment_id")
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, client_id, payment_status, status, mp_payment_id, approval_status")
         .eq("id", appointmentId)
         .single();
       appointment = data;
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     if (!appointment && payment_id) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, client_id, payment_status, status, mp_payment_id")
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, client_id, payment_status, status, mp_payment_id, approval_status")
         .eq("mp_payment_id", String(payment_id))
         .maybeSingle();
       appointment = data;
@@ -63,10 +63,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, status: "already_paid" });
     }
 
+    const needsApproval = appointment.approval_status === "pending_approval";
+    const newStatus = needsApproval ? "pending_approval" : "pending";
+
     await svc
       .from("appointments")
       .update({
-        status: "pending",
+        status: newStatus,
         payment_status: "paid",
         mp_payment_id: payment_id ? String(payment_id) : appointment.mp_payment_id,
       })
@@ -91,15 +94,17 @@ export async function POST(request: Request) {
     const payerEmail = profile?.email || "";
     const payerName = profile?.full_name || payerEmail;
 
-    sendAppointmentEmail("confirmacion", payerEmail, payerName, {
-      serviceName: service?.name || "Servicio",
-      modality: appointment.modality,
-      date: dateStr,
-      time: timeStr,
-      duration: service?.duration_minutes || 60,
-      notes: appointment.notes,
-      appointmentId: appointment.id,
-    });
+    if (!needsApproval) {
+      sendAppointmentEmail("confirmacion", payerEmail, payerName, {
+        serviceName: service?.name || "Servicio",
+        modality: appointment.modality,
+        date: dateStr,
+        time: timeStr,
+        duration: service?.duration_minutes || 60,
+        notes: appointment.notes,
+        appointmentId: appointment.id,
+      });
+    }
 
     notifyAdminNewAppointment({
       clientName: payerName,

@@ -10,6 +10,7 @@ type Service = {
   duration_minutes: number;
   price_cents_online: number;
   price_cents_presencial: number;
+  deposit_percentage: number;
   allowed_modalities: string[];
   is_active: boolean;
   created_at: string;
@@ -24,9 +25,11 @@ export default function ServiciosPage() {
   const [loading, setLoading] = useState(true);
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [editingDuration, setEditingDuration] = useState<string | null>(null);
+  const [editingDeposit, setEditingDeposit] = useState<string | null>(null);
   const [editOnline, setEditOnline] = useState("");
   const [editPresencial, setEditPresencial] = useState("");
   const [editDuration, setEditDuration] = useState("");
+  const [editDeposit, setEditDeposit] = useState("");
   const [saving, setSaving] = useState(false);
   const [userRole, setUserRole] = useState<string>("");
 
@@ -84,6 +87,24 @@ export default function ServiciosPage() {
     }
   };
 
+  const handleSaveDeposit = async (id: string) => {
+    setSaving(true);
+    const pct = Math.min(100, Math.max(0, parseInt(editDeposit) || 0));
+    const res = await fetch(`/api/admin/services/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deposit_percentage: pct }),
+    });
+    setSaving(false);
+    if (res.ok) {
+      setEditingDeposit(null);
+      fetchServices();
+    } else {
+      const err = await res.json();
+      alert("Error: " + (err.error || "desconocido"));
+    }
+  };
+
   const toggleActive = async (id: string, current: boolean) => {
     const res = await fetch(`/api/admin/services/${id}`, {
       method: "PUT",
@@ -111,6 +132,7 @@ export default function ServiciosPage() {
               <th className="px-6 py-4 font-semibold">Duración</th>
               <th className="px-6 py-4 font-semibold">Online</th>
               <th className="px-6 py-4 font-semibold">Presencial</th>
+              <th className="px-6 py-4 font-semibold">Seña</th>
               <th className="px-6 py-4 font-semibold">Modalidad</th>
               <th className="px-6 py-4 font-semibold">Estado</th>
               <th className="px-6 py-4 font-semibold text-right">Acción</th>
@@ -131,7 +153,7 @@ export default function ServiciosPage() {
               ))
             ) : services.length === 0 ? (
               <tr>
-                <td colSpan={7} className="p-12 text-center text-gray-400">
+                <td colSpan={8} className="p-12 text-center text-gray-400">
                   <span className="material-symbols-outlined text-4xl mb-2">spa</span>
                   <p>No hay servicios todavía.</p>
                 </td>
@@ -195,6 +217,29 @@ export default function ServiciosPage() {
                   ) : (
                     <span className="text-sm font-semibold text-gray-900">
                       {s.price_cents_presencial > 0 ? formatPrice(s.price_cents_presencial) : <span className="text-gray-300 font-normal">—</span>}
+                    </span>
+                  )}
+                </td>
+                <td className="px-6 py-4">
+                  {editingDeposit === s.id ? (
+                    <div className="flex items-center gap-1">
+                      <input type="number" min={0} max={100} value={editDeposit}
+                        onChange={(e) => setEditDeposit(e.target.value)}
+                        className="w-14 border border-gray-300 rounded px-1 py-0.5 text-sm text-center" autoFocus />
+                      <span className="text-xs text-gray-400">%</span>
+                      <button onClick={() => handleSaveDeposit(s.id)} disabled={saving}
+                        className="text-xs font-semibold px-1.5 py-0.5 bg-pink-600 text-white rounded hover:bg-pink-700">OK</button>
+                      <button onClick={() => setEditingDeposit(null)} className="text-xs text-gray-400">×</button>
+                    </div>
+                  ) : (
+                    <span className="flex items-center gap-1 text-sm text-gray-700">
+                      {s.deposit_percentage > 0 ? `${s.deposit_percentage}%` : <span className="text-gray-300 font-normal">—</span>}
+                      {isOwner && (
+                        <button onClick={() => { setEditingDeposit(s.id); setEditDeposit(String(s.deposit_percentage)); }}
+                          className="text-gray-300 hover:text-pink-600 transition-colors">
+                          <span className="material-symbols-outlined text-sm">edit</span>
+                        </button>
+                      )}
                     </span>
                   )}
                 </td>

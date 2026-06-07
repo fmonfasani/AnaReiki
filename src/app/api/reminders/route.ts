@@ -38,6 +38,27 @@ export async function POST(request: Request) {
       console.log(`Liberados ${expiredPayments.length} appointments pending_payment expirados`);
     }
 
+    // Cancelar approved que pasaron el cutoff (1h antes del turno sin pagar saldo)
+    const { data: cutoffAppts } = await svc
+      .from("appointments")
+      .update({
+        status: "cancelled",
+        approval_status: "rejected",
+        rejection_action: "refund",
+        payment_status: "failed",
+        cancelled_reason: "No pagó el saldo antes del cutoff",
+        cancelled_at: now,
+        updated_at: now,
+      })
+      .eq("approval_status", "approved")
+      .eq("status", "approved")
+      .lte("cutoff_at", now)
+      .select("id, client_id, deposit_cents");
+
+    if (cutoffAppts && cutoffAppts.length > 0) {
+      console.log(`Cancelados ${cutoffAppts.length} appointments por cutoff de saldo no pagado`);
+    }
+
     const { data: pending, error } = await svc
       .from("appointment_reminders")
       .select("*, appointments!inner(*, profiles!client_id(email, full_name))")

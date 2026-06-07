@@ -16,9 +16,13 @@ interface Appointment {
     id: string;
     start_time: string;
     end_time: string;
-    status: "pending" | "pending_payment" | "confirmed" | "cancelled" | "completed" | "no_show";
+    status: "pending" | "pending_payment" | "pending_approval" | "approved" | "confirmed" | "cancelled" | "completed" | "no_show";
     payment_status?: string;
     price_cents?: number;
+    deposit_cents?: number;
+    balance_cents?: number;
+    approval_status?: string;
+    cutoff_at?: string;
     notes: string | null;
     services: {
         name: string;
@@ -42,6 +46,26 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ appointmentId: id }),
+            });
+            const json = await res.json();
+            if (json.mp_init_point) {
+                window.location.href = json.mp_init_point;
+            } else {
+                alert("Error: " + (json.error || "No se pudo iniciar el pago"));
+            }
+        } catch {
+            alert("Error de conexión");
+        }
+        setLoadingId(null);
+    };
+
+    const handlePayBalance = async (id: string) => {
+        setLoadingId(id);
+        try {
+            const res = await fetch("/api/appointments/pay-balance", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ appointment_id: id }),
             });
             const json = await res.json();
             if (json.mp_init_point) {
@@ -110,15 +134,34 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
                                                 {format(parseISO(appt.start_time), "EEEE d 'de' MMMM", { locale: es })}
                                             </h3>
                                         </div>
-                                        <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${appt.status === 'confirmed' ? 'bg-green-100 text-green-700' : appt.status === 'pending_payment' ? 'bg-amber-100 text-amber-700' : 'bg-orange-100 text-orange-700'
+                                        <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                            appt.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                                            appt.status === 'pending_payment' ? 'bg-amber-100 text-amber-700' :
+                                            appt.status === 'pending_approval' ? 'bg-purple-100 text-purple-700' :
+                                            appt.status === 'approved' ? 'bg-blue-100 text-blue-700' :
+                                            'bg-orange-100 text-orange-700'
                                             }`}>
-                                            {appt.status === 'confirmed' ? 'Confirmada' : appt.status === 'pending_payment' ? 'Pendiente de pago' : 'Pendiente'}
+                                            {appt.status === 'confirmed' ? 'Confirmada' :
+                                             appt.status === 'pending_payment' ? 'Pendiente de pago' :
+                                             appt.status === 'pending_approval' ? 'En revisión' :
+                                             appt.status === 'approved' ? 'Aprobada - falta pagar' :
+                                             'Pendiente'}
                                         </div>
                                     </div>
 
                                     {appt.status === "pending_payment" && (
                                         <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3 text-xs text-amber-700">
                                             Reserva pendiente de pago. Completá el pago para confirmar la sesión.
+                                        </div>
+                                    )}
+                                    {appt.status === "pending_approval" && (
+                                        <div className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 mb-3 text-xs text-purple-700">
+                                            Tu reserva está en revisión. Esperá la aprobación de Ana.
+                                        </div>
+                                    )}
+                                    {appt.status === "approved" && (
+                                        <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 mb-3 text-xs text-blue-700">
+                                            Reserva aprobada. {appt.balance_cents ? `Falta pagar ${formatPrice(appt.balance_cents)} antes de 1 hora del turno.` : ''}
                                         </div>
                                     )}
                                     <div className="flex flex-wrap items-center gap-3 text-gray-500 text-sm mb-6">
@@ -144,6 +187,14 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
                                                 className="flex-1 py-2 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-all disabled:opacity-50"
                                             >
                                                 {loadingId === appt.id ? "Redirigiendo..." : `Pagar ahora ${appt.price_cents ? formatPrice(appt.price_cents) : ""}`}
+                                            </button>
+                                        ) : appt.status === "approved" && (appt.balance_cents || 0) > 0 ? (
+                                            <button
+                                                onClick={() => handlePayBalance(appt.id)}
+                                                disabled={loadingId === appt.id}
+                                                className="flex-1 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all disabled:opacity-50"
+                                            >
+                                                {loadingId === appt.id ? "Redirigiendo..." : `Pagar saldo ${formatPrice(appt.balance_cents!)}`}
                                             </button>
                                         ) : (
                                             <>

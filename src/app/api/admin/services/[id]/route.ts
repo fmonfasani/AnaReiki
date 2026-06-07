@@ -51,6 +51,11 @@ export async function PUT(
       return NextResponse.json({ error: "No autorizado para modificar duración" }, { status: 403 });
     }
 
+    // deposit_percentage solo owner
+    if (body.deposit_percentage !== undefined && !isOwnerUser) {
+      return NextResponse.json({ error: "Solo el owner puede modificar el porcentaje de seña" }, { status: 403 });
+    }
+
     const svc = createServiceClient();
     const updates: Record<string, unknown> = {};
     if (body.name !== undefined) updates.name = body.name;
@@ -61,6 +66,7 @@ export async function PUT(
     if (body.is_active !== undefined) updates.is_active = body.is_active;
     if (body.price_cents_online !== undefined) updates.price_cents_online = body.price_cents_online;
     if (body.price_cents_presencial !== undefined) updates.price_cents_presencial = body.price_cents_presencial;
+    if (body.deposit_percentage !== undefined) updates.deposit_percentage = body.deposit_percentage;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "No hay campos para actualizar" }, { status: 400 });
