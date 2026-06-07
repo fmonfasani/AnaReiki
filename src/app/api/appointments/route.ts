@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
     const { data: service, error: serviceError } = await svc
       .from("services")
-      .select("name, duration_minutes, allowed_modalities, price_cents_online, price_cents_presencial")
+      .select("name, duration_minutes, allowed_modalities, price_cents_online, price_cents_presencial, deposit_percentage")
       .eq("id", service_id)
       .single();
 
@@ -91,8 +91,8 @@ export async function POST(request: Request) {
     const priceCents = modality === "online"
       ? (service.price_cents_online || 0)
       : (service.price_cents_presencial || 0);
-    const depositPct = 0;
-    const depositCents = 0;
+    const depositPct = service.deposit_percentage || 0;
+    const depositCents = depositPct > 0 ? Math.round(priceCents * depositPct / 100) : 0;
     const balanceCents = priceCents - depositCents;
     const needsApproval = depositPct > 0 && balanceCents > 0;
 
@@ -106,11 +106,14 @@ export async function POST(request: Request) {
         end_time: endDate.toISOString(),
         modality,
         notes: notes || null,
-        status: priceCents > 0 ? "pending_payment" : "pending",
+        status: needsApproval ? "pending_approval" : (priceCents > 0 ? "pending_payment" : "pending"),
+        approval_status: needsApproval ? "pending_approval" : "n/a",
         price_cents: priceCents,
+        deposit_cents: depositCents,
+        balance_cents: balanceCents,
         payment_status: priceCents > 0 ? "pending_payment" : "pending",
       })
-      .select("id, status, start_time, end_time, modality, price_cents, payment_status")
+      .select("id, status, start_time, end_time, modality, price_cents, payment_status, deposit_cents, balance_cents, approval_status")
       .single();
 
     if (insertError) {

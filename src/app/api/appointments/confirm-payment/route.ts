@@ -9,11 +9,13 @@ export async function POST(request: Request) {
     const { payment_id, appointment_id, external_reference } = body;
 
     let appointmentId = appointment_id || null;
+    let paymentType: string | null = null;
 
     if (!appointmentId && external_reference) {
       try {
         const parsed = JSON.parse(external_reference);
         appointmentId = parsed.appointmentId || null;
+        paymentType = parsed.type || null;
       } catch {
         appointmentId = external_reference;
       }
@@ -59,18 +61,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Turno no encontrado" }, { status: 404 });
     }
 
-    if (appointment.payment_status === "paid") {
+    if (appointment.payment_status === "paid" && appointment.status !== "pending_approval") {
       return NextResponse.json({ success: true, status: "already_paid" });
     }
 
-    const needsApproval = appointment.approval_status === "pending_approval";
-    const newStatus = needsApproval ? "pending_approval" : "pending";
+    const isBalancePayment = paymentType === "balance";
+    let newStatus = appointment.status;
+    let newPaymentStatus = "paid";
+
+    if (isBalancePayment) {
+      newStatus = "confirmed";
+    } else if (appointment.approval_status === "pending_approval") {
+      newStatus = "pending_approval";
+    } else if (appointment.status === "pending_payment") {
+      newStatus = "confirmed";
+    }
 
     await svc
       .from("appointments")
       .update({
         status: newStatus,
-        payment_status: "paid",
+        payment_status: newPaymentStatus,
         mp_payment_id: payment_id ? String(payment_id) : appointment.mp_payment_id,
       })
       .eq("id", appointment.id);
@@ -94,7 +105,7 @@ export async function POST(request: Request) {
     const payerEmail = profile?.email || "";
     const payerName = profile?.full_name || payerEmail;
 
-    if (!needsApproval) {
+    if (newStatus === "confirmed") {
       sendAppointmentEmail("confirmacion", payerEmail, payerName, {
         serviceName: service?.name || "Servicio",
         modality: appointment.modality,
@@ -116,7 +127,7 @@ export async function POST(request: Request) {
       duration: service?.duration_minutes || 60,
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, newStatus });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Error interno" },
