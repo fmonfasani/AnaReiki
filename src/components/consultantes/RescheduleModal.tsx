@@ -10,6 +10,7 @@ import type { Slot } from "@/types/appointments";
 interface RescheduleModalProps {
   appointmentId: string;
   currentDate: string;
+  currentSlotStart?: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -17,6 +18,7 @@ interface RescheduleModalProps {
 export default function RescheduleModal({
   appointmentId,
   currentDate,
+  currentSlotStart,
   onClose,
   onSuccess,
 }: RescheduleModalProps) {
@@ -39,7 +41,8 @@ export default function RescheduleModal({
       .then((r) => r.json())
       .then((json) => {
         if (!cancelled) {
-          setAvailableSlots(json.data || []);
+          const slots: Slot[] = json.data || [];
+          setAvailableSlots(currentSlotStart ? slots.filter((s) => s.slot_start !== currentSlotStart) : slots);
           setLoadingSlots(false);
         }
       })

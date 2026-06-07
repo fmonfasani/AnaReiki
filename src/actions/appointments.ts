@@ -85,17 +85,34 @@ export async function cancelAppointment(input: {
     return { error: "Unauthorized" };
   }
 
-  const { data, error } = await supabase.rpc("cancel_appointment", {
+  const svc = createServiceClient();
+
+  const { data: appt } = await svc
+    .from("appointments")
+    .select("client_id")
+    .eq("id", input.appointmentId)
+    .single();
+
+  if (!appt) {
+    return { error: "Turno no encontrado" };
+  }
+
+  if (appt.client_id !== user.id) {
+    return { error: "No autorizado" };
+  }
+
+  const { error: rpcError } = await svc.rpc("cancel_appointment", {
     p_appointment_id: input.appointmentId,
     p_reason: input.reason?.trim() || null,
+    p_cancelled_by: user.id,
   });
 
-  if (error) {
-    return { error: error.message };
+  if (rpcError) {
+    return { error: rpcError.message };
   }
 
   revalidateAppointmentsViews();
-  return { success: true, data };
+  return { success: true };
 }
 
 export async function rescheduleAppointment(input: {
@@ -124,7 +141,7 @@ export async function rescheduleAppointment(input: {
 
   const { data: appointment, error: fetchError } = await svc
     .from("appointments")
-    .select("id, client_id, service_id, start_time, status")
+    .select("id, client_id, service_id, start_time, status, modality")
     .eq("id", input.appointmentId)
     .single();
 
@@ -152,6 +169,29 @@ export async function rescheduleAppointment(input: {
 
   if (!service) {
     return { error: "Servicio no encontrado" };
+  }
+
+  const newDate = newStartIso.split("T")[0];
+  const modality = appointment.modality || "presencial";
+
+  const { data: availableSlots, error: slotsError } = await svc
+    .rpc("get_available_slots_v2", {
+      p_date: newDate,
+      p_modality: modality,
+      p_service_id: appointment.service_id,
+    });
+
+  if (slotsError) {
+    return { error: "Error al verificar disponibilidad" };
+  }
+
+  const slotAvailable = Array.isArray(availableSlots) && availableSlots.some(
+    (s: { slot_start: string; booked: number; max_participants: number }) =>
+      s.slot_start === newStartIso && s.booked < s.max_participants,
+  );
+
+  if (!slotAvailable) {
+    return { error: "El horario seleccionado ya no está disponible" };
   }
 
   const newEndTime = new Date(new Date(newStartIso).getTime() + service.duration_minutes * 60000).toISOString();

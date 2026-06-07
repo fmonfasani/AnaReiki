@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { format, parseISO, isPast } from "date-fns";
 import { es } from "date-fns/locale";
-import { motion, AnimatePresence } from "framer-motion";
 import { cancelAppointment } from "@/actions/appointments";
 import RescheduleModal from "./RescheduleModal";
 import Link from "next/link";
@@ -34,10 +33,42 @@ interface MisCitasClientProps {
     initialAppointments: Appointment[];
 }
 
+const statusLabel: Record<string, string> = {
+    pending: "Pendiente",
+    pending_payment: "Pendiente de pago",
+    pending_approval: "En revisión",
+    approved: "Aprobada",
+    confirmed: "Confirmada",
+    cancelled: "Cancelada",
+    completed: "Completada",
+    no_show: "No asistió",
+};
+
+const statusColor: Record<string, string> = {
+    pending: "bg-orange-100 text-orange-700",
+    pending_payment: "bg-amber-100 text-amber-700",
+    pending_approval: "bg-purple-100 text-purple-700",
+    approved: "bg-blue-100 text-blue-700",
+    confirmed: "bg-green-100 text-green-700",
+    cancelled: "bg-gray-100 text-gray-500",
+    completed: "bg-green-100 text-green-700",
+    no_show: "bg-red-50 text-red-600",
+};
+
 export default function MisCitasClient({ initialAppointments }: MisCitasClientProps) {
     const [appointments, setAppointments] = useState(initialAppointments);
     const [loadingId, setLoadingId] = useState<string | null>(null);
     const [reschedulingId, setReschedulingId] = useState<string | null>(null);
+    const [filter, setFilter] = useState<"upcoming" | "past">("upcoming");
+
+    const upcoming = appointments.filter(
+        (a) => !isPast(parseISO(a.start_time)) && a.status !== "cancelled"
+    ).sort((a, b) => parseISO(a.start_time).getTime() - parseISO(b.start_time).getTime());
+    const past = appointments.filter(
+        (a) => isPast(parseISO(a.start_time)) || a.status === "cancelled"
+    ).sort((a, b) => parseISO(b.start_time).getTime() - parseISO(a.start_time).getTime());
+
+    const visible = filter === "upcoming" ? upcoming : past;
 
     const handleRetryPayment = async (id: string) => {
         setLoadingId(id);
@@ -95,195 +126,124 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
         }
     };
 
-    const upcoming = appointments.filter(
-        (a) => !isPast(parseISO(a.start_time)) && a.status !== "cancelled"
-    );
-    const past = appointments.filter(
-        (a) => isPast(parseISO(a.start_time)) || a.status === "cancelled"
-    );
-
     return (
         <>
-        <div className="space-y-10">
-            <section>
-                <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2 font-display">
-                    <span className="text-[var(--color-terracotta)]">◉</span>
-                    Próximas Sesiones
-                </h2>
+        <div className="space-y-6">
+            <div className="flex gap-2 bg-gray-100 p-1 rounded-xl w-fit">
+                <button
+                    onClick={() => setFilter("upcoming")}
+                    className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
+                        filter === "upcoming"
+                            ? "bg-white text-gray-900 shadow-sm"
+                            : "text-gray-500 hover:text-gray-700"
+                    }`}
+                >
+                    Por realizar ({upcoming.length})
+                </button>
+                <button
+                    onClick={() => setFilter("past")}
+                    className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
+                        filter === "past"
+                            ? "bg-white text-gray-900 shadow-sm"
+                            : "text-gray-500 hover:text-gray-700"
+                    }`}
+                >
+                    Realizados ({past.length})
+                </button>
+            </div>
 
-                {upcoming.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <AnimatePresence mode="popLayout">
-                            {upcoming.map((appt) => {
-                                const apt = appt as Appointment & { modality?: string };
-                                return (
-                                <motion.div
-                                    key={appt.id}
-                                    layout
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.95 }}
-                                    className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group"
-                                >
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <span className="text-xs font-bold text-[var(--color-primary-dark)] uppercase tracking-widest">
-                                                {appt.services?.name || "Sesión"}
-                                            </span>
-                                            <h3 className="text-lg font-bold text-gray-900 capitalize">
-                                                {format(parseISO(appt.start_time), "EEEE d 'de' MMMM", { locale: es })}
-                                            </h3>
-                                        </div>
-                                        <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                            appt.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                                            appt.status === 'pending_payment' ? 'bg-amber-100 text-amber-700' :
-                                            appt.status === 'pending_approval' ? 'bg-purple-100 text-purple-700' :
-                                            appt.status === 'approved' ? 'bg-blue-100 text-blue-700' :
-                                            'bg-orange-100 text-orange-700'
-                                            }`}>
-                                            {appt.status === 'confirmed' ? 'Confirmada' :
-                                             appt.status === 'pending_payment' ? 'Pendiente de pago' :
-                                             appt.status === 'pending_approval' ? 'En revisión' :
-                                             appt.status === 'approved' ? 'Aprobada - falta pagar' :
-                                             'Pendiente'}
-                                        </div>
+            {visible.length === 0 ? (
+                <div className="bg-gray-50 rounded-3xl p-12 text-center border-2 border-dashed border-gray-200">
+                    {filter === "upcoming" ? (
+                        <>
+                            <p className="text-gray-500 mb-6">No tenés ninguna cita programada.</p>
+                            <Link
+                                href="/consultantes/reservar"
+                                className="inline-flex items-center gap-2 bg-[var(--color-terracotta)] text-white px-6 py-3 rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg"
+                            >
+                                <span>+</span>
+                                Reservar ahora
+                            </Link>
+                        </>
+                    ) : (
+                        <p className="text-gray-500">No tenés citas realizadas.</p>
+                    )}
+                </div>
+            ) : (
+                <div className="space-y-3">
+                    {visible.map((appt) => {
+                        const apt = appt as Appointment & { modality?: string };
+                        const fecha = parseISO(appt.start_time);
+                        const esPasado = isPast(fecha);
+                        return (
+                            <div
+                                key={appt.id}
+                                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col sm:flex-row sm:items-center gap-4"
+                            >
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-xs font-bold text-[var(--color-primary-dark)] uppercase tracking-widest">
+                                            {appt.services?.name || "Sesión"}
+                                        </span>
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                            statusColor[appt.status] || "bg-gray-100 text-gray-600"
+                                        }`}>
+                                            {statusLabel[appt.status] || appt.status}
+                                        </span>
                                     </div>
-
-                                    {appt.status === "pending_payment" && (
-                                        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3 text-xs text-amber-700">
-                                            Reserva pendiente de pago. Completá el pago para confirmar la sesión.
-                                        </div>
-                                    )}
-                                    {appt.status === "pending_approval" && (
-                                        <div className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 mb-3 text-xs text-purple-700">
-                                            Tu reserva está en revisión. Esperá la aprobación de Ana.
-                                        </div>
-                                    )}
-                                    {appt.status === "approved" && (
-                                        <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 mb-3 text-xs text-blue-700">
-                                            Reserva aprobada. {appt.balance_cents ? `Falta pagar ${formatPrice(appt.balance_cents)} antes de 1 hora del turno.` : ''}
-                                        </div>
-                                    )}
-                                    <div className="flex flex-wrap items-center gap-3 text-gray-500 text-sm mb-6">
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-sm text-gray-400">🕐</span>
-                                            {format(parseISO(appt.start_time), "HH:mm")} hs
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-sm text-gray-400">⏱</span>
-                                            {appt.services?.duration_minutes} min
-                                        </div>
-                                        <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-3 text-sm text-gray-700">
+                                        <span className="font-semibold">
+                                            {format(fecha, "EEEE d 'de' MMMM", { locale: es })}
+                                        </span>
+                                        <span className="text-gray-300">|</span>
+                                        <span>{format(fecha, "HH:mm")} hs</span>
+                                        <span className="text-gray-300">|</span>
+                                        <span className="flex items-center gap-1">
                                             {apt.modality === "online" ? "💻" : "🏠"}
-                                            <span className="capitalize">{apt.modality || "presencial"}</span>
-                                        </div>
+                                            {apt.modality === "online" ? "Online" : "Presencial"}
+                                        </span>
                                     </div>
+                                </div>
 
-                                    <div className="flex gap-3">
-                                        {appt.status === "pending_payment" ? (
+                                <div className="flex gap-2 shrink-0">
+                                    {appt.status === "pending_payment" ? (
+                                        <button
+                                            onClick={() => handleRetryPayment(appt.id)}
+                                            disabled={loadingId === appt.id}
+                                            className="px-4 py-2 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-all disabled:opacity-50"
+                                        >
+                                            {loadingId === appt.id ? "..." : `Pagar ${appt.price_cents ? formatPrice(appt.price_cents) : ""}`}
+                                        </button>
+                                    ) : appt.status === "approved" && (appt.balance_cents || 0) > 0 ? (
+                                        <button
+                                            onClick={() => handlePayBalance(appt.id)}
+                                            disabled={loadingId === appt.id}
+                                            className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all disabled:opacity-50"
+                                        >
+                                            {loadingId === appt.id ? "..." : `Pagar saldo ${formatPrice(appt.balance_cents!)}`}
+                                        </button>
+                                    ) : filter === "upcoming" ? (
+                                        <>
                                             <button
-                                                onClick={() => handleRetryPayment(appt.id)}
+                                                onClick={() => handleCancel(appt.id)}
                                                 disabled={loadingId === appt.id}
-                                                className="flex-1 py-2 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-all disabled:opacity-50"
+                                                className="px-4 py-2 text-sm font-bold text-red-500 hover:bg-red-50 rounded-xl border border-transparent hover:border-red-100 transition-all disabled:opacity-50"
                                             >
-                                                {loadingId === appt.id ? "Redirigiendo..." : `Pagar ahora ${appt.price_cents ? formatPrice(appt.price_cents) : ""}`}
+                                                {loadingId === appt.id ? "..." : "Cancelar"}
                                             </button>
-                                        ) : appt.status === "approved" && (appt.balance_cents || 0) > 0 ? (
                                             <button
-                                                onClick={() => handlePayBalance(appt.id)}
-                                                disabled={loadingId === appt.id}
-                                                className="flex-1 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all disabled:opacity-50"
+                                                onClick={() => setReschedulingId(appt.id)}
+                                                className="px-4 py-2 text-sm font-bold text-[var(--color-terracotta)] hover:bg-orange-50 rounded-xl border border-transparent hover:border-orange-100 transition-all"
                                             >
-                                                {loadingId === appt.id ? "Redirigiendo..." : `Pagar saldo ${formatPrice(appt.balance_cents!)}`}
+                                                Reprogramar
                                             </button>
-                                        ) : (
-                                            <>
-                                                <button
-                                                    onClick={() => handleCancel(appt.id)}
-                                                    disabled={loadingId === appt.id}
-                                                    className="flex-1 py-2 text-sm font-bold text-red-500 hover:bg-red-50 rounded-xl border border-transparent hover:border-red-100 transition-all disabled:opacity-50"
-                                                >
-                                                    {loadingId === appt.id ? "Cancelando..." : "Cancelar"}
-                                                </button>
-                                                <button
-                                                    onClick={() => setReschedulingId(appt.id)}
-                                                    className="flex-1 py-2 text-sm font-bold text-[var(--color-terracotta)] hover:bg-orange-50 rounded-xl border border-transparent hover:border-orange-100 transition-all"
-                                                >
-                                                    Reprogramar
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                </motion.div>
-                                );
-                            })}
-                        </AnimatePresence>
-                    </div>
-                ) : (
-                    <div className="bg-gray-50 rounded-3xl p-12 text-center border-2 border-dashed border-gray-200">
-                        <p className="text-gray-500 mb-6">No tenés ninguna cita programada.</p>
-                        <Link
-                            href="/consultantes/reservar"
-                            className="inline-flex items-center gap-2 bg-[var(--color-terracotta)] text-white px-6 py-3 rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg"
-                        >
-                            <span>+</span>
-                            Reservar ahora
-                        </Link>
-                    </div>
-                )}
-            </section>
-
-            {past.length > 0 && (
-                <section>
-                    <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2 font-display opacity-60">
-                        <span className="material-symbols-outlined">history</span>
-                        Historial y Canceladas
-                    </h2>
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead className="bg-gray-50 border-b border-gray-100">
-                                    <tr>
-                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Fecha</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Servicio</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Estado</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {past.slice(0, 5).map((appt) => (
-                                        <tr key={appt.id} className="hover:bg-gray-50/50 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="text-sm font-bold text-gray-900">
-                                                    {format(parseISO(appt.start_time), "dd/MM/yyyy")}
-                                                </div>
-                                                <div className="text-xs text-gray-500">
-                                                    {format(parseISO(appt.start_time), "HH:mm")} hs
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">
-                                                {appt.services?.name}
-                                                {(appt as any).modality && (
-                                                    <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${(appt as any).modality === "online" ? "bg-blue-50 text-blue-600" : "bg-green-50 text-green-600"}`}>
-                                                        {(appt as any).modality === "online" ? "💻 Online" : "🏠 Presencial"}
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-tighter ${appt.status === 'completed' ? 'bg-green-50 text-green-600 border border-green-100' :
-                                                        appt.status === 'cancelled' ? 'bg-gray-100 text-gray-500 border border-gray-200' :
-                                                            'bg-red-50 text-red-600 border border-red-100'
-                                                    }`}>
-                                                    {appt.status === 'completed' ? 'Completada' :
-                                                        appt.status === 'cancelled' ? 'Cancelada' : 'No asistió'}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
+                                        </>
+                                    ) : null}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             )}
         </div>
 
@@ -291,6 +251,7 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
                 <RescheduleModal
                     appointmentId={reschedulingId}
                     currentDate={appointments.find(a => a.id === reschedulingId)?.start_time || ""}
+                    currentSlotStart={appointments.find(a => a.id === reschedulingId)?.start_time || undefined}
                     onClose={() => setReschedulingId(null)}
                     onSuccess={() => {
                         setReschedulingId(null);

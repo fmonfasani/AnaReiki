@@ -26,7 +26,7 @@ export default async function MisCitasPage() {
         .from("appointments")
         .select("*, services!service_id(id, name, slug, duration_minutes, allowed_modalities)")
         .eq("client_id", user.id)
-        .order("start_time", { ascending: false });
+        .order("start_time", { ascending: true });
 
     if (error) {
         console.error("Error fetching appointments:", error);
