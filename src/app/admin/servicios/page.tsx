@@ -121,7 +121,7 @@ export default function ServiciosPage() {
     <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-bold text-gray-900 font-display">Servicios</h1>
-        <p className="text-gray-500 text-sm">Gestioná los servicios, duración y precios por modalidad. Solo el Owner puede modificar precios.</p>
+        <p className="text-gray-500 text-sm">Gestioná los servicios, duración y precios por modalidad.</p>
       </header>
 
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
@@ -259,7 +259,7 @@ export default function ServiciosPage() {
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-2">
-                    {isOwner && (
+                    {isAdmin && (
                       <button
                         onClick={() => {
                           setEditingPrice(s.id);
@@ -289,7 +289,7 @@ export default function ServiciosPage() {
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
         <p className="font-semibold mb-1">Importante</p>
-        <p>Los precios se muestran al consultante según la modalidad elegida. El pago se procesa a través de Mercado Pago al confirmar la reserva. Solo el Owner puede modificar precios.</p>
+        <p>Los precios se muestran al consultante según la modalidad elegida. El pago se procesa a través de Mercado Pago al confirmar la reserva.</p>
       </div>
     </div>
   );

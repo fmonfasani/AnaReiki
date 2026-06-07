@@ -41,9 +41,9 @@ export async function PUT(
 
     const isOwnerUser = await isOwner(supabase, user.id);
 
-    // price_cents_online y price_cents_presencial solo puede setearlos el owner
-    if ((body.price_cents_online !== undefined || body.price_cents_presencial !== undefined) && !isOwnerUser) {
-      return NextResponse.json({ error: "Solo el owner puede modificar precios" }, { status: 403 });
+    // price_cents_online y price_cents_presencial solo puede setearlos admin/owner
+    if ((body.price_cents_online !== undefined || body.price_cents_presencial !== undefined) && !(await checkAdmin(supabase, user.id))) {
+      return NextResponse.json({ error: "No autorizado para modificar precios" }, { status: 403 });
     }
 
     // duration_minutes puede modificarlo admin/owner (no gerente)
