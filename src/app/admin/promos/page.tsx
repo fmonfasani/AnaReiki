@@ -97,10 +97,11 @@ export default function PromosPage() {
     e.preventDefault();
     setSaving(true);
 
-    const discountValue = parseFloat(form.discount_value);
-    const discountPercent = form.discount_type === "percent" ? discountValue : null;
-    const discountFixed = form.discount_type === "fixed" ? discountValue : null;
-    const priceOverride = form.discount_type === "override" ? discountValue : null;
+    const hasDiscount = form.discount_value.trim() !== "";
+    const discountValue = hasDiscount ? parseFloat(form.discount_value) : NaN;
+    const discountPercent = hasDiscount && form.discount_type === "percent" ? discountValue : null;
+    const discountFixed = hasDiscount && form.discount_type === "fixed" ? discountValue : null;
+    const priceOverride = hasDiscount && form.discount_type === "override" ? discountValue : null;
 
     const res = await fetch("/api/admin/promos", {
       method: "POST",
@@ -181,7 +182,7 @@ export default function PromosPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Valor</label>
               <input type="number" step="0.01" value={form.discount_value} onChange={(e) => setForm({ ...form, discount_value: e.target.value })}
-                className="w-full border-gray-200 rounded-lg focus:ring-pink-500" required />
+                className="w-full border-gray-200 rounded-lg focus:ring-pink-500" placeholder="Opcional" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Compras máximas (opcional)</label>
