@@ -15,6 +15,11 @@ export default function RegistroPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  const getRedirect = () => {
+    if (typeof window === "undefined") return null;
+    return new URLSearchParams(window.location.search).get("redirect");
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -35,10 +40,10 @@ export default function RegistroPage() {
 
       setSuccess(true);
 
-      // If email confirmation is disabled, redirect immediately
+      const redirectTo = getRedirect();
       if (data.user && !data.user.identities?.length) {
         setTimeout(() => {
-          router.push("/consultantes");
+          router.push(redirectTo || "/consultantes");
           router.refresh();
         }, 2000);
       }
@@ -78,10 +83,10 @@ export default function RegistroPage() {
             consultantes...
           </p>
           <Link
-            href="/consultantes"
+            href={getRedirect() || "/consultantes"}
             className="inline-block text-purple-600 hover:text-purple-500 font-medium"
           >
-            Ir al área de consultantes�
+            Ir al área de consultantes
           </Link>
         </div>
       </div>
@@ -181,7 +186,7 @@ export default function RegistroPage() {
           <div className="text-center text-sm">
             <span className="text-gray-600">¿Ya tienes cuenta? </span>
             <Link
-              href="/login"
+              href={"/login" + (getRedirect() ? `?redirect=${encodeURIComponent(getRedirect()!)}` : "")}
               className="font-medium text-purple-600 hover:text-purple-500 transition"
             >
               Inicia sesión aquí

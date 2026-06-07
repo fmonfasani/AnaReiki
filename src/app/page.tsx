@@ -140,7 +140,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
               <Link
-                href="/consultantes/reservar"
+                href="/login?redirect=/consultantes/reservar"
                 className="bg-primary-dark hover:bg-primary-dark/90 text-white px-12 py-5 rounded-full font-display font-bold text-xl transition-all shadow-xl shadow-primary-dark/30 transform hover:-translate-y-1"
               >
                 Reservá tu turno

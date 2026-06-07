@@ -13,6 +13,12 @@ export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  const getRedirect = () => {
+    if (typeof window === "undefined") return null;
+    const params = new URLSearchParams(window.location.search);
+    return params.get("redirect");
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -25,6 +31,13 @@ export default function LoginPage() {
       });
 
       if (error) throw error;
+
+      const redirectTo = getRedirect();
+      if (redirectTo) {
+        router.push(redirectTo);
+        router.refresh();
+        return;
+      }
 
       const roleRes = await fetch("/api/auth/check-role");
       if (!roleRes.ok) {
@@ -116,7 +129,7 @@ export default function LoginPage() {
           <div className="text-center text-sm">
             <span className="text-gray-600">¿No tienes cuenta? </span>
             <Link
-              href="/registro"
+              href={"/registro" + (getRedirect() ? `?redirect=${encodeURIComponent(getRedirect()!)}` : "")}
               className="font-medium text-purple-600 hover:text-purple-500 transition"
             >
               Regístrate aquí
