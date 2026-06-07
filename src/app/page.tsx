@@ -50,13 +50,13 @@ export default function Home() {
                     </span>
                   </Link>
                   <Link
-                    href="#terapias"
-                    className="bg-white border border-primary/20 hover:bg-background-alt text-text-main px-8 py-4 rounded-full font-display font-medium text-lg transition-all flex items-center justify-center gap-2 transform hover:-translate-y-1 overflow-hidden"
+                    href="/login?redirect=/consultantes/reservar"
+                    className="bg-primary-dark hover:bg-primary-dark/90 text-white px-8 py-4 rounded-full font-display font-bold text-lg transition-all shadow-xl shadow-primary-dark/20 flex items-center justify-center gap-2 transform hover:-translate-y-1"
                   >
-                    <span className="material-symbols-outlined text-primary-dark">
-                      spa
+                    <span className="material-symbols-outlined text-white/80">
+                      calendar_month
                     </span>
-                    Explorar Servicios
+                    Reservá tu turno
                   </Link>
                 </div>
               </div>
