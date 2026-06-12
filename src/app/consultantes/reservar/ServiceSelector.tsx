@@ -34,6 +34,9 @@ type Props = {
 const formatPrice = (cents: number) =>
   new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(cents / 100);
 
+const formatSimplePrice = (cents: number) =>
+  `$${(cents / 100).toLocaleString("es-AR")}`;
+
 export default function ServiceSelector({ services, promos, selected, onSelect, onBuyPromo }: Props) {
   const [expandedPromo, setExpandedPromo] = useState<string | null>(null);
 
@@ -86,7 +89,7 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
                     <div className="flex items-center gap-2">
                       {hasBundlePrice && (
                         <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded-full">
-                          {formatPrice(promo.bundle_price_cents!)}
+                          {formatSimplePrice(promo.bundle_price_cents!)}
                         </span>
                       )}
                       <span className="text-xs text-amber-600 font-medium whitespace-nowrap">
@@ -108,8 +111,13 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
                         onClick={(e) => { e.stopPropagation(); onBuyPromo(promo.id); }}
                         className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl text-sm font-bold transition-all"
                       >
-                        Comprar Promo {formatPrice(promo.bundle_price_cents!)} · {promo.max_sessions || 1} sesiones
+                        Comprar Promo {formatSimplePrice(promo.bundle_price_cents!)} · {promo.max_sessions || 1} sesiones
                       </button>
+                    )}
+                    {!hasBundlePrice && childServices.length > 0 && (
+                      <p className="text-xs text-amber-600 text-center pt-1 pb-1">
+                        Seleccioná un servicio para reservar con descuento
+                      </p>
                     )}
                     {childServices.map((svc) => (
                       <button
@@ -137,12 +145,12 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
                               <div className="text-right">
                                 {svc.price_cents_online ? (
                                   <span className="text-xs font-bold text-[var(--color-terracotta)] whitespace-nowrap block">
-                                    Online: ${(svc.price_cents_online! / 100).toLocaleString("es-AR")}
+                                    Online: {formatPrice(svc.price_cents_online!)}
                                   </span>
                                 ) : null}
                                 {svc.price_cents_presencial ? (
                                   <span className="text-xs font-bold text-[var(--color-terracotta)] whitespace-nowrap block">
-                                    Presencial: ${(svc.price_cents_presencial! / 100).toLocaleString("es-AR")}
+                                    Presencial: {formatPrice(svc.price_cents_presencial!)}
                                   </span>
                                 ) : null}
                               </div>
@@ -187,16 +195,16 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
                 )}
               </div>
               <div className="flex flex-col items-end gap-1 shrink-0">
-                {(service.price_cents_online || service.price_cents_presencial || 0) > 0 ? (
+                 {(service.price_cents_online || service.price_cents_presencial || 0) > 0 ? (
                   <div className="text-right">
                     {service.price_cents_online ? (
                       <span className="text-xs font-bold text-[var(--color-terracotta)] whitespace-nowrap block">
-                        Online: ${(service.price_cents_online! / 100).toLocaleString("es-AR")}
+                        Online: {formatPrice(service.price_cents_online!)}
                       </span>
                     ) : null}
                     {service.price_cents_presencial ? (
                       <span className="text-xs font-bold text-[var(--color-terracotta)] whitespace-nowrap block">
-                        Presencial: ${(service.price_cents_presencial! / 100).toLocaleString("es-AR")}
+                        Presencial: {formatPrice(service.price_cents_presencial!)}
                       </span>
                     ) : null}
                   </div>
