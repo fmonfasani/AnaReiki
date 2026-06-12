@@ -28,6 +28,8 @@ type Promo = {
   description: string | null;
   is_active: boolean;
   service_ids: string[];
+  bundle_price_cents?: number;
+  max_sessions?: number;
 };
 
 const STEPS = ["Servicio", "Modalidad", "Fecha", "Horario", "Confirmar", "Listo"];
@@ -48,6 +50,7 @@ export default function BookingWizard() {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [appointmentId, setAppointmentId] = useState<string | null>(null);
+  const [buyingPromo, setBuyingPromo] = useState(false);
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -90,6 +93,22 @@ export default function BookingWizard() {
   const handlePromoSelect = (promotionId: string | null, priceCents: number | undefined) => {
     setSelectedPromotionId(promotionId);
     setPromoPriceCents(priceCents);
+  };
+
+  const handleBuyPromo = async (promoId: string) => {
+    setBuyingPromo(true);
+    try {
+      const res = await fetch(`/api/promos/${promoId}/buy`, { method: "POST" });
+      const json = await res.json();
+      if (json.mp_init_point) {
+        window.location.href = json.mp_init_point;
+      } else {
+        setBookingError(json.error || "Error al comprar promo");
+      }
+    } catch {
+      setBookingError("Error de conexión");
+    }
+    setBuyingPromo(false);
   };
 
   const handleConfirm = async (notes?: string) => {
@@ -203,12 +222,20 @@ export default function BookingWizard() {
 
       <div className="animate-in fade-in duration-300">
         {step === 0 && (
-          <ServiceSelector
-            services={services}
-            promos={promos}
-            selected={selectedService}
-            onSelect={handleServiceSelect}
-          />
+          <>
+            <ServiceSelector
+              services={services}
+              promos={promos}
+              selected={selectedService}
+              onSelect={handleServiceSelect}
+              onBuyPromo={buyingPromo ? undefined : handleBuyPromo}
+            />
+            {buyingPromo && (
+              <div className="text-center py-4">
+                <p className="text-sm text-gray-500">Redirigiendo a Mercado Pago...</p>
+              </div>
+            )}
+          </>
         )}
 
         {step === 1 && selectedService && (

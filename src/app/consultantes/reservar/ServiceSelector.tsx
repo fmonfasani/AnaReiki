@@ -19,6 +19,8 @@ type Promo = {
   description: string | null;
   is_active: boolean;
   service_ids: string[];
+  bundle_price_cents?: number;
+  max_sessions?: number;
 };
 
 type Props = {
@@ -26,9 +28,13 @@ type Props = {
   promos: Promo[];
   selected: Service | null;
   onSelect: (service: Service) => void;
+  onBuyPromo?: (promoId: string) => void;
 };
 
-export default function ServiceSelector({ services, promos, selected, onSelect }: Props) {
+const formatPrice = (cents: number) =>
+  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(cents / 100);
+
+export default function ServiceSelector({ services, promos, selected, onSelect, onBuyPromo }: Props) {
   const [expandedPromo, setExpandedPromo] = useState<string | null>(null);
 
   const servicesById = new Map(services.map((s) => [s.id, s]));
@@ -50,87 +56,111 @@ export default function ServiceSelector({ services, promos, selected, onSelect }
           const childServices = promo.service_ids
             .map((id) => servicesById.get(id))
             .filter((s): s is Service => !!s);
+          const hasBundlePrice = !!promo.bundle_price_cents && promo.bundle_price_cents > 0;
 
           return (
             <React.Fragment key={promo.id}>
-              <button
-                onClick={() => setExpandedPromo(isExpanded ? null : promo.id)}
-                className={`text-left p-4 rounded-2xl border-2 transition-all duration-200 ${
+              <div
+                className={`rounded-2xl border-2 transition-all duration-200 ${
                   isExpanded
                     ? "border-amber-400 bg-amber-50 shadow-md"
                     : "border-amber-200 bg-amber-50/50 hover:border-amber-400 hover:shadow-sm"
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-amber-500">local_offer</span>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-[var(--color-text-main)] text-sm">
-                      {promo.name}
-                    </h3>
-                    {promo.description && (
-                      <p className="text-xs text-[var(--color-text-light)] mt-0.5 line-clamp-1">
-                        {promo.description}
-                      </p>
-                    )}
-                  </div>
-                  <span className="text-xs text-amber-600 font-medium whitespace-nowrap">
-                    {childServices.length} servicios
-                  </span>
-                  <span className={`material-symbols-outlined text-amber-400 text-lg transition-transform ${
-                    isExpanded ? "rotate-180" : ""
-                  }`}>
-                    expand_more
-                  </span>
-                </div>
-              </button>
-
-              {isExpanded && childServices.map((svc) => (
                 <button
-                  key={svc.id}
-                  onClick={() => onSelect(svc)}
-                  className={`text-left p-4 rounded-2xl border-2 transition-all duration-200 ml-4 ${
-                    selected?.id === svc.id
-                      ? "border-[var(--color-primary-dark)] bg-[var(--color-primary)]/20 shadow-md"
-                      : "border-gray-100 bg-white hover:border-[var(--color-primary)] hover:shadow-sm"
-                  }`}
+                  onClick={() => setExpandedPromo(isExpanded ? null : promo.id)}
+                  className="w-full text-left p-4"
                 >
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-amber-500">local_offer</span>
                     <div className="flex-1">
                       <h3 className="font-semibold text-[var(--color-text-main)] text-sm">
-                        {svc.name}
+                        {promo.name}
                       </h3>
-                      {svc.description && (
-                        <p className="text-xs text-[var(--color-text-light)] mt-1 line-clamp-2">
-                          {svc.description}
+                      {promo.description && (
+                        <p className="text-xs text-[var(--color-text-light)] mt-0.5 line-clamp-1">
+                          {promo.description}
                         </p>
                       )}
                     </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      {(svc.price_cents_online || svc.price_cents_presencial || 0) > 0 ? (
-                        <div className="text-right">
-                          {svc.price_cents_online ? (
-                            <span className="text-xs font-bold text-[var(--color-terracotta)] whitespace-nowrap block">
-                              Online: ${(svc.price_cents_online! / 100).toLocaleString("es-AR")}
-                            </span>
-                          ) : null}
-                          {svc.price_cents_presencial ? (
-                            <span className="text-xs font-bold text-[var(--color-terracotta)] whitespace-nowrap block">
-                              Presencial: ${(svc.price_cents_presencial! / 100).toLocaleString("es-AR")}
-                            </span>
-                          ) : null}
-                        </div>
-                      ) : (
-                        <span className="text-xs font-medium text-green-600 whitespace-nowrap">
-                          Gratuito
+                    <div className="flex items-center gap-2">
+                      {hasBundlePrice && (
+                        <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded-full">
+                          {formatPrice(promo.bundle_price_cents!)}
                         </span>
                       )}
-                      <span className="text-xs font-medium text-[var(--color-primary-dark)] bg-[var(--color-primary)]/30 px-2 py-1 rounded-full whitespace-nowrap">
-                        {svc.duration_minutes} min
+                      <span className="text-xs text-amber-600 font-medium whitespace-nowrap">
+                        {childServices.length} servicios
+                      </span>
+                      <span className={`material-symbols-outlined text-amber-400 text-lg transition-transform ${
+                        isExpanded ? "rotate-180" : ""
+                      }`}>
+                        expand_more
                       </span>
                     </div>
                   </div>
                 </button>
-              ))}
+
+                {isExpanded && (
+                  <div className="px-4 pb-4 space-y-2">
+                    {hasBundlePrice && onBuyPromo && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onBuyPromo(promo.id); }}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl text-sm font-bold transition-all"
+                      >
+                        Comprar Promo {formatPrice(promo.bundle_price_cents!)} · {promo.max_sessions || 1} sesiones
+                      </button>
+                    )}
+                    {childServices.map((svc) => (
+                      <button
+                        key={svc.id}
+                        onClick={() => onSelect(svc)}
+                        className={`w-full text-left p-4 rounded-2xl border-2 transition-all duration-200 ${
+                          selected?.id === svc.id
+                            ? "border-[var(--color-primary-dark)] bg-[var(--color-primary)]/20 shadow-md"
+                            : "border-gray-100 bg-white hover:border-[var(--color-primary)] hover:shadow-sm"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-[var(--color-text-main)] text-sm">
+                              {svc.name}
+                            </h3>
+                            {svc.description && (
+                              <p className="text-xs text-[var(--color-text-light)] mt-1 line-clamp-2">
+                                {svc.description}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            {(svc.price_cents_online || svc.price_cents_presencial || 0) > 0 ? (
+                              <div className="text-right">
+                                {svc.price_cents_online ? (
+                                  <span className="text-xs font-bold text-[var(--color-terracotta)] whitespace-nowrap block">
+                                    Online: ${(svc.price_cents_online! / 100).toLocaleString("es-AR")}
+                                  </span>
+                                ) : null}
+                                {svc.price_cents_presencial ? (
+                                  <span className="text-xs font-bold text-[var(--color-terracotta)] whitespace-nowrap block">
+                                    Presencial: ${(svc.price_cents_presencial! / 100).toLocaleString("es-AR")}
+                                  </span>
+                                ) : null}
+                              </div>
+                            ) : (
+                              <span className="text-xs font-medium text-green-600 whitespace-nowrap">
+                                Gratuito
+                              </span>
+                            )}
+                            <span className="text-xs font-medium text-[var(--color-primary-dark)] bg-[var(--color-primary)]/30 px-2 py-1 rounded-full whitespace-nowrap">
+                              {svc.duration_minutes} min
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </React.Fragment>
           );
         })}

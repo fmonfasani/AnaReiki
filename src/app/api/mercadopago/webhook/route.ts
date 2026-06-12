@@ -22,18 +22,62 @@ export async function POST(request: Request) {
     const mpStatus = paymentResult.status;
     const externalRef = paymentResult.external_reference;
     const payerEmail = paymentResult.payer.email;
+    const mpPaymentId = String(id);
 
-    let appointmentId: string | null = null;
+    const svc = createServiceClient();
+
+    let externalData: Record<string, unknown> | null = null;
     if (externalRef) {
       try {
-        const parsed = JSON.parse(externalRef);
-        appointmentId = parsed.appointmentId || null;
+        externalData = JSON.parse(externalRef);
       } catch {
-        appointmentId = externalRef;
+        externalData = { appointmentId: externalRef };
       }
     }
 
-    const svc = createServiceClient();
+    // --- Handle promo bundle purchase ---
+    if (externalData?.type === "promo_bundle") {
+      const promoId = externalData.promoId as string;
+      const userId = externalData.userId as string;
+
+      if (mpStatus === "approved") {
+        const { data: purchase } = await svc
+          .from("promo_purchases")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("promotion_id", promoId)
+          .eq("status", "pending")
+          .maybeSingle();
+
+        if (purchase) {
+          await svc
+            .from("promo_purchases")
+            .update({
+              status: "approved",
+              mp_payment_id: mpPaymentId,
+              paid_at: new Date().toISOString(),
+            })
+            .eq("id", purchase.id);
+        }
+      } else if (mpStatus === "rejected" || mpStatus === "cancelled") {
+        const userId = externalData.userId as string;
+        const promoId = externalData.promoId as string;
+        await svc
+          .from("promo_purchases")
+          .update({ status: "rejected" })
+          .eq("user_id", userId)
+          .eq("promotion_id", promoId)
+          .eq("status", "pending");
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
+    // --- Handle appointment payment ---
+    let appointmentId: string | null = null;
+    if (externalData) {
+      appointmentId = (externalData.appointmentId as string) || null;
+    }
 
     let appointment;
     if (appointmentId) {
@@ -49,7 +93,7 @@ export async function POST(request: Request) {
       const { data } = await svc
         .from("appointments")
         .select("id, service_id, start_time, end_time, modality, notes, price_cents, payment_status")
-        .eq("mp_payment_id", String(id))
+        .eq("mp_payment_id", mpPaymentId)
         .maybeSingle();
       appointment = data;
     }
@@ -65,7 +109,7 @@ export async function POST(request: Request) {
         .update({
           status: "pending",
           payment_status: "paid",
-          mp_payment_id: String(id),
+          mp_payment_id: mpPaymentId,
         })
         .eq("id", appointment.id);
 

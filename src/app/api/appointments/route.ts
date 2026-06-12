@@ -93,8 +93,38 @@ export async function POST(request: Request) {
     let finalPriceCents = basePriceCents;
     let discountCents = 0;
     let resolvedPromotionId: string | null = null;
+    let usedPromoPurchaseId: string | null = null;
 
-    if (promotion_id && basePriceCents > 0) {
+    // Check if user has an active promo purchase covering this service
+    if (basePriceCents > 0) {
+      const { data: activePurchases } = await svc
+        .from("promo_purchases")
+        .select("id, promotion_id, sessions_remaining")
+        .eq("user_id", user.id)
+        .eq("status", "approved")
+        .gt("sessions_remaining", 0);
+
+      if (activePurchases?.length) {
+        const purchaseIds = activePurchases.map(p => p.promotion_id);
+        const { data: promoSessionLinks } = await svc
+          .from("promotion_sessions")
+          .select("promotion_id")
+          .eq("service_id", service_id)
+          .in("promotion_id", purchaseIds);
+
+        const matchedPromoIds = new Set((promoSessionLinks || []).map(ps => ps.promotion_id));
+        const matching = activePurchases.find(p => matchedPromoIds.has(p.promotion_id));
+
+        if (matching) {
+          finalPriceCents = 0;
+          discountCents = basePriceCents;
+          resolvedPromotionId = matching.promotion_id;
+          usedPromoPurchaseId = matching.id;
+        }
+      }
+    }
+
+    if (!usedPromoPurchaseId && promotion_id && basePriceCents > 0) {
       const { data: promoData } = await supabase
         .rpc("get_available_promos", {
           p_service_id: service_id,
@@ -135,6 +165,10 @@ export async function POST(request: Request) {
     if (insertError) {
       console.error("Appointment insert error", { user: user.id, service_id, slot_start, error: insertError.message });
       return NextResponse.json({ error: insertError.message }, { status: 500 });
+    }
+
+    if (usedPromoPurchaseId) {
+      await svc.rpc("decrement_promo_session", { p_purchase_id: usedPromoPurchaseId });
     }
 
     let mpInitPoint: string | null = null;
