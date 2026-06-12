@@ -6,8 +6,8 @@ import { isAdmin } from "@/lib/auth/roles";
 import SidebarNav from "./SidebarNav";
 
 const PLAN_ACCESS: Record<string, string[]> = {
-  prana: ["inicio", "suscripciones", "mis-citas", "comunidad", "perfil"],
-  shakti: ["inicio", "suscripciones", "biblioteca", "podcast", "comunidad", "evolucion", "mis-citas", "perfil"],
+  prana: ["inicio", "suscripciones", "mis-citas", "comunidad", "mensajes", "perfil"],
+  shakti: ["inicio", "suscripciones", "biblioteca", "podcast", "comunidad", "evolucion", "mis-citas", "mensajes", "perfil"],
   ananda: ["inicio", "suscripciones", "biblioteca", "clases", "podcast", "comunidad", "mensajes", "chat-buda", "evolucion", "mis-citas", "perfil"],
 };
 

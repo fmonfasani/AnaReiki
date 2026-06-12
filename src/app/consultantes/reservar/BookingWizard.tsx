@@ -42,6 +42,8 @@ export default function BookingWizard() {
   const [selectedModality, setSelectedModality] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+  const [selectedPromotionId, setSelectedPromotionId] = useState<string | null>(null);
+  const [promoPriceCents, setPromoPriceCents] = useState<number | undefined>(undefined);
 
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
@@ -80,7 +82,14 @@ export default function BookingWizard() {
 
   const handleSlotSelect = (slot: Slot) => {
     setSelectedSlot(slot);
+    setSelectedPromotionId(null);
+    setPromoPriceCents(undefined);
     setStep(4);
+  };
+
+  const handlePromoSelect = (promotionId: string | null, priceCents: number | undefined) => {
+    setSelectedPromotionId(promotionId);
+    setPromoPriceCents(priceCents);
   };
 
   const handleConfirm = async (notes?: string) => {
@@ -90,16 +99,25 @@ export default function BookingWizard() {
     setBookingError(null);
 
     try {
+      const body: Record<string, unknown> = {
+        service_id: selectedService.id,
+        rule_id: selectedSlot.rule_id,
+        modality: selectedModality,
+        slot_start: selectedSlot.slot_start,
+        notes,
+      };
+
+      if (selectedPromotionId) {
+        body.promotion_id = selectedPromotionId;
+        if (promoPriceCents !== undefined) {
+          body.price_cents = promoPriceCents;
+        }
+      }
+
       const res = await fetch("/api/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          service_id: selectedService.id,
-          rule_id: selectedSlot.rule_id,
-          modality: selectedModality,
-          slot_start: selectedSlot.slot_start,
-          notes,
-        }),
+        body: JSON.stringify(body),
       });
 
       const json = await res.json();
@@ -226,6 +244,8 @@ export default function BookingWizard() {
             modality={selectedModality}
             date={selectedDate}
             slot={selectedSlot}
+            promotionId={selectedPromotionId}
+            onPromoSelect={handlePromoSelect}
             onConfirm={handleConfirm}
             loading={bookingLoading}
             error={bookingError}

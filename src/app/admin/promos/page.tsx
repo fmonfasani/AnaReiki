@@ -2,6 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 
+type Service = {
+  id: string;
+  name: string;
+};
+
 type Promotion = {
   id: string;
   name: string;
@@ -16,13 +21,7 @@ type Promotion = {
   starts_at: string | null;
   expires_at: string | null;
   created_at: string;
-  service_ids: string[];
-};
-
-type Service = {
-  id: string;
-  name: string;
-  slug: string;
+  service_ids?: string[];
 };
 
 type PromoForm = {
@@ -31,10 +30,10 @@ type PromoForm = {
   discount_type: "percent" | "fixed" | "override";
   discount_value: string;
   allowed_tiers: string[];
+  service_ids: string[];
   max_purchases: string;
   is_active: boolean;
   expires_at: string;
-  service_ids: string[];
 };
 
 const emptyForm: PromoForm = {
@@ -43,17 +42,17 @@ const emptyForm: PromoForm = {
   discount_type: "percent",
   discount_value: "",
   allowed_tiers: [],
+  service_ids: [],
   max_purchases: "",
   is_active: true,
   expires_at: "",
-  service_ids: [],
 };
 
 const ALL_TIERS = ["prana", "shakti", "ananda"];
 
 export default function PromosPage() {
   const [promos, setPromos] = useState<Promotion[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
+  const [allServices, setAllServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<PromoForm>(emptyForm);
@@ -67,13 +66,13 @@ export default function PromosPage() {
     setLoading(false);
   };
 
+  useEffect(() => { fetchPromos(); fetchServices(); }, []);
+
   const fetchServices = async () => {
     const res = await fetch("/api/admin/services");
     const json = await res.json();
-    if (json.data) setServices(json.data);
+    if (json.data) setAllServices(json.data);
   };
-
-  useEffect(() => { fetchPromos(); fetchServices(); }, []);
 
   const toggleTier = (tier: string) => {
     setForm((f) => ({
@@ -113,6 +112,7 @@ export default function PromosPage() {
         discount_fixed: discountFixed,
         price_override: priceOverride,
         allowed_tiers: form.allowed_tiers.length > 0 ? form.allowed_tiers : null,
+        service_ids: form.service_ids.length > 0 ? form.service_ids : null,
         max_purchases: form.max_purchases ? parseInt(form.max_purchases) : null,
         is_active: form.is_active,
         expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
@@ -211,17 +211,29 @@ export default function PromosPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Servicios incluidos</label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
-              {services.map((s) => (
-                <label key={s.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:text-pink-700">
-                  <input type="checkbox" checked={form.service_ids.includes(s.id)}
-                    onChange={() => toggleService(s.id)}
-                    className="rounded border-gray-300 text-pink-600" />
-                  {s.name}
-                </label>
-              ))}
-              {services.length === 0 && <p className="text-gray-400 text-sm col-span-full">Cargando servicios...</p>}
+            <label className="block text-sm font-medium text-gray-700 mb-2">Servicios vinculados (opcional — si no seleccionás ninguno, aplica a todos)</label>
+            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 border border-gray-200 rounded-lg">
+              {allServices.length === 0 ? (
+                <span className="text-xs text-gray-400 p-2">Cargando servicios...</span>
+              ) : (
+                allServices.map((svc) => (
+                  <button key={svc.id} type="button" onClick={() => {
+                    setForm((f) => ({
+                      ...f,
+                      service_ids: f.service_ids.includes(svc.id)
+                        ? f.service_ids.filter((s) => s !== svc.id)
+                        : [...f.service_ids, svc.id],
+                    }));
+                  }}
+                    className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                      form.service_ids.includes(svc.id)
+                        ? "bg-pink-100 border-pink-300 text-pink-700"
+                        : "bg-gray-50 border-gray-200 text-gray-600"
+                    }`}>
+                    {svc.name}
+                  </button>
+                ))
+              )}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -251,6 +263,7 @@ export default function PromosPage() {
             <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100">
               <th className="px-6 py-4 font-semibold">Nombre</th>
               <th className="px-6 py-4 font-semibold">Descuento</th>
+              <th className="px-6 py-4 font-semibold">Servicios</th>
               <th className="px-6 py-4 font-semibold">Tiers</th>
               <th className="px-6 py-4 font-semibold">Compras</th>
               <th className="px-6 py-4 font-semibold">Vence</th>
@@ -265,6 +278,7 @@ export default function PromosPage() {
                   <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-32" /></td>
                   <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-16" /></td>
                   <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-24" /></td>
+                  <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-16" /></td>
                   <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-12" /></td>
                   <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-20" /></td>
                   <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-16" /></td>
@@ -273,7 +287,7 @@ export default function PromosPage() {
               ))
             ) : promos.length === 0 ? (
               <tr>
-                <td colSpan={7} className="p-12 text-center text-gray-400">
+                <td colSpan={8} className="p-12 text-center text-gray-400">
                   <span className="material-symbols-outlined text-4xl mb-2">local_offer</span>
                   <p>No hay promociones todavía.</p>
                 </td>
@@ -285,6 +299,16 @@ export default function PromosPage() {
                   {p.description && <p className="text-xs text-gray-400 mt-0.5">{p.description}</p>}
                 </td>
                 <td className="px-6 py-4 text-sm font-semibold text-pink-600">{discountLabel(p)}</td>
+                <td className="px-6 py-4 text-sm text-gray-500 max-w-32">
+                  {(p.service_ids || []).length > 0
+                    ? (p.service_ids as string[]).map((sid) => {
+                        const svc = allServices.find((s) => s.id === sid);
+                        return svc ? (
+                          <span key={sid} className="inline-block px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs mr-1 mb-1">{svc.name}</span>
+                        ) : null;
+                      })
+                    : <span className="text-gray-300">Todos</span>}
+                </td>
                 <td className="px-6 py-4 text-sm text-gray-500">
                   {(p.allowed_tiers || []).length > 0
                     ? (p.allowed_tiers as string[]).map((t) => (

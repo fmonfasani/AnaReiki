@@ -21,7 +21,6 @@ const PLAN_UPGRADE: Record<string, string> = {
   biblioteca: "Shakti o Ananda",
   clases: "Shakti o Ananda",
   podcast: "Shakti o Ananda",
-  mensajes: "Ananda",
   "chat-buda": "Ananda",
   evolucion: "Shakti o Ananda",
 };
@@ -75,7 +74,7 @@ export default function SidebarNav({ items, planTier, mobile }: SidebarNavProps)
           </span>
           <span className="font-medium text-sm flex-1">{item.name}</span>
           {item.locked && (
-            <span className="text-xs text-gray-400 font-medium">PRO</span>
+            <span className="text-xs text-gray-400 font-medium">SUBIR</span>
           )}
         </Link>
       ))}

@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { service_id, modality, slot_start, rule_id, notes } = body;
+    const { service_id, modality, slot_start, rule_id, notes, promotion_id, price_cents: clientPriceCents } = body;
 
     if (!service_id || !modality || !slot_start) {
       return NextResponse.json(
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
     const { data: service, error: serviceError } = await svc
       .from("services")
-      .select("name, duration_minutes, allowed_modalities, price_cents_online, price_cents_presencial, deposit_percentage")
+      .select("name, duration_minutes, allowed_modalities, price_cents")
       .eq("id", service_id)
       .single();
 
@@ -88,13 +88,29 @@ export async function POST(request: Request) {
     const startTime = slot_start;
     const startDate = new Date(startTime);
     const endDate = new Date(startDate.getTime() + service.duration_minutes * 60000);
-    const priceCents = modality === "online"
-      ? (service.price_cents_online || 0)
-      : (service.price_cents_presencial || 0);
-    const depositPct = service.deposit_percentage || 0;
-    const depositCents = depositPct > 0 ? Math.round(priceCents * depositPct / 100) : 0;
-    const balanceCents = priceCents - depositCents;
-    const needsApproval = depositPct > 0 && balanceCents > 0;
+    const basePriceCents = service.price_cents || 0;
+
+    let finalPriceCents = basePriceCents;
+    let discountCents = 0;
+    let resolvedPromotionId: string | null = null;
+
+    if (promotion_id && basePriceCents > 0) {
+      const { data: promoData } = await supabase
+        .rpc("get_available_promos", {
+          p_service_id: service_id,
+          p_tier: clientPriceCents ? undefined : undefined,
+        });
+
+      const matched = (promoData || []).find((p: { id: string }) => p.id === promotion_id);
+      if (matched) {
+        finalPriceCents = matched.final_price_cents;
+        discountCents = basePriceCents - finalPriceCents;
+        resolvedPromotionId = promotion_id;
+      }
+    }
+
+    const priceCents = clientPriceCents !== undefined ? clientPriceCents : finalPriceCents;
+    const finalDiscount = discountCents;
 
     const { data: appointment, error: insertError } = await svc
       .from("appointments")
@@ -106,14 +122,14 @@ export async function POST(request: Request) {
         end_time: endDate.toISOString(),
         modality,
         notes: notes || null,
-        status: needsApproval ? "pending_approval" : (priceCents > 0 ? "pending_payment" : "pending"),
-        approval_status: needsApproval ? "pending_approval" : "n/a",
+        status: priceCents > 0 ? "pending_payment" : "pending",
         price_cents: priceCents,
-        deposit_cents: depositCents,
-        balance_cents: balanceCents,
         payment_status: priceCents > 0 ? "pending_payment" : "pending",
+        promotion_id: resolvedPromotionId,
+        discount_cents: finalDiscount,
+        original_price_cents: basePriceCents,
       })
-      .select("id, status, start_time, end_time, modality, price_cents, payment_status, deposit_cents, balance_cents, approval_status")
+      .select("id, status, start_time, end_time, modality, price_cents, payment_status, promotion_id, discount_cents, original_price_cents")
       .single();
 
     if (insertError) {
@@ -124,19 +140,18 @@ export async function POST(request: Request) {
     let mpInitPoint: string | null = null;
 
     if (priceCents > 0) {
-      const mpAmount = needsApproval ? depositCents : priceCents;
       const { createPaymentPreference } = await import("@/lib/mercadopago");
       const result = await createPaymentPreference({
         items: [{
-          title: needsApproval ? `${service.name} (seña ${depositPct}%)` : service.name,
+          title: service.name,
           quantity: 1,
-          unit_price: mpAmount / 100,
+          unit_price: priceCents / 100,
           currency_id: "ARS",
         }],
         payerEmail: user.email || "",
         backUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://anamurat.online"}/consultantes/reservar/confirmacion`,
         notificationUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://anamurat.online"}/api/mercadopago/webhook`,
-        externalReference: JSON.stringify({ userId: user.id, appointmentId: appointment.id, type: needsApproval ? "deposit" : "full" }),
+        externalReference: JSON.stringify({ userId: user.id, appointmentId: appointment.id, type: "full" }),
         autoReturn: "approved",
       });
 

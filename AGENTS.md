@@ -5,7 +5,7 @@ Construir y deployar plataforma SaaS completa de Ana Reiki: landing, CRM terapé
 - UX en español (es-AR).
 - DB migrations numeradas (001→032).
 - Sin SDK externo de pagos — MP vía API directa.
-- 3 tiers: Prana (free), Shakti ($99/mes), Ananda ($199/mes).
+- 3 tiers: Prana (gratis), Shakti ($149/mes), Ananda ($299/mes).
 - Roles: `owner`, `admin`, `gerente`, `consultante`.
 - RLS con `is_admin_user()` (admin+owner) e `is_owner_user()` (solo owner) SECURITY DEFINER.
 - Deploy: VPS Hetzner, Docker + nginx host + Let's Encrypt, `anamurat.online`.
@@ -37,10 +37,31 @@ Construir y deployar plataforma SaaS completa de Ana Reiki: landing, CRM terapé
 - **Layout fallback `is_premium`**: Si `plan_tier !== 'prana'` pero `is_premium === false`, fuerza a `prana`. Migration 026 corrige funciones de pago para actualizar `plan_tier`.
 - **Fix cancel_appointment overload**: Migration 028 — dropea función vieja (2 params) y reemplaza la de 3 params para que retorne `appointments` row y no sea ambigua.
 - **Dashboard Enhancement**: Migration 029 — tablas `oracle_quotes` (20 frases seed), `session_history` (bitácora del consultante), `streak_milestones` (hitos de racha con trigger automático). Admin CRUD en `/admin/frases`. Dashboard muestra oráculo desde DB, hitos de racha (🌱7, 🌿30, 🌳60...), y entradas de bitácora. Evolución agrega tab "Bitácora" con formulario self-journal (título, notas, mood antes/después, privacidad) integrado en línea de tiempo.
-- **Migration 030** (`complete_payment_fix`): Confirm-payment endpoint refactorizado — usa `external_reference` de URL, no depende de `getPayment()` contra API MP. OAuth fallback con `getAccessToken()` async.
-- **Migration 031** (`services_pricing_v2`): `services` ahora tiene `price_cents_online` y `price_cents_presencial` independientes. `availability_rules_v2` cambia de `service_id` único a `service_ids uuid[]` — permite múltiples servicios por regla. `get_available_slots_v2()` actualizada para emitir un slot por servicio del array. Admin servicios: precios online/presencial editables por Owner, duración editable por Admin/Owner. RuleManager: checkboxes multi-servicio con select all/deselect all.
-- **DatePicker fix**: Días sin oferta se muestran con letra gris (no blanca) para que sean legibles. Solo los días con disponibilidad tienen highlight terracota.
-- **Migration 032** (`deposit_approval_flow`): `services.deposit_percentage` (porcentaje de seña opcional, 0=pago completo). `appointments` nuevas columnas: `deposit_cents`, `balance_cents`, `approval_status` (enum), `approved_at`, `rejected_at`, `rejection_action`, `cutoff_at`. `appointments.status` ampliado con `pending_approval` y `approved`. Funciones: `approve_appointment()`, `reject_appointment()`, `get_pending_approvals_count()`, `expire_old_approvals()` actualizada para cutoff. Endpoints: `POST /api/admin/appointments/[id]/approve`, `POST /api/admin/appointments/[id]/reject`, `POST /api/appointments/pay-balance`, `POST /api/admin/appointments/[id]/mark-refunded`. Frontend: `PendingAppointments` modificado para mostrar aprobación/rechazo con modal, `MisCitasClient` muestra badges/acciones según status. Cutoff automático vía reminders cron.
+- **Payment Flow Complete (Migration 030)**: Unifica migrations 027+028+029 en un solo script idempotente (`IF NOT EXISTS`/`IF EXISTS`). Incluye `price_cents`, `payment_status` (pending/pending_payment/paid/refunded), `mp_preference_id`, `mp_payment_id` en appointments; fix `cancel_appointment` overload; enum `pending_payment`; función `confirm_appointment_payment()`. Ejecutada en Supabase Dashboard.
+- **Admin Servicios UI**: Página `/admin/servicios` con editor de precios por servicio (solo owner accede al campo `price_cents`). Sidebar actualizado con enlace.
+- **Retry Payment**: Endpoint `POST /api/appointments/retry-payment` que crea nueva preferencia MP para turnos con `payment_status = 'pending_payment'` + botón "Reintentar pago" en MisCitasClient.
+- **MP Webhook IPN**: `POST /api/mercadopago/webhook` escucha notificaciones de MP, actualiza `payment_status` a `paid` y llama a `confirm_appointment_payment()`. `notification_url` incluida en `createPaymentPreference()`. Test suite agregado en `__tests__/route.test.ts`.
+- **Pending Payment Cleanup**: Turnos con `pending_payment` por más de 30 minutos se cancelan automáticamente vía `expire_old_approvals()` en cron de reminders.
+- **`notificationUrl` en `mercadopago.ts`**: `createPaymentPreference()` acepta `notificationUrl` opcional para que MP notifique al webhook automáticamente.
+- **Pricing actualizado (Migration 031)**: Shakti → $149/mes (price_cents 14900), Ananda → $299/mes (price_cents 29900). Nuevo plan `ananda-monthly` en DB. PremiumUpgrade refleja precios y features actualizados.
+- **Mensajes habilitado para todos los tiers**: Prana, Shakti y Ananda ahora acceden a mensajes directos. Restricción Ananda-only eliminada del sidebar.
+- **Promo-Service Integration (Migration 032)**: `service_id` en `promotion_sessions`, `promotion_id`/`discount_cents`/`original_price_cents` en appointments, `deposit_percent` en services. Función `get_available_promos()` para calcular precio final.
+- **API promos**: `GET /api/promos/available?service_id=X` devuelve promos activas con precio final. Admin API actualizada para vincular servicios a promos.
+- **Promo selector en booking**: BookingConfirm muestra promos disponibles como opciones seleccionables. Al elegir una, se actualiza el precio final.
+- **Badge cambiado**: Items bloqueados muestran "SUBIR" en vez de "PRO".
+
+### Feature matrix actual:
+| Módulo | Prana (gratis) | Shakti ($149/mes) | Ananda ($299/mes) |
+|--------|:-:|:-:|:-:|
+| Perfil, Agenda, Mis Citas | ✅ | ✅ | ✅ |
+| Comunidad | ✅ | ✅ | ✅ |
+| Mensajes directos | ✅ | ✅ | ✅ |
+| Notificaciones | ✅ | ✅ | ✅ |
+| Biblioteca | ❌ | ✅ | ✅ |
+| Evolución (mood tracker) | ❌ | ✅ | ✅ |
+| Clases grabadas | ❌ | ❌ | ✅ |
+| Chat Buda (IA) | ❌ | ❌ | ✅ |
+| Evolución completa + insights IA | ❌ | ❌ | ✅ |
 
 ### Resolved (prev. Blocked)
 - ~~**MP OAuth connect**: El endpoint `/api/mercadopago/oauth/link` devuelve error "MP OAuth no configurado".~~ → **Resuelto**. Era del build anterior (commit pre-`809f968`). Verificado: `MP_CLIENT_ID` y `MP_CLIENT_SECRET` seteados, 5 tokens activos en DB, expiración Dic 2026, auth URL generada correctamente. El owner (Ana) ya conectó con éxito.
@@ -54,14 +75,14 @@ Construir y deployar plataforma SaaS completa de Ana Reiki: landing, CRM terapé
 - **Promos**: Tablas `promotions` + `promotion_sessions` + `promo_purchases`. Pago único vía MP preference. Filtro por `allowed_tiers`.
 
 ## Next Steps
-1. Debuggear MP OAuth: por qué `/api/mercadopago/oauth/link` falla con vars set en container.
-2. Separar DM de Comunidad (tablas + API + migración de datos existentes).
-3. Sistema de Foros (categorías, temas, posts, likes, bookmarks).
-4. Sistema de Comentarios polimórfico (biblioteca, podcast, videos, clases).
-5. Sidebar Admin y Consultante reorganizados.
-6. Agenda reingeniería Fase 6: Cleanup tablas viejas (availability_slots, availability_rules v1, availability_exceptions, availability, columna service_id obsoleta).
+1. Separar DM de Comunidad (tablas + API + migración de datos existentes).
+2. Sistema de Foros (categorías, temas, posts, likes, bookmarks).
+3. Sistema de Comentarios polimórfico (biblioteca, podcast, videos, clases).
+4. Sidebar Admin y Consultante reorganizados.
+5. Agenda reingeniería Fase 5: Admin RuleManager UI.
+6. Agenda reingeniería Fase 6: Cleanup tablas viejas.
 7. User: verificar dominio Resend en Namecheap.
-8. User: testear checkout MP con cuenta diferente.
+8. User: testear checkout MP con cuenta diferente (producción).
 
 ## Deploy — VPS Hetzner
 
@@ -183,4 +204,16 @@ Cuando el usuario pida deployar:
 - `src/app/api/reminders/route.ts`: Cron job + `expire_old_approvals()`
 - `src/lib/auth/roles.ts`: `isAdmin()` (admin+owner) + `isOwner()`
 - `src/app/api/auth/check-role/route.ts`: Endpoint reconoce owner como admin
-- `docs/proposal/PROPUESTA_REINGENIERIA.md`: Propuesta completa RBAC + turnos + promos
+- `supabase/migrations/030_complete_payment_fix.sql`: Unifica migrations 027-029, idempotente.
+- `src/app/api/mercadopago/webhook/route.ts`: Webhook MP IPN — escucha notificaciones de pago, actualiza turno.
+- `src/app/api/mercadopago/webhook/__tests__/route.test.ts`: Tests del webhook.
+- `src/app/api/appointments/retry-payment/route.ts`: Crea nueva preferencia MP para turnos con `pending_payment`.
+- `src/app/api/appointments/confirm-payment/route.ts`: Verifica pago post-redirect.
+- `src/app/admin/servicios/page.tsx`: Admin editor de precios por servicio (solo owner).
+- `src/app/admin/frases/page.tsx`: Admin CRUD de frases del oráculo.
+- `src/app/api/admin/oracle-quotes/route.ts`: API CRUD frases del oráculo.
+- `src/app/api/session-history/route.ts`: API bitácora del consultante.
+- `src/app/consultantes/evolucion/page.tsx`: Tab "Bitácora" con self-journal.
+- `src/lib/mercadopago.ts`: `createPaymentPreference()` con soporte `notificationUrl`.
+- `src/lib/email.ts`: Templates HTML email (confirmación, cancelación, reprogramación).
+- `docs/analysis/2026-06-05_enacom37009_analisis-arquitectura-completo.md`: Análisis arquitectura completo.

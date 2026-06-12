@@ -7,7 +7,7 @@
 ## INFRAESTRUCTURA Y CORE
 
 - [x] Proyecto Supabase + auth + RLS
-- [x] Migraciones (001→028 aplicadas)
+- [x] Migraciones (001→032 aplicadas)
 - [x] Deploy VPS Hetzner: Docker + nginx + Let's Encrypt
 - [x] GitHub Actions auto-deploy
 - [x] 4 roles: consultante, gerente, admin, owner
@@ -52,10 +52,12 @@
 ## MERCADO PAGO
 
 ### Pagos one-time (turnos)
-- [x] createPaymentPreference() en lib
+- [x] createPaymentPreference() en lib (con notificationUrl)
 - [x] POST /api/appointments crea preferencia si price_cents > 0
 - [x] POST /api/appointments/confirm-payment (post-redirect)
-- [x] POST /api/mercadopago/webhook (IPN)
+- [x] POST /api/appointments/retry-payment (reintentar pago)
+- [x] POST /api/mercadopago/webhook (IPN con tests)
+- [x] Pending payment cleanup (30 min timeout vía cron)
 - [x] Columnas: price_cents, payment_status, mp_preference_id, mp_payment_id
 
 ### Suscripciones (planes)
@@ -69,7 +71,7 @@
 ### OAuth multi-cliente
 - [x] Tabla mp_credentials
 - [x] OAuth link, callback, status endpoints
-- [ ] **DEBUG**: link devuelve "MP OAuth no configurado" (blocked)
+- [x] Conexión exitosa (Ana ya conectó, 5 tokens activos)
 
 ### Admin payments
 - [x] Payments dashboard con KPIs
@@ -95,9 +97,10 @@
 - [x] Ver/editar nombre y email
 
 ### Suscripciones
-- [x] Comparativa de planes
+- [x] Comparativa de planes con feature matrix
 - [x] Upgrade a Shakti/Ananda
 - [x] Downgrade/cancel
+- [x] Precios actualizados: Prana gratis, Shakti $149/mes, Ananda $299/mes
 
 ### Mis Citas
 - [x] Lista de turnos con estados
@@ -121,7 +124,7 @@
 ### Mensajes
 - [x] Bandeja de entrada/salida
 - [x] Leer/no leído
-- [x] Solo tier Ananda
+- [x] Disponible para todos los tiers (Prana, Shakti, Ananda)
 
 ### Chat Buda (AI)
 - [x] Chat contextual con historial de moods + notas
@@ -250,9 +253,13 @@
 
 ## PRÓXIMOS PASOS INMEDIATOS
 
-1. [ ] Debuggear MP OAuth (link endpoint)
-2. [ ] Crear UI admin para setear price_cents en servicios
-3. [ ] Verificar dominio Resend en Namecheap (DNS)
-4. [ ] Testear checkout MP con cuenta diferente
-5. [ ] Agregar Meditaciones Guiadas como servicio
-6. [ ] Mobile menu drawer funcional
+1. [ ] Ejecutar migration 031 en Supabase Dashboard
+2. [ ] Verificar dominio Resend en Namecheap (DNS)
+3. [ ] Testear checkout MP con cuenta diferente (producción)
+4. [ ] Separar DM de Comunidad (tablas + API + migración)
+5. [ ] Sistema de Foros (categorías, temas, posts, likes, bookmarks)
+6. [ ] Sistema de Comentarios polimórfico
+7. [ ] Sidebar Admin y Consultante reorganizados
+8. [ ] Agenda reingeniería Fase 5: Admin RuleManager UI
+9. [ ] Agregar Meditaciones Guiadas como servicio
+10. [ ] Mobile menu drawer funcional

@@ -1,17 +1,31 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import type { Slot } from "@/types/appointments";
 
 type Service = { id: string; name: string; duration_minutes: number; price_cents_online?: number; price_cents_presencial?: number };
 
+type Promo = {
+  id: string;
+  name: string;
+  description: string | null;
+  discount_percent: number | null;
+  discount_fixed: number | null;
+  price_override: number | null;
+  final_price_cents: number;
+  original_price_cents: number;
+  expires_at: string | null;
+};
+
 type Props = {
   service: Service;
   modality: string;
   date: Date;
   slot: Slot;
+  promotionId: string | null;
+  onPromoSelect: (promotionId: string | null, priceCents: number | undefined) => void;
   onConfirm: (notes?: string) => Promise<void>;
   loading: boolean;
   error: string | null;
@@ -35,13 +49,33 @@ export default function BookingConfirm({
   modality,
   date,
   slot,
+  promotionId,
+  onPromoSelect,
   onConfirm,
   loading,
   error,
 }: Props) {
   const [notes, setNotes] = useState("");
-  const priceCents = modality === "online" ? (service.price_cents_online || 0) : (service.price_cents_presencial || 0);
-  const hasPrice = priceCents > 0;
+  const [promos, setPromos] = useState<Promo[]>([]);
+  const [promosLoading, setPromosLoading] = useState(false);
+  const hasPrice = (service.price_cents || 0) > 0;
+
+  const selectedPromo = promos.find((p) => p.id === promotionId) || null;
+  const effectivePrice = selectedPromo ? selectedPromo.final_price_cents : (service.price_cents || 0);
+  const hasDiscount = selectedPromo && effectivePrice < (service.price_cents || 0);
+
+  useEffect(() => {
+    if (!hasPrice) return;
+    setPromosLoading(true);
+    fetch(`/api/promos/available?service_id=${service.id}`)
+      .then((r) => r.json())
+      .then((json) => {
+        setPromos(json.data || []);
+        if (json.data?.length === 0) onPromoSelect(null, undefined);
+      })
+      .catch(() => setPromos([]))
+      .finally(() => setPromosLoading(false));
+  }, [service.id]);
 
   return (
     <div className="space-y-6">
@@ -61,7 +95,16 @@ export default function BookingConfirm({
           <div className="flex justify-between items-center">
             <span className="text-sm text-[var(--color-text-light)]">Precio</span>
             <span className="font-bold text-lg text-[var(--color-terracotta)]">
-              {formatPrice(priceCents)}
+              {hasDiscount ? (
+                <span className="flex items-center gap-2">
+                  <span className="line-through text-sm text-gray-400 font-normal">
+                    {formatPrice(service.price_cents!)}
+                  </span>
+                  {formatPrice(effectivePrice)}
+                </span>
+              ) : (
+                formatPrice(service.price_cents!)
+              )}
             </span>
           </div>
         )}
@@ -90,6 +133,64 @@ export default function BookingConfirm({
             {service.duration_minutes} minutos
           </span>
         </div>
+
+        {hasPrice && promos.length > 0 && (
+          <>
+            <hr className="border-gray-100" />
+            <div>
+              <p className="text-sm font-semibold text-[var(--color-text-main)] mb-3">
+                Promociones disponibles
+              </p>
+              <div className="space-y-2">
+                <button
+                  onClick={() => onPromoSelect(null, undefined)}
+                  className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
+                    !selectedPromo
+                      ? "border-[var(--color-primary-dark)] bg-[var(--color-primary-dark)]/5"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <span className="font-medium">Sin promo</span>
+                  <span className="float-right text-gray-500">{formatPrice(service.price_cents!)}</span>
+                </button>
+                {promos.map((promo) => (
+                  <button
+                    key={promo.id}
+                    onClick={() => onPromoSelect(promo.id, promo.final_price_cents)}
+                    className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
+                      selectedPromo?.id === promo.id
+                        ? "border-green-500 bg-green-50"
+                        : "border-gray-200 hover:border-green-300"
+                    }`}
+                  >
+                    <div>
+                      <span className="font-medium text-green-700">{promo.name}</span>
+                      {promo.description && (
+                        <span className="text-gray-500 ml-2">{promo.description}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-green-600 font-bold">
+                        {formatPrice(promo.final_price_cents)}
+                      </span>
+                      {promo.final_price_cents < promo.original_price_cents && (
+                        <span className="text-xs text-gray-400 line-through">
+                          {formatPrice(promo.original_price_cents)}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {promosLoading && (
+          <div className="text-center py-2">
+            <span className="text-xs text-gray-400">Cargando promos...</span>
+          </div>
+        )}
 
         <hr className="border-gray-100" />
 
@@ -129,7 +230,7 @@ export default function BookingConfirm({
           {loading
             ? "Reservando..."
             : hasPrice
-              ? `Pagar y reservar (${formatPrice(priceCents)})`
+              ? `Pagar y reservar (${formatPrice(effectivePrice)})`
               : "Confirmar Reserva"}
         </button>
       </div>

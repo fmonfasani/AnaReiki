@@ -24,7 +24,8 @@ describe("PremiumUpgrade", () => {
     render(<PremiumUpgrade />);
     expect(screen.getByText("Perfil personal")).toBeDefined();
     expect(screen.getByText("Agendar citas con Ana")).toBeDefined();
-    expect(screen.getByText("Comunidad (leer y participar)")).toBeDefined();
+    expect(screen.getByText("Comunidad")).toBeDefined();
+    expect(screen.getByText("Mensajes directos")).toBeDefined();
   });
 
   it("should show Shakti features", () => {
@@ -36,8 +37,10 @@ describe("PremiumUpgrade", () => {
 
   it("should show Ananda features including all modules", () => {
     render(<PremiumUpgrade />);
-    expect(screen.getAllByText("Chat IA ilimitado").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("Mensajes directos con otros consultantes")).toBeDefined();
+    expect(screen.getByText("Todo lo de Shakti")).toBeDefined();
+    expect(screen.getByText("Todas las clases grabadas")).toBeDefined();
+    expect(screen.getByText("Chat Buda (IA ilimitado)")).toBeDefined();
+    expect(screen.getByText("Evolución completa con insights IA")).toBeDefined();
   });
 
   it("should show Shakti and Ananda as Próximamente", () => {
@@ -53,8 +56,8 @@ describe("PremiumUpgrade", () => {
 
   it("should show pricing for paid tiers", () => {
     render(<PremiumUpgrade />);
-    expect(screen.getByText("$99/mes")).toBeDefined();
-    expect(screen.getByText("$199/mes")).toBeDefined();
+    expect(screen.getByText("$149/mes")).toBeDefined();
+    expect(screen.getByText("$299/mes")).toBeDefined();
   });
 
   it("should show the introductory description", () => {

@@ -40,34 +40,33 @@ describe("SidebarNav", () => {
     expect(screen.queryAllByText("PRO").length).toBe(0);
   });
 
-  it("should lock chat-buda and mensajes for shakti plan", () => {
-    const shaktiAccess = ["inicio", "suscripciones", "biblioteca", "podcast", "comunidad", "evolucion", "mis-citas", "perfil"];
+  it("should lock chat-buda for shakti plan", () => {
+    const shaktiAccess = ["inicio", "suscripciones", "biblioteca", "podcast", "comunidad", "evolucion", "mis-citas", "mensajes", "perfil"];
     const items = mapItems(shaktiAccess);
     render(<SidebarNav items={items} planTier="shakti" />);
 
     expect(screen.getByText("Chat Buda").closest("a")?.className).toContain("cursor-not-allowed");
-    expect(screen.getByText("Mensajes").closest("a")?.className).toContain("cursor-not-allowed");
     expect(screen.getByText("Biblioteca").closest("a")?.className).not.toContain("cursor-not-allowed");
   });
 
-  it("should lock biblioteca, clases, podcast, evolucion, mensajes, chat-buda for prana plan", () => {
-    const pranaAccess = ["inicio", "suscripciones", "mis-citas", "comunidad", "perfil"];
+  it("should lock biblioteca, clases, podcast, evolucion, chat-buda for prana plan", () => {
+    const pranaAccess = ["inicio", "suscripciones", "mis-citas", "comunidad", "mensajes", "perfil"];
     const items = mapItems(pranaAccess);
     render(<SidebarNav items={items} planTier="prana" />);
 
     expect(screen.getByText("Biblioteca").closest("a")?.className).toContain("cursor-not-allowed");
     expect(screen.getByText("Clases").closest("a")?.className).toContain("cursor-not-allowed");
-    expect(screen.getByText("Mensajes").closest("a")?.className).toContain("cursor-not-allowed");
     expect(screen.getByText("Inicio").closest("a")?.className).not.toContain("cursor-not-allowed");
     expect(screen.getByText("Comunidad").closest("a")?.className).not.toContain("cursor-not-allowed");
+    expect(screen.getByText("Mensajes").closest("a")?.className).not.toContain("cursor-not-allowed");
   });
 
-  it("should show PRO badge for locked items", () => {
+  it("should show SUBIR badge for locked items", () => {
     const items = [
       { id: "biblioteca", name: "Biblioteca", href: "/consultantes/biblioteca", icon: "library_books", locked: true },
     ];
     render(<SidebarNav items={items} planTier="prana" />);
-    expect(screen.getByText("PRO")).toBeDefined();
+    expect(screen.getByText("SUBIR")).toBeDefined();
   });
 
   it("should show lock toast when clicking a locked item", () => {
