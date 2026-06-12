@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import ProfileForm from "@/components/consultantes/ProfileForm";
+import MisPromosCard from "@/components/consultantes/MisPromosCard";
 import Link from "next/link";
 
 export default async function PerfilPage() {
@@ -52,6 +53,8 @@ export default async function PerfilPage() {
           email: user.email || "",
         }}
       />
+
+      <MisPromosCard />
     </div>
   );
 }

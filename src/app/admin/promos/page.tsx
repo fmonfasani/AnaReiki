@@ -14,6 +14,8 @@ type Promotion = {
   discount_percent: number | null;
   discount_fixed: number | null;
   price_override: number | null;
+  bundle_price_cents: number | null;
+  max_sessions: number;
   allowed_tiers: string[] | null;
   max_purchases: number | null;
   current_purchases: number;
@@ -27,8 +29,10 @@ type Promotion = {
 type PromoForm = {
   name: string;
   description: string;
-  discount_type: "percent" | "fixed" | "override";
+  discount_type: "percent" | "fixed" | "override" | "bundle";
   discount_value: string;
+  bundle_price: string;
+  max_sessions: string;
   allowed_tiers: string[];
   service_ids: string[];
   max_purchases: string;
@@ -41,6 +45,8 @@ const emptyForm: PromoForm = {
   description: "",
   discount_type: "percent",
   discount_value: "",
+  bundle_price: "",
+  max_sessions: "5",
   allowed_tiers: [],
   service_ids: [],
   max_purchases: "",
@@ -50,11 +56,15 @@ const emptyForm: PromoForm = {
 
 const ALL_TIERS = ["prana", "shakti", "ananda"];
 
+const formatPrice = (cents: number) =>
+  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(cents / 100);
+
 export default function PromosPage() {
   const [promos, setPromos] = useState<Promotion[]>([]);
   const [allServices, setAllServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<PromoForm>(emptyForm);
   const [saving, setSaving] = useState(false);
 
@@ -92,37 +102,75 @@ export default function PromosPage() {
     }));
   };
 
+  const openEdit = (p: Promotion) => {
+    const isBundle = !!p.bundle_price_cents && p.bundle_price_cents > 0;
+    setForm({
+      name: p.name,
+      description: p.description || "",
+      discount_type: isBundle ? "bundle" : p.discount_percent ? "percent" : p.discount_fixed ? "fixed" : p.price_override ? "override" : "percent",
+      discount_value: isBundle ? "" : String(p.discount_percent || p.discount_fixed || p.price_override || ""),
+      bundle_price: isBundle ? String(p.bundle_price_cents) : "",
+      max_sessions: String(p.max_sessions || 5),
+      allowed_tiers: p.allowed_tiers || [],
+      service_ids: p.service_ids || [],
+      max_purchases: p.max_purchases ? String(p.max_purchases) : "",
+      is_active: p.is_active,
+      expires_at: p.expires_at ? p.expires_at.slice(0, 10) : "",
+    });
+    setEditingId(p.id);
+    setShowForm(true);
+  };
+
+  const resetForm = () => {
+    setForm(emptyForm);
+    setEditingId(null);
+    setShowForm(false);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
 
-    const hasDiscount = form.discount_value.trim() !== "";
-    const discountValue = hasDiscount ? parseFloat(form.discount_value) : NaN;
-    const discountPercent = hasDiscount && form.discount_type === "percent" ? discountValue : null;
-    const discountFixed = hasDiscount && form.discount_type === "fixed" ? discountValue : null;
-    const priceOverride = hasDiscount && form.discount_type === "override" ? discountValue : null;
+    const isBundle = form.discount_type === "bundle";
+    const body: Record<string, unknown> = {
+      name: form.name,
+      description: form.description || null,
+      allowed_tiers: form.allowed_tiers.length > 0 ? form.allowed_tiers : null,
+      service_ids: form.service_ids.length > 0 ? form.service_ids : null,
+      max_purchases: form.max_purchases ? parseInt(form.max_purchases) : null,
+      is_active: form.is_active,
+      expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
+    };
 
-    const res = await fetch("/api/admin/promos", {
-      method: "POST",
+    if (isBundle) {
+      body.bundle_price_cents = form.bundle_price ? parseInt(form.bundle_price) : null;
+      body.max_sessions = form.max_sessions ? parseInt(form.max_sessions) : 1;
+      body.discount_percent = null;
+      body.discount_fixed = null;
+      body.price_override = null;
+    } else {
+      body.bundle_price_cents = null;
+      body.max_sessions = 1;
+      const hasDiscount = form.discount_value.trim() !== "";
+      const discountValue = hasDiscount ? parseFloat(form.discount_value) : NaN;
+      body.discount_percent = hasDiscount && form.discount_type === "percent" ? discountValue : null;
+      body.discount_fixed = hasDiscount && form.discount_type === "fixed" ? discountValue : null;
+      body.price_override = hasDiscount && form.discount_type === "override" ? discountValue : null;
+    }
+
+    const method = editingId ? "PATCH" : "POST";
+    const url = editingId ? "/api/admin/promos" : "/api/admin/promos";
+    if (editingId) body.id = editingId;
+
+    const res = await fetch(url, {
+      method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: form.name,
-        description: form.description || null,
-        discount_percent: discountPercent,
-        discount_fixed: discountFixed,
-        price_override: priceOverride,
-        allowed_tiers: form.allowed_tiers.length > 0 ? form.allowed_tiers : null,
-        service_ids: form.service_ids.length > 0 ? form.service_ids : null,
-        max_purchases: form.max_purchases ? parseInt(form.max_purchases) : null,
-        is_active: form.is_active,
-        expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
-      }),
+      body: JSON.stringify(body),
     });
 
     setSaving(false);
     if (res.ok) {
-      setForm(emptyForm);
-      setShowForm(false);
+      resetForm();
       fetchPromos();
     } else {
       const err = await res.json();
@@ -140,10 +188,11 @@ export default function PromosPage() {
   };
 
   const discountLabel = (p: Promotion) => {
+    if (p.bundle_price_cents) return null;
     if (p.discount_percent) return `${p.discount_percent}% OFF`;
     if (p.discount_fixed) return `$${p.discount_fixed} OFF`;
     if (p.price_override) return `$${p.price_override}`;
-    return "—";
+    return null;
   };
 
   return (
@@ -154,7 +203,7 @@ export default function PromosPage() {
           <p className="text-gray-500 text-sm">Creá y gestioná promociones para tus consultantes.</p>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => { resetForm(); setShowForm(!showForm); }}
           className="px-4 py-2 bg-pink-600 text-white rounded-lg text-sm font-medium hover:bg-pink-700 transition-colors"
         >
           {showForm ? "Cancelar" : "Nueva Promoción"}
@@ -170,30 +219,51 @@ export default function PromosPage() {
                 className="w-full border-gray-200 rounded-lg focus:ring-pink-500" required />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de descuento</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
               <select value={form.discount_type} onChange={(e) => setForm({ ...form, discount_type: e.target.value as any })}
                 className="w-full border-gray-200 rounded-lg focus:ring-pink-500">
+                <option value="bundle">🧺 Bundle (sesiones incluidas)</option>
                 <option value="percent">Porcentaje (%)</option>
                 <option value="fixed">Monto fijo ($)</option>
                 <option value="override">Precio personalizado</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Valor</label>
-              <input type="number" step="0.01" value={form.discount_value} onChange={(e) => setForm({ ...form, discount_value: e.target.value })}
-                className="w-full border-gray-200 rounded-lg focus:ring-pink-500" placeholder="Opcional" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Compras máximas (opcional)</label>
-              <input type="number" value={form.max_purchases} onChange={(e) => setForm({ ...form, max_purchases: e.target.value })}
-                className="w-full border-gray-200 rounded-lg focus:ring-pink-500" placeholder="Ilimitado" />
-            </div>
           </div>
+
+          {form.discount_type === "bundle" ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Precio del bundle (en centavos, ej: 5000 = $50)</label>
+                <input type="number" value={form.bundle_price} onChange={(e) => setForm({ ...form, bundle_price: e.target.value })}
+                  className="w-full border-gray-200 rounded-lg focus:ring-green-500" placeholder="Ej: 5000" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Sesiones incluidas</label>
+                <input type="number" value={form.max_sessions} onChange={(e) => setForm({ ...form, max_sessions: e.target.value })}
+                  className="w-full border-gray-200 rounded-lg focus:ring-green-500" placeholder="Ej: 5" min="1" />
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Valor</label>
+                <input type="number" step="0.01" value={form.discount_value} onChange={(e) => setForm({ ...form, discount_value: e.target.value })}
+                  className="w-full border-gray-200 rounded-lg focus:ring-pink-500" placeholder="Opcional" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Compras máximas (opcional)</label>
+                <input type="number" value={form.max_purchases} onChange={(e) => setForm({ ...form, max_purchases: e.target.value })}
+                  className="w-full border-gray-200 rounded-lg focus:ring-pink-500" placeholder="Ilimitado" />
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
             <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
               className="w-full border-gray-200 rounded-lg focus:ring-pink-500" rows={2} />
           </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Tiers permitidos (opcional)</label>
             <div className="flex gap-2">
@@ -209,21 +279,15 @@ export default function PromosPage() {
               ))}
             </div>
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Servicios vinculados (opcional — si no seleccionás ninguno, aplica a todos)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Servicios vinculados</label>
             <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 border border-gray-200 rounded-lg">
               {allServices.length === 0 ? (
                 <span className="text-xs text-gray-400 p-2">Cargando servicios...</span>
               ) : (
                 allServices.map((svc) => (
-                  <button key={svc.id} type="button" onClick={() => {
-                    setForm((f) => ({
-                      ...f,
-                      service_ids: f.service_ids.includes(svc.id)
-                        ? f.service_ids.filter((s) => s !== svc.id)
-                        : [...f.service_ids, svc.id],
-                    }));
-                  }}
+                  <button key={svc.id} type="button" onClick={() => toggleService(svc.id)}
                     className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
                       form.service_ids.includes(svc.id)
                         ? "bg-pink-100 border-pink-300 text-pink-700"
@@ -235,6 +299,7 @@ export default function PromosPage() {
               )}
             </div>
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Vence (opcional)</label>
@@ -249,10 +314,19 @@ export default function PromosPage() {
               </label>
             </div>
           </div>
-          <button type="submit" disabled={saving || !form.name}
-            className="w-full bg-pink-600 hover:bg-pink-700 disabled:bg-gray-300 text-white font-bold py-2.5 rounded-lg transition-colors">
-            {saving ? "Guardando..." : "Crear Promoción"}
-          </button>
+
+          <div className="flex gap-2">
+            <button type="submit" disabled={saving || !form.name}
+              className="flex-1 bg-pink-600 hover:bg-pink-700 disabled:bg-gray-300 text-white font-bold py-2.5 rounded-lg transition-colors">
+              {saving ? "Guardando..." : editingId ? "Actualizar Promoción" : "Crear Promoción"}
+            </button>
+            {editingId && (
+              <button type="button" onClick={resetForm}
+                className="px-6 py-2.5 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">
+                Cancelar edición
+              </button>
+            )}
+          </div>
         </form>
       )}
 
@@ -261,10 +335,9 @@ export default function PromosPage() {
           <thead>
             <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100">
               <th className="px-6 py-4 font-semibold">Nombre</th>
-              <th className="px-6 py-4 font-semibold">Descuento</th>
+              <th className="px-6 py-4 font-semibold">Descuento / Bundle</th>
               <th className="px-6 py-4 font-semibold">Servicios</th>
               <th className="px-6 py-4 font-semibold">Tiers</th>
-              <th className="px-6 py-4 font-semibold">Compras</th>
               <th className="px-6 py-4 font-semibold">Vence</th>
               <th className="px-6 py-4 font-semibold">Estado</th>
               <th className="px-6 py-4 font-semibold text-right">Acción</th>
@@ -278,7 +351,6 @@ export default function PromosPage() {
                   <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-16" /></td>
                   <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-24" /></td>
                   <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-16" /></td>
-                  <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-12" /></td>
                   <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-20" /></td>
                   <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-16" /></td>
                   <td className="px-6 py-4 text-right"><div className="h-4 bg-gray-100 rounded w-8 inline-block" /></td>
@@ -286,18 +358,31 @@ export default function PromosPage() {
               ))
             ) : promos.length === 0 ? (
               <tr>
-                <td colSpan={8} className="p-12 text-center text-gray-400">
+                <td colSpan={7} className="p-12 text-center text-gray-400">
                   <span className="material-symbols-outlined text-4xl mb-2">local_offer</span>
                   <p>No hay promociones todavía.</p>
                 </td>
               </tr>
-            ) : promos.map((p) => (
+            ) : promos.map((p) => {
+              const bundleLabel = p.bundle_price_cents
+                ? `${formatPrice(p.bundle_price_cents)} · ${p.max_sessions} sesiones`
+                : discountLabel(p) || "—";
+              return (
               <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
                 <td className="px-6 py-4">
                   <p className="font-medium text-gray-900">{p.name}</p>
                   {p.description && <p className="text-xs text-gray-400 mt-0.5">{p.description}</p>}
                 </td>
-                <td className="px-6 py-4 text-sm font-semibold text-pink-600">{discountLabel(p)}</td>
+                <td className="px-6 py-4">
+                  {p.bundle_price_cents ? (
+                    <span className="inline-flex items-center gap-1 text-sm font-semibold text-green-700 bg-green-50 px-2 py-1 rounded-lg">
+                      <span className="material-symbols-outlined text-sm">inventory_2</span>
+                      {bundleLabel}
+                    </span>
+                  ) : (
+                    <span className="text-sm font-semibold text-pink-600">{bundleLabel}</span>
+                  )}
+                </td>
                 <td className="px-6 py-4 text-sm text-gray-500 max-w-32">
                   {(p.service_ids || []).length > 0
                     ? (p.service_ids as string[]).map((sid) => {
@@ -315,9 +400,6 @@ export default function PromosPage() {
                       ))
                     : <span className="text-gray-300">Todos</span>}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-500">
-                  {p.current_purchases}{p.max_purchases ? ` / ${p.max_purchases}` : ""}
-                </td>
                 <td className="px-6 py-4 text-sm text-gray-400">
                   {p.expires_at ? new Date(p.expires_at).toLocaleDateString() : "—"}
                 </td>
@@ -329,17 +411,22 @@ export default function PromosPage() {
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <button
-                    onClick={() => toggleActive(p.id, p.is_active)}
-                    className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all ${
-                      p.is_active ? "border-gray-200 text-gray-500 hover:bg-gray-50" : "border-pink-200 text-pink-600 hover:bg-pink-50"
-                    }`}
-                  >
-                    {p.is_active ? "Desactivar" : "Activar"}
-                  </button>
+                  <div className="flex items-center justify-end gap-2">
+                    <button onClick={() => openEdit(p)}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-all">
+                      Editar
+                    </button>
+                    <button onClick={() => toggleActive(p.id, p.is_active)}
+                      className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all ${
+                        p.is_active ? "border-gray-200 text-gray-500 hover:bg-gray-50" : "border-pink-200 text-pink-600 hover:bg-pink-50"
+                      }`}>
+                      {p.is_active ? "Desactivar" : "Activar"}
+                    </button>
+                  </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
