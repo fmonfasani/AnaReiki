@@ -28,6 +28,10 @@ type Promo = {
   description: string | null;
   is_active: boolean;
   service_ids: string[];
+  modality: string | null;
+  discount_factor: number;
+  deposit_type: string;
+  deposit_value: number;
   bundle_price_cents?: number;
   max_sessions?: number;
 };
@@ -52,6 +56,7 @@ export default function BookingWizard() {
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [selectedPromotionId, setSelectedPromotionId] = useState<string | null>(null);
   const [promoPriceCents, setPromoPriceCents] = useState<number | undefined>(undefined);
+  const [selectedPromo, setSelectedPromo] = useState<Promo | null>(null);
 
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
@@ -83,9 +88,34 @@ export default function BookingWizard() {
     fetchServices();
   }, []);
 
+  const getPromoTotal = (promo: Promo): number => {
+    const svcs = promo.service_ids.map((id) => services.find((s) => s.id === id)).filter(Boolean) as Service[];
+    const priceField = promo.modality === "online" ? "price_cents_online" : "price_cents_presencial";
+    const subtotal = svcs.reduce((sum, s) => sum + ((s as any)[priceField] || 0), 0);
+    return Math.round(subtotal * (promo.discount_factor ?? 1));
+  };
+
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service);
+    setSelectedPromo(null);
+    setSelectedPromotionId(null);
+    setPromoPriceCents(undefined);
     setStep(1);
+  };
+
+  const handleReservePromo = (promo: Promo) => {
+    const firstService = promo.service_ids
+      .map((id) => services.find((s) => s.id === id))
+      .find(Boolean);
+    if (!firstService) return;
+
+    setSelectedService(firstService);
+    setSelectedPromo(promo);
+    setSelectedModality(promo.modality);
+    setSelectedPromotionId(promo.id);
+    setPromoPriceCents(getPromoTotal(promo));
+    // Skip modality step (promo has fixed modality) -> go to date
+    setStep(2);
   };
 
   const handleModalitySelect = (modality: string) => {
@@ -100,21 +130,7 @@ export default function BookingWizard() {
 
   const handleSlotSelect = (slot: Slot) => {
     setSelectedSlot(slot);
-    setSelectedPromotionId(null);
-    setPromoPriceCents(undefined);
     setStep(4);
-  };
-
-  const handlePromoSelect = (promotionId: string | null, priceCents: number | undefined) => {
-    setSelectedPromotionId(promotionId);
-    setPromoPriceCents(priceCents);
-  };
-
-  const handleReserveSession = (promoId: string) => {
-    const promo = promos.find((p) => p.id === promoId);
-    if (!promo || !promo.service_ids.length) return;
-    const firstService = services.find((s) => promo.service_ids.includes(s.id));
-    if (firstService) handleServiceSelect(firstService);
   };
 
   const handleBuyPromo = async (promoId: string) => {
@@ -185,10 +201,23 @@ export default function BookingWizard() {
   const goBack = () => {
     if (step === 1) {
       setSelectedService(null);
+      setSelectedPromo(null);
+      setSelectedPromotionId(null);
+      setPromoPriceCents(undefined);
       setStep(0);
     } else if (step === 2) {
-      setSelectedModality(null);
-      setStep(1);
+      if (selectedPromo) {
+        // Came from promo, go back to service selection
+        setSelectedPromo(null);
+        setSelectedPromotionId(null);
+        setPromoPriceCents(undefined);
+        setSelectedService(null);
+        setSelectedModality(null);
+        setStep(0);
+      } else {
+        setSelectedModality(null);
+        setStep(1);
+      }
     } else if (step === 3) {
       setSelectedDate(null);
       setStep(2);
@@ -197,6 +226,14 @@ export default function BookingWizard() {
       setStep(3);
     }
   };
+
+  const stepLabel = selectedPromo ? (
+    [STEPS[0], "—", STEPS[2], STEPS[3], STEPS[4], STEPS[5]]
+  ) : STEPS;
+
+  const displaySteps = selectedPromo
+    ? ["Servicio", "", "Fecha", "Horario", "Confirmar", "Listo"]
+    : STEPS;
 
   if (loadingServices) {
     return (
@@ -209,28 +246,27 @@ export default function BookingWizard() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center justify-center gap-2 mb-8">
-        {STEPS.map((label, i) => (
-          <React.Fragment key={label}>
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                i < step
-                  ? "bg-[var(--color-terracotta)] text-white"
-                  : i === step
-                    ? "bg-[var(--color-primary-dark)] text-white"
-                    : "bg-gray-100 text-[var(--color-text-light)]"
-              }`}
-            >
-              {i < step ? "✓" : i + 1}
-            </div>
-            {i < STEPS.length - 1 && (
+        {displaySteps.map((label, i) => {
+          if (!label) return <div key={i} className="w-6 h-0.5 bg-gray-100" />;
+          return (
+            <React.Fragment key={label}>
+              {i > 0 && displaySteps[i - 1] && (
+                <div className={`w-6 h-0.5 ${i < step ? "bg-[var(--color-terracotta)]" : "bg-gray-100"}`} />
+              )}
               <div
-                className={`w-6 h-0.5 ${
-                  i < step ? "bg-[var(--color-terracotta)]" : "bg-gray-100"
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                  i < step
+                    ? "bg-[var(--color-terracotta)] text-white"
+                    : i === step
+                      ? "bg-[var(--color-primary-dark)] text-white"
+                      : "bg-gray-100 text-[var(--color-text-light)]"
                 }`}
-              />
-            )}
-          </React.Fragment>
-        ))}
+              >
+                {i < step ? "✓" : i + 1}
+              </div>
+            </React.Fragment>
+          );
+        })}
       </div>
 
       {step > 0 && step < 5 && (
@@ -251,7 +287,7 @@ export default function BookingWizard() {
               selected={selectedService}
               onSelect={handleServiceSelect}
               onBuyPromo={buyingPromo ? undefined : handleBuyPromo}
-              onReserveSession={handleReserveSession}
+              onReservePromo={handleReservePromo}
               userPurchases={userPurchases}
             />
             {buyingPromo && (
@@ -262,7 +298,7 @@ export default function BookingWizard() {
           </>
         )}
 
-        {step === 1 && selectedService && (
+        {step === 1 && selectedService && !selectedPromo && (
           <ModalitySelector
             allowedModalities={selectedService.allowed_modalities || ["online", "presencial"]}
             selected={selectedModality}
@@ -273,7 +309,7 @@ export default function BookingWizard() {
         {step === 2 && selectedModality && (
           <DatePicker
             modality={selectedModality}
-            serviceId={selectedService?.id || null}
+            serviceId={selectedPromo ? selectedPromo.service_ids[0] || null : (selectedService?.id || null)}
             selected={selectedDate}
             onSelect={handleDateSelect}
           />
@@ -296,7 +332,7 @@ export default function BookingWizard() {
             date={selectedDate}
             slot={selectedSlot}
             promotionId={selectedPromotionId}
-            onPromoSelect={handlePromoSelect}
+            onPromoSelect={() => {}}
             onConfirm={handleConfirm}
             loading={bookingLoading}
             error={bookingError}

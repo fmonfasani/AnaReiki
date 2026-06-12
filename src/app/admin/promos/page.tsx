@@ -1,40 +1,43 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 
 type Service = {
   id: string;
   name: string;
+  description: string | null;
+  duration_minutes: number;
+  price_cents_online: number;
+  price_cents_presencial: number;
+  allowed_modalities: string[];
+  is_active: boolean;
 };
 
 type Promotion = {
   id: string;
   name: string;
   description: string | null;
-  discount_percent: number | null;
-  discount_fixed: number | null;
-  price_override: number | null;
-  bundle_price_cents: number | null;
-  max_sessions: number;
-  allowed_tiers: string[] | null;
-  max_purchases: number | null;
-  current_purchases: number;
   is_active: boolean;
-  starts_at: string | null;
+  service_ids: string[];
+  modality: string | null;
+  discount_factor: number;
+  deposit_type: string;
+  deposit_value: number;
+  max_purchases: number | null;
+  allowed_tiers: string[] | null;
   expires_at: string | null;
   created_at: string;
-  service_ids?: string[];
 };
 
 type PromoForm = {
   name: string;
   description: string;
-  discount_type: "percent" | "fixed" | "override" | "bundle";
-  discount_value: string;
-  bundle_price: string;
-  max_sessions: string;
-  allowed_tiers: string[];
   service_ids: string[];
+  modality: string;
+  discount_factor: string;
+  deposit_type: string;
+  deposit_value: string;
+  allowed_tiers: string[];
   max_purchases: string;
   is_active: boolean;
   expires_at: string;
@@ -43,12 +46,12 @@ type PromoForm = {
 const emptyForm: PromoForm = {
   name: "",
   description: "",
-  discount_type: "percent",
-  discount_value: "",
-  bundle_price: "",
-  max_sessions: "5",
-  allowed_tiers: [],
   service_ids: [],
+  modality: "online",
+  discount_factor: "1",
+  deposit_type: "none",
+  deposit_value: "",
+  allowed_tiers: [],
   max_purchases: "",
   is_active: true,
   expires_at: "",
@@ -57,7 +60,7 @@ const emptyForm: PromoForm = {
 const ALL_TIERS = ["prana", "shakti", "ananda"];
 
 const formatPrice = (cents: number) =>
-  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(cents / 100);
+  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(cents / 100);
 
 export default function PromosPage() {
   const [promos, setPromos] = useState<Promotion[]>([]);
@@ -67,6 +70,23 @@ export default function PromosPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<PromoForm>(emptyForm);
   const [saving, setSaving] = useState(false);
+
+  const selectedServices = allServices.filter((s) => form.service_ids.includes(s.id));
+
+  const subtotal = useMemo(() => {
+    const priceField = form.modality === "online" ? "price_cents_online" : "price_cents_presencial";
+    return selectedServices.reduce((sum, s) => sum + (s[priceField] || 0), 0);
+  }, [selectedServices, form.modality]);
+
+  const discount = parseFloat(form.discount_factor) || 1;
+  const discountedTotal = Math.round(subtotal * discount);
+  let depositCents = 0;
+  const depositVal = parseFloat(form.deposit_value) || 0;
+  if (form.deposit_type === "percent" && depositVal > 0) {
+    depositCents = Math.round(discountedTotal * (depositVal / 100));
+  } else if (form.deposit_type === "fixed" && depositVal > 0) {
+    depositCents = Math.round(depositVal);
+  }
 
   const fetchPromos = async () => {
     setLoading(true);
@@ -103,16 +123,15 @@ export default function PromosPage() {
   };
 
   const openEdit = (p: Promotion) => {
-    const isBundle = !!p.bundle_price_cents && p.bundle_price_cents > 0;
     setForm({
       name: p.name,
       description: p.description || "",
-      discount_type: isBundle ? "bundle" : p.discount_percent ? "percent" : p.discount_fixed ? "fixed" : p.price_override ? "override" : "percent",
-      discount_value: isBundle ? "" : String(p.discount_percent || p.discount_fixed || p.price_override || ""),
-      bundle_price: isBundle ? String(p.bundle_price_cents) : "",
-      max_sessions: String(p.max_sessions || 5),
-      allowed_tiers: p.allowed_tiers || [],
       service_ids: p.service_ids || [],
+      modality: p.modality || "online",
+      discount_factor: String(p.discount_factor ?? 1),
+      deposit_type: p.deposit_type || "none",
+      deposit_value: p.deposit_value ? String(p.deposit_value) : "",
+      allowed_tiers: p.allowed_tiers || [],
       max_purchases: p.max_purchases ? String(p.max_purchases) : "",
       is_active: p.is_active,
       expires_at: p.expires_at ? p.expires_at.slice(0, 10) : "",
@@ -131,38 +150,24 @@ export default function PromosPage() {
     e.preventDefault();
     setSaving(true);
 
-    const isBundle = form.discount_type === "bundle";
     const body: Record<string, unknown> = {
       name: form.name,
       description: form.description || null,
-      allowed_tiers: form.allowed_tiers.length > 0 ? form.allowed_tiers : null,
       service_ids: form.service_ids.length > 0 ? form.service_ids : null,
+      modality: form.modality,
+      discount_factor: discount,
+      deposit_type: form.deposit_type,
+      deposit_value: depositVal,
+      allowed_tiers: form.allowed_tiers.length > 0 ? form.allowed_tiers : null,
       max_purchases: form.max_purchases ? parseInt(form.max_purchases) : null,
       is_active: form.is_active,
       expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
     };
 
-    if (isBundle) {
-      body.bundle_price_cents = form.bundle_price ? parseInt(form.bundle_price) : null;
-      body.max_sessions = form.max_sessions ? parseInt(form.max_sessions) : 1;
-      body.discount_percent = null;
-      body.discount_fixed = null;
-      body.price_override = null;
-    } else {
-      body.bundle_price_cents = null;
-      body.max_sessions = 1;
-      const hasDiscount = form.discount_value.trim() !== "";
-      const discountValue = hasDiscount ? parseFloat(form.discount_value) : NaN;
-      body.discount_percent = hasDiscount && form.discount_type === "percent" ? discountValue : null;
-      body.discount_fixed = hasDiscount && form.discount_type === "fixed" ? discountValue : null;
-      body.price_override = hasDiscount && form.discount_type === "override" ? discountValue : null;
-    }
-
     const method = editingId ? "PATCH" : "POST";
-    const url = editingId ? "/api/admin/promos" : "/api/admin/promos";
     if (editingId) body.id = editingId;
 
-    const res = await fetch(url, {
+    const res = await fetch("/api/admin/promos", {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -187,14 +192,6 @@ export default function PromosPage() {
     fetchPromos();
   };
 
-  const discountLabel = (p: Promotion) => {
-    if (p.bundle_price_cents) return null;
-    if (p.discount_percent) return `${p.discount_percent}% OFF`;
-    if (p.discount_fixed) return `$${p.discount_fixed} OFF`;
-    if (p.price_override) return `$${p.price_override}`;
-    return null;
-  };
-
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between">
@@ -211,7 +208,7 @@ export default function PromosPage() {
       </header>
 
       {showForm && (
-        <form onSubmit={handleSave} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+        <form onSubmit={handleSave} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
@@ -219,90 +216,113 @@ export default function PromosPage() {
                 className="w-full border-gray-200 rounded-lg focus:ring-pink-500" required />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-              <select value={form.discount_type} onChange={(e) => setForm({ ...form, discount_type: e.target.value as any })}
-                className="w-full border-gray-200 rounded-lg focus:ring-pink-500">
-                <option value="bundle">🧺 Bundle (sesiones incluidas)</option>
-                <option value="percent">Porcentaje (%)</option>
-                <option value="fixed">Monto fijo ($)</option>
-                <option value="override">Precio personalizado</option>
-              </select>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+              <input type="text" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
+                className="w-full border-gray-200 rounded-lg focus:ring-pink-500" />
             </div>
           </div>
 
-          {form.discount_type === "bundle" ? (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Precio del bundle (en centavos, ej: 5000 = $50)</label>
-                <input type="number" value={form.bundle_price} onChange={(e) => setForm({ ...form, bundle_price: e.target.value })}
-                  className="w-full border-gray-200 rounded-lg focus:ring-green-500" placeholder="Ej: 5000" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sesiones incluidas</label>
-                <input type="number" value={form.max_sessions} onChange={(e) => setForm({ ...form, max_sessions: e.target.value })}
-                  className="w-full border-gray-200 rounded-lg focus:ring-green-500" placeholder="Ej: 5" min="1" />
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Valor</label>
-                <input type="number" step="0.01" value={form.discount_value} onChange={(e) => setForm({ ...form, discount_value: e.target.value })}
-                  className="w-full border-gray-200 rounded-lg focus:ring-pink-500" placeholder="Opcional" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Compras máximas (opcional)</label>
-                <input type="number" value={form.max_purchases} onChange={(e) => setForm({ ...form, max_purchases: e.target.value })}
-                  className="w-full border-gray-200 rounded-lg focus:ring-pink-500" placeholder="Ilimitado" />
-              </div>
-            </div>
-          )}
-
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full border-gray-200 rounded-lg focus:ring-pink-500" rows={2} />
+            <label className="block text-sm font-medium text-gray-700 mb-2">Servicios incluidos</label>
+            <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-3 border border-gray-200 rounded-lg bg-gray-50/50">
+              {allServices.length === 0 ? (
+                <span className="text-xs text-gray-400 p-2 col-span-2">Cargando servicios...</span>
+              ) : allServices.filter((s) => s.is_active).map((svc) => {
+                const selected = form.service_ids.includes(svc.id);
+                return (
+                  <button key={svc.id} type="button" onClick={() => toggleService(svc.id)}
+                    className={`text-left p-3 rounded-xl border text-sm transition-all ${
+                      selected
+                        ? "border-pink-300 bg-pink-50 shadow-sm"
+                        : "border-gray-200 bg-white hover:border-pink-200"
+                    }`}>
+                    <div className="font-medium text-gray-900">{svc.name}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">
+                      {svc.duration_minutes} min · Online: {formatPrice(svc.price_cents_online)} · Presencial: {formatPrice(svc.price_cents_presencial)}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Tiers permitidos (opcional)</label>
-            <div className="flex gap-2">
-              {ALL_TIERS.map((tier) => (
-                <button key={tier} type="button" onClick={() => toggleTier(tier)}
-                  className={`px-3 py-1.5 rounded-lg text-sm border capitalize transition-colors ${
-                    form.allowed_tiers.includes(tier)
-                      ? "bg-pink-100 border-pink-300 text-pink-700"
-                      : "bg-gray-50 border-gray-200 text-gray-600"
-                  }`}>
-                  {tier}
-                </button>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Modalidad</label>
+            <div className="flex gap-3">
+              {["online", "presencial"].map((m) => (
+                <label key={m} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer transition-all ${
+                  form.modality === m ? "border-pink-300 bg-pink-50 text-pink-700" : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                }`}>
+                  <input type="radio" name="modality" value={m} checked={form.modality === m}
+                    onChange={() => setForm({ ...form, modality: m })} className="text-pink-600" />
+                  <span className="capitalize font-medium text-sm">{m === "online" ? "💻 Online" : "🏠 Presencial"}</span>
+                </label>
               ))}
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Servicios vinculados</label>
-            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 border border-gray-200 rounded-lg">
-              {allServices.length === 0 ? (
-                <span className="text-xs text-gray-400 p-2">Cargando servicios...</span>
-              ) : (
-                allServices.map((svc) => (
-                  <button key={svc.id} type="button" onClick={() => toggleService(svc.id)}
-                    className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
-                      form.service_ids.includes(svc.id)
-                        ? "bg-pink-100 border-pink-300 text-pink-700"
-                        : "bg-gray-50 border-gray-200 text-gray-600"
-                    }`}>
-                    {svc.name}
-                  </button>
-                ))
+          <div className="bg-amber-50 rounded-xl p-4 border border-amber-100 space-y-2">
+            <h4 className="font-semibold text-sm text-amber-800">Resumen de precios</h4>
+            <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 text-sm">
+              <span className="text-gray-600">Subtotal ({form.modality}):</span>
+              <span className="font-semibold text-gray-900 text-right">{formatPrice(subtotal)}</span>
+              <span className="text-gray-600">Factor de descuento:</span>
+              <div className="text-right">
+                <input type="number" step="0.01" min="0" max="1" value={form.discount_factor}
+                  onChange={(e) => setForm({ ...form, discount_factor: e.target.value })}
+                  className="w-20 border border-gray-300 rounded px-1.5 py-0.5 text-sm text-right" />
+              </div>
+              <span className="text-gray-600">Total con descuento:</span>
+              <span className={`font-bold text-right ${discount < 1 ? "text-green-700" : "text-gray-900"}`}>
+                {formatPrice(discountedTotal)}
+                {discount < 1 && (
+                  <span className="ml-1.5 text-xs text-green-500 bg-green-100 px-1.5 py-0.5 rounded-full">
+                    {Math.round((1 - discount) * 100)}% OFF
+                  </span>
+                )}
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 space-y-2">
+            <h4 className="font-semibold text-sm text-blue-800">Seña / Depósito</h4>
+            <div className="flex items-end gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
+                <select value={form.deposit_type} onChange={(e) => setForm({ ...form, deposit_type: e.target.value })}
+                  className="border-gray-200 rounded-lg text-sm">
+                  <option value="none">Sin seña</option>
+                  <option value="percent">Porcentaje (%)</option>
+                  <option value="fixed">Monto fijo</option>
+                </select>
+              </div>
+              {form.deposit_type !== "none" && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    {form.deposit_type === "percent" ? "Porcentaje" : "Monto en centavos"}
+                  </label>
+                  <input type="number" step={form.deposit_type === "percent" ? "1" : "100"} min="0"
+                    value={form.deposit_value}
+                    onChange={(e) => setForm({ ...form, deposit_value: e.target.value })}
+                    className="w-24 border border-gray-300 rounded-lg px-2 py-1.5 text-sm" />
+                </div>
+              )}
+              {depositCents > 0 && (
+                <div className="text-sm font-semibold text-blue-700 py-1">
+                  Seña: {formatPrice(depositCents)}
+                </div>
               )}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Vence (opcional)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Compras máximas</label>
+              <input type="number" value={form.max_purchases} onChange={(e) => setForm({ ...form, max_purchases: e.target.value })}
+                className="w-full border-gray-200 rounded-lg focus:ring-pink-500" placeholder="Ilimitado" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Vence</label>
               <input type="date" value={form.expires_at} onChange={(e) => setForm({ ...form, expires_at: e.target.value })}
                 className="w-full border-gray-200 rounded-lg focus:ring-pink-500" />
             </div>
@@ -315,8 +335,22 @@ export default function PromosPage() {
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <button type="submit" disabled={saving || !form.name}
+          <div className="flex items-center gap-2">
+            {ALL_TIERS.map((tier) => (
+              <button key={tier} type="button" onClick={() => toggleTier(tier)}
+                className={`px-3 py-1.5 rounded-lg text-sm border capitalize transition-colors ${
+                  form.allowed_tiers.includes(tier)
+                    ? "bg-pink-100 border-pink-300 text-pink-700"
+                    : "bg-gray-50 border-gray-200 text-gray-600"
+                }`}>
+                {tier}
+              </button>
+            ))}
+            <span className="text-xs text-gray-400 ml-1">Tiers (opcional)</span>
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <button type="submit" disabled={saving || !form.name || form.service_ids.length === 0}
               className="flex-1 bg-pink-600 hover:bg-pink-700 disabled:bg-gray-300 text-white font-bold py-2.5 rounded-lg transition-colors">
               {saving ? "Guardando..." : editingId ? "Actualizar Promoción" : "Crear Promoción"}
             </button>
@@ -334,83 +368,77 @@ export default function PromosPage() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100">
-              <th className="px-6 py-4 font-semibold">Nombre</th>
-              <th className="px-6 py-4 font-semibold">Descuento / Bundle</th>
-              <th className="px-6 py-4 font-semibold">Servicios</th>
-              <th className="px-6 py-4 font-semibold">Tiers</th>
-              <th className="px-6 py-4 font-semibold">Vence</th>
-              <th className="px-6 py-4 font-semibold">Estado</th>
-              <th className="px-6 py-4 font-semibold text-right">Acción</th>
+              <th className="px-4 py-4 font-semibold">Nombre</th>
+              <th className="px-4 py-4 font-semibold">Modalidad</th>
+              <th className="px-4 py-4 font-semibold">Subtotal</th>
+              <th className="px-4 py-4 font-semibold">Dto.</th>
+              <th className="px-4 py-4 font-semibold">Total</th>
+              <th className="px-4 py-4 font-semibold">Seña</th>
+              <th className="px-4 py-4 font-semibold">Servicios</th>
+              <th className="px-4 py-4 font-semibold">Estado</th>
+              <th className="px-4 py-4 font-semibold text-right">Acción</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {loading ? (
               Array.from({ length: 3 }).map((_, i) => (
                 <tr key={i} className="animate-pulse">
-                  <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-32" /></td>
-                  <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-16" /></td>
-                  <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-24" /></td>
-                  <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-16" /></td>
-                  <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-20" /></td>
-                  <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-16" /></td>
-                  <td className="px-6 py-4 text-right"><div className="h-4 bg-gray-100 rounded w-8 inline-block" /></td>
+                  <td className="px-4 py-4"><div className="h-4 bg-gray-100 rounded w-28" /></td>
+                  <td className="px-4 py-4" colSpan={8}><div className="h-4 bg-gray-100 rounded w-full" /></td>
                 </tr>
               ))
             ) : promos.length === 0 ? (
               <tr>
-                <td colSpan={7} className="p-12 text-center text-gray-400">
+                <td colSpan={9} className="p-12 text-center text-gray-400">
                   <span className="material-symbols-outlined text-4xl mb-2">local_offer</span>
                   <p>No hay promociones todavía.</p>
                 </td>
               </tr>
             ) : promos.map((p) => {
-              const bundleLabel = p.bundle_price_cents
-                ? `${formatPrice(p.bundle_price_cents)} · ${p.max_sessions} sesiones`
-                : discountLabel(p) || "—";
+              const svcs = (p.service_ids || []).map((sid) => allServices.find((s) => s.id === sid)).filter(Boolean) as Service[];
+              const priceField = p.modality === "online" ? "price_cents_online" : "price_cents_presencial";
+              const sub = svcs.reduce((sum, s) => sum + (s[priceField] || 0), 0);
+              const df = p.discount_factor ?? 1;
+              const total = Math.round(sub * df);
+              let depCents = 0;
+              if (p.deposit_type === "percent" && p.deposit_value > 0) depCents = Math.round(total * (p.deposit_value / 100));
+              else if (p.deposit_type === "fixed" && p.deposit_value > 0) depCents = Math.round(p.deposit_value);
               return (
               <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
-                <td className="px-6 py-4">
+                <td className="px-4 py-4">
                   <p className="font-medium text-gray-900">{p.name}</p>
                   {p.description && <p className="text-xs text-gray-400 mt-0.5">{p.description}</p>}
                 </td>
-                <td className="px-6 py-4">
-                  {p.bundle_price_cents ? (
-                    <span className="inline-flex items-center gap-1 text-sm font-semibold text-green-700 bg-green-50 px-2 py-1 rounded-lg">
-                      <span className="material-symbols-outlined text-sm">inventory_2</span>
-                      {bundleLabel}
-                    </span>
-                  ) : (
-                    <span className="text-sm font-semibold text-pink-600">{bundleLabel}</span>
-                  )}
+                <td className="px-4 py-4">
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
+                    p.modality === "online" ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"
+                  }`}>
+                    {p.modality === "online" ? "💻 Online" : "🏠 Presencial"}
+                  </span>
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-500 max-w-32">
-                  {(p.service_ids || []).length > 0
-                    ? (p.service_ids as string[]).map((sid) => {
-                        const svc = allServices.find((s) => s.id === sid);
-                        return svc ? (
-                          <span key={sid} className="inline-block px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs mr-1 mb-1">{svc.name}</span>
-                        ) : null;
-                      })
-                    : <span className="text-gray-300">Todos</span>}
+                <td className="px-4 py-4 text-sm font-semibold text-gray-700">{formatPrice(sub)}</td>
+                <td className="px-4 py-4 text-sm">
+                  {df < 1 ? (
+                    <span className="text-green-600 font-semibold">{Math.round((1 - df) * 100)}%</span>
+                  ) : <span className="text-gray-300">—</span>}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-500">
-                  {(p.allowed_tiers || []).length > 0
-                    ? (p.allowed_tiers as string[]).map((t) => (
-                        <span key={t} className="inline-block px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs mr-1 capitalize">{t}</span>
-                      ))
-                    : <span className="text-gray-300">Todos</span>}
+                <td className="px-4 py-4 text-sm font-bold text-gray-900">{formatPrice(total)}</td>
+                <td className="px-4 py-4 text-sm text-blue-600">
+                  {depCents > 0 ? formatPrice(depCents) : <span className="text-gray-300">—</span>}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-400">
-                  {p.expires_at ? new Date(p.expires_at).toLocaleDateString() : "—"}
+                <td className="px-4 py-4 text-sm text-gray-500 max-w-32">
+                  {svcs.length > 0 ? svcs.map((s) => (
+                    <span key={s.id} className="inline-block px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs mr-1 mb-1">{s.name}</span>
+                  )) : <span className="text-gray-300">—</span>}
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-4">
                   <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${
                     p.is_active ? "bg-green-50 text-green-700 border-green-100" : "bg-gray-50 text-gray-400 border-gray-200"
                   }`}>
                     {p.is_active ? "Activa" : "Inactiva"}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-right">
+                <td className="px-4 py-4 text-right">
                   <div className="flex items-center justify-end gap-2">
                     <button onClick={() => openEdit(p)}
                       className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-all">

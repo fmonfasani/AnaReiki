@@ -48,11 +48,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  const { service_ids, ...promoFields } = await request.json();
+  const { service_ids, modality, discount_factor, deposit_type, deposit_value, ...promoFields } = await request.json();
   const svc = createServiceClient();
 
   const { data: promo, error } = await svc.from("promotions").insert({
     ...promoFields,
+    modality: modality || null,
+    discount_factor: discount_factor ?? 1.00,
+    deposit_type: deposit_type || 'none',
+    deposit_value: deposit_value ?? 0,
     created_by: user.id,
   }).select().single();
 
@@ -81,7 +85,14 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  const { id, service_ids, ...updates } = await request.json();
+  const body = await request.json();
+  const { id, service_ids, modality, discount_factor, deposit_type, deposit_value, ...updates } = body;
+
+  // Tratar campos nuevos explícitamente
+  if (body.hasOwnProperty('modality')) updates.modality = modality || null;
+  if (body.hasOwnProperty('discount_factor')) updates.discount_factor = discount_factor ?? 1.00;
+  if (body.hasOwnProperty('deposit_type')) updates.deposit_type = deposit_type || 'none';
+  if (body.hasOwnProperty('deposit_value')) updates.deposit_value = deposit_value ?? 0;
   const svc = createServiceClient();
 
   if (Object.keys(updates).length > 0) {
