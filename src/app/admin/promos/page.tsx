@@ -116,7 +116,6 @@ export default function PromosPage() {
         max_purchases: form.max_purchases ? parseInt(form.max_purchases) : null,
         is_active: form.is_active,
         expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
-        service_ids: form.service_ids,
       }),
     });
 
