@@ -32,12 +32,18 @@ type Promo = {
   max_sessions?: number;
 };
 
+type UserPurchase = {
+  promotion_id: string;
+  sessions_remaining: number;
+};
+
 const STEPS = ["Servicio", "Modalidad", "Fecha", "Horario", "Confirmar", "Listo"];
 
 export default function BookingWizard() {
   const [step, setStep] = useState(0);
   const [services, setServices] = useState<Service[]>([]);
   const [promos, setPromos] = useState<Promo[]>([]);
+  const [userPurchases, setUserPurchases] = useState<UserPurchase[]>([]);
   const [loadingServices, setLoadingServices] = useState(true);
 
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -55,10 +61,19 @@ export default function BookingWizard() {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const res = await fetch("/api/services");
-        const json = await res.json();
-        setServices(json.data || []);
-        setPromos(json.promos || []);
+        const [svcRes, purchasesRes] = await Promise.all([
+          fetch("/api/services"),
+          fetch("/api/promos/my"),
+        ]);
+        const svcJson = await svcRes.json();
+        setServices(svcJson.data || []);
+        setPromos(svcJson.promos || []);
+
+        const purchasesJson = await purchasesRes.json();
+        setUserPurchases((purchasesJson.data || []).map((p: any) => ({
+          promotion_id: p.promotion_id,
+          sessions_remaining: p.sessions_remaining,
+        })));
       } catch {
         setServices([]);
       } finally {
@@ -93,6 +108,13 @@ export default function BookingWizard() {
   const handlePromoSelect = (promotionId: string | null, priceCents: number | undefined) => {
     setSelectedPromotionId(promotionId);
     setPromoPriceCents(priceCents);
+  };
+
+  const handleReserveSession = (promoId: string) => {
+    const promo = promos.find((p) => p.id === promoId);
+    if (!promo || !promo.service_ids.length) return;
+    const firstService = services.find((s) => promo.service_ids.includes(s.id));
+    if (firstService) handleServiceSelect(firstService);
   };
 
   const handleBuyPromo = async (promoId: string) => {
@@ -229,6 +251,8 @@ export default function BookingWizard() {
               selected={selectedService}
               onSelect={handleServiceSelect}
               onBuyPromo={buyingPromo ? undefined : handleBuyPromo}
+              onReserveSession={handleReserveSession}
+              userPurchases={userPurchases}
             />
             {buyingPromo && (
               <div className="text-center py-4">

@@ -23,12 +23,19 @@ type Promo = {
   max_sessions?: number;
 };
 
+type UserPurchase = {
+  promotion_id: string;
+  sessions_remaining: number;
+};
+
 type Props = {
   services: Service[];
   promos: Promo[];
   selected: Service | null;
   onSelect: (service: Service) => void;
   onBuyPromo?: (promoId: string) => void;
+  onReserveSession?: (promoId: string) => void;
+  userPurchases?: UserPurchase[];
 };
 
 const formatPrice = (cents: number) =>
@@ -37,10 +44,11 @@ const formatPrice = (cents: number) =>
 const formatSimplePrice = (cents: number) =>
   `$${(cents / 100).toLocaleString("es-AR")}`;
 
-export default function ServiceSelector({ services, promos, selected, onSelect, onBuyPromo }: Props) {
+export default function ServiceSelector({ services, promos, selected, onSelect, onBuyPromo, onReserveSession, userPurchases = [] }: Props) {
   const [expandedPromo, setExpandedPromo] = useState<string | null>(null);
 
   const servicesById = new Map(services.map((s) => [s.id, s]));
+  const purchasesByPromo = new Map(userPurchases.map((p) => [p.promotion_id, p.sessions_remaining]));
 
   return (
     <div className="space-y-4">
@@ -106,19 +114,37 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
 
                 {isExpanded && (
                   <div className="px-4 pb-4 space-y-2">
-                    {hasBundlePrice && onBuyPromo && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onBuyPromo(promo.id); }}
-                        className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl text-sm font-bold transition-all"
-                      >
-                        Comprar Promo {formatSimplePrice(promo.bundle_price_cents!)} · {promo.max_sessions || 1} sesiones
-                      </button>
-                    )}
-                    {!hasBundlePrice && childServices.length > 0 && (
-                      <p className="text-xs text-amber-600 text-center pt-1 pb-1">
-                        Seleccioná un servicio para reservar con descuento
-                      </p>
-                    )}
+                    {(() => {
+                      const remaining = purchasesByPromo.get(promo.id);
+                      if (remaining && remaining > 0 && onReserveSession) {
+                        return (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onReserveSession(promo.id); }}
+                            className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm"
+                          >
+                            Reservar sesión (te {remaining === 1 ? "queda" : "quedan"} {remaining})
+                          </button>
+                        );
+                      }
+                      if (hasBundlePrice && onBuyPromo) {
+                        return (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onBuyPromo(promo.id); }}
+                            className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl text-sm font-bold transition-all"
+                          >
+                            Comprar Promo {formatSimplePrice(promo.bundle_price_cents!)} · {promo.max_sessions || 1} sesiones
+                          </button>
+                        );
+                      }
+                      if (!hasBundlePrice && childServices.length > 0) {
+                        return (
+                          <p className="text-xs text-amber-600 text-center pt-1 pb-1">
+                            Seleccioná un servicio para reservar con descuento
+                          </p>
+                        );
+                      }
+                      return null;
+                    })()}
                     {childServices.map((svc) => (
                       <button
                         key={svc.id}
