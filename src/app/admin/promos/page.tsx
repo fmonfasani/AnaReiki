@@ -150,6 +150,9 @@ export default function PromosPage() {
     e.preventDefault();
     setSaving(true);
 
+    // Calcular duracion total del paquete (suma de servicios)
+    const totalDuration = selectedServices.reduce((sum, s) => sum + s.duration_minutes, 0);
+
     const body: Record<string, unknown> = {
       name: form.name,
       description: form.description || null,
@@ -158,6 +161,7 @@ export default function PromosPage() {
       discount_factor: discount,
       deposit_type: form.deposit_type,
       deposit_value: depositVal,
+      duration_minutes: totalDuration,
       allowed_tiers: form.allowed_tiers.length > 0 ? form.allowed_tiers : null,
       max_purchases: form.max_purchases ? parseInt(form.max_purchases) : null,
       is_active: form.is_active,
@@ -272,6 +276,8 @@ export default function PromosPage() {
                   onChange={(e) => setForm({ ...form, discount_factor: e.target.value })}
                   className="w-20 border border-gray-300 rounded px-1.5 py-0.5 text-sm text-right" />
               </div>
+              <span className="text-gray-600">Duración total:</span>
+              <span className="font-semibold text-gray-900 text-right">{selectedServices.reduce((s, svc) => s + svc.duration_minutes, 0)} min</span>
               <span className="text-gray-600">Total con descuento:</span>
               <span className={`font-bold text-right ${discount < 1 ? "text-green-700" : "text-gray-900"}`}>
                 {formatPrice(discountedTotal)}

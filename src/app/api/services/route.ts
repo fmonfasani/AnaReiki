@@ -12,7 +12,7 @@ export async function GET() {
         .order("name"),
       supabase
         .from("promotions")
-        .select("id, name, description, is_active, service_ids, bundle_price_cents, max_sessions, modality, discount_factor, deposit_type, deposit_value")
+        .select("id, name, description, is_active, service_ids, bundle_price_cents, max_sessions, modality, discount_factor, deposit_type, deposit_value, duration_minutes")
         .eq("is_active", true),
       supabase
         .from("promotion_sessions")

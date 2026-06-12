@@ -85,10 +85,51 @@ export async function POST(request: Request) {
       if (owner) consultant_id = owner.id;
     }
 
+    // Si es una promo, calcular duracion total y precio del paquete
+    let promoDuration = service.duration_minutes;
+    let basePriceCents = service.price_cents || 0;
+    let promoServiceIds: string[] | null = null;
+
+    if (promotion_id) {
+      const { data: promo } = await svc
+        .from("promotions")
+        .select("id, service_ids, duration_minutes, discount_factor, modality, deposit_type, deposit_value, bundle_price_cents")
+        .eq("id", promotion_id)
+        .single();
+
+      if (promo) {
+        const psIds: string[] = promo.service_ids || [];
+        promoServiceIds = psIds;
+
+        if (promo.duration_minutes) {
+          promoDuration = promo.duration_minutes;
+        } else if (psIds.length > 0) {
+          const { data: promoSevices } = await svc
+            .from("services")
+            .select("duration_minutes")
+            .in("id", psIds);
+          promoDuration = (promoSevices || []).reduce((sum, s) => sum + (s.duration_minutes || 0), 0);
+        }
+
+        const priceField = promo.modality === "online" ? "price_cents_online" : "price_cents_presencial";
+        if (psIds.length > 0) {
+          const { data: promoSevices } = await svc
+            .from("services")
+            .select(priceField)
+            .in("id", psIds);
+          const subtotal = (promoSevices || []).reduce((sum: number, s: any) => sum + (s[priceField] || 0), 0);
+          basePriceCents = Math.round(subtotal * (promo.discount_factor ?? 1));
+        }
+      }
+    }
+
     const startTime = slot_start;
     const startDate = new Date(startTime);
-    const endDate = new Date(startDate.getTime() + service.duration_minutes * 60000);
-    const basePriceCents = service.price_cents || 0;
+    const endDate = new Date(startDate.getTime() + promoDuration * 60000);
+
+    const promoNotes = promoServiceIds && promoServiceIds.length > 0
+      ? `${notes || ""}\n\n🧺 Promo: ${promotion_id || ""}\nServicios incluidos: ${promoServiceIds.join(", ")}`.trim()
+      : notes;
 
     let finalPriceCents = basePriceCents;
     let discountCents = 0;
@@ -124,7 +165,11 @@ export async function POST(request: Request) {
       }
     }
 
-    if (!usedPromoPurchaseId && promotion_id && basePriceCents > 0) {
+    // Para promos paquete (multi-servicio), el precio ya se calculó completo
+    if (promoServiceIds && promoServiceIds.length > 0) {
+      finalPriceCents = basePriceCents;
+      resolvedPromotionId = promotion_id;
+    } else if (!usedPromoPurchaseId && promotion_id && basePriceCents > 0) {
       const { data: promoData } = await supabase
         .rpc("get_available_promos", {
           p_service_id: service_id,
@@ -142,20 +187,22 @@ export async function POST(request: Request) {
     const priceCents = clientPriceCents !== undefined ? clientPriceCents : finalPriceCents;
     const finalDiscount = discountCents;
 
+    const appointmentServiceId = promoServiceIds ? (service_id || promoServiceIds[0]) : service_id;
+
     const { data: appointment, error: insertError } = await svc
       .from("appointments")
       .insert({
-        service_id,
+        service_id: appointmentServiceId,
         consultant_id,
         client_id: user.id,
         start_time: startDate.toISOString(),
         end_time: endDate.toISOString(),
         modality,
-        notes: notes || null,
+        notes: promoServiceIds ? promoNotes : (notes || null),
         status: priceCents > 0 ? "pending_payment" : "pending",
         price_cents: priceCents,
         payment_status: priceCents > 0 ? "pending_payment" : "pending",
-        promotion_id: resolvedPromotionId,
+        promotion_id: resolvedPromotionId || promotion_id,
         discount_cents: finalDiscount,
         original_price_cents: basePriceCents,
       })
