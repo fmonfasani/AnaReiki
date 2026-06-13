@@ -24,6 +24,15 @@ const MILESTONE_LABELS: Record<number, { label: string; emoji: string }> = {
   365: { label: "1 año", emoji: "✨" },
 };
 
+const TIER_ORDER = ["prana", "shakti", "ananda"];
+
+const PRACTICE_CARDS = [
+  { id: "clases", href: "/consultantes/clases", emoji: "🧘‍♀️", bg: "bg-purple-100", text: "text-purple-600", title: "Clases de Yoga", desc: "Retoma tu última clase o explora nuevas secuencias.", tier: "ananda" as const },
+  { id: "podcast", href: "/consultantes/podcast", emoji: "🎧", bg: "bg-pink-100", text: "text-pink-600", title: "Meditaciones", desc: "Escucha nuevos episodios y meditaciones guiadas.", tier: "shakti" as const },
+  { id: "chat-buda", href: "/consultantes/chat-buda", emoji: "🪷", bg: "bg-amber-100", text: "text-amber-600", title: "Chat Buda", desc: "Conversá con Ana sobre tu proceso y emociones.", tier: "ananda" as const },
+  { id: "evolucion", href: "/consultantes/evolucion", emoji: "🌿", bg: "bg-teal-100", text: "text-teal-600", title: "Mi Evolución", desc: "Revisa tu progreso y notas personales.", tier: "shakti" as const },
+];
+
 const DAY_LABELS = [
   "Domingo", "Lunes", "Martes", "Miércoles",
   "Jueves", "Viernes", "Sábado",
@@ -55,7 +64,7 @@ export default async function MembersDashboard() {
   const svc = createServiceClient();
   const todayIso = new Date().toISOString();
 
-  const [nextAppointment, sessionNotes, reflections, recentContent, availability, oracleData, streakData, sessionHistory] =
+  const [nextAppointment, sessionNotes, reflections, recentContent, availability, oracleData, streakData, sessionHistory, profileResult] =
     await Promise.all([
       supabase.from("appointments").select("*").eq("client_id", user.id).gte("start_time", todayIso).order("start_time", { ascending: true }).limit(1).single(),
       supabase.from("session_notes").select("*").eq("user_id", user.id).eq("is_private", false).order("created_at", { ascending: false }).limit(4),
@@ -65,6 +74,7 @@ export default async function MembersDashboard() {
       svc.from("oracle_quotes").select("quote").eq("is_active", true).limit(50),
       svc.from("streak_milestones").select("current_streak, max_streak, milestones").eq("user_id", user.id).maybeSingle(),
       svc.from("session_history").select("id, title, created_at, mood_after, tags").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
+      supabase.from("profiles").select("plan_tier, is_premium").eq("id", user.id).single(),
     ]);
 
   const streak = calculateStreak(reflections?.data || []);
@@ -73,6 +83,14 @@ export default async function MembersDashboard() {
     ? dbOracle[new Date().getDate() % dbOracle.length].quote
     : FALLBACK_ORACLES[new Date().getDate() % FALLBACK_ORACLES.length];
   const nextSlots = (availability?.data || []).slice(0, 3);
+
+  const profile = profileResult.data;
+  let planTier = profile?.plan_tier || "prana";
+  const isPremium = profile?.is_premium ?? true;
+  if (planTier !== "prana" && !isPremium) planTier = "prana";
+  const userLevel = TIER_ORDER.indexOf(planTier);
+
+  const isLocked = (cardTier: string) => userLevel < TIER_ORDER.indexOf(cardTier);
 
   const milestones: number[] = (streakData.data as { milestones?: number[] })?.milestones || [];
   const achievedMilestones = milestones.filter((m: number) => m <= streak);
@@ -227,26 +245,33 @@ export default async function MembersDashboard() {
 
       <h3 className="font-bold text-gray-900 text-xl font-display mt-8">Continúa tu práctica</h3>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Link href="/consultantes/clases" className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
-          <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600 text-2xl mb-4 group-hover:scale-110 transition-transform">🧘‍♀️</div>
-          <h3 className="font-bold text-gray-900 mb-1">Clases de Yoga</h3>
-          <p className="text-sm text-gray-500">Retoma tu última clase o explora nuevas secuencias.</p>
-        </Link>
-        <Link href="/consultantes/podcast" className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
-          <div className="w-12 h-12 bg-pink-100 rounded-xl flex items-center justify-center text-pink-600 text-2xl mb-4 group-hover:scale-110 transition-transform">🎧</div>
-          <h3 className="font-bold text-gray-900 mb-1">Meditaciones</h3>
-          <p className="text-sm text-gray-500">Escucha nuevos episodios y meditaciones guiadas.</p>
-        </Link>
-        <Link href="/consultantes/chat-buda" className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
-          <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600 text-2xl mb-4 group-hover:scale-110 transition-transform">🪷</div>
-          <h3 className="font-bold text-gray-900 mb-1">Chat Buda</h3>
-          <p className="text-sm text-gray-500">Conversá con Ana sobre tu proceso y emociones.</p>
-        </Link>
-        <Link href="/consultantes/evolucion" className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
-          <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center text-teal-600 text-2xl mb-4 group-hover:scale-110 transition-transform">🌿</div>
-          <h3 className="font-bold text-gray-900 mb-1">Mi Evolución</h3>
-          <p className="text-sm text-gray-500">Revisa tu progreso y notas personales.</p>
-        </Link>
+        {PRACTICE_CARDS.map((card) => {
+          const locked = isLocked(card.tier);
+          const inner = (
+            <div className={`group bg-white p-6 rounded-2xl shadow-sm border transition-all ${locked ? "border-gray-200 opacity-80" : "border-gray-100 hover:shadow-md hover:-translate-y-1"}`}>
+              <div className={`w-12 h-12 ${card.bg} rounded-xl flex items-center justify-center ${card.text} text-2xl mb-4 ${locked ? "" : "group-hover:scale-110 transition-transform"}`}>
+                {card.emoji}
+              </div>
+              <h3 className="font-bold text-gray-900 mb-1">{card.title}</h3>
+              <p className="text-sm text-gray-500">{card.desc}</p>
+              {locked && (
+                <div className="mt-3 flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg w-fit border border-amber-200">
+                  <span className="material-symbols-outlined text-[14px]">lock</span>
+                  SUBIR
+                </div>
+              )}
+            </div>
+          );
+          return locked ? (
+            <Link key={card.id} href="/consultantes/suscripciones" className="block cursor-pointer">
+              {inner}
+            </Link>
+          ) : (
+            <Link key={card.id} href={card.href} className="block">
+              {inner}
+            </Link>
+          );
+        })}
       </div>
 
       <section className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
