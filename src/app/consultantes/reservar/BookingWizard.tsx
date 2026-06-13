@@ -244,29 +244,39 @@ export default function BookingWizard() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="flex items-center justify-center gap-2 mb-8">
-        {displaySteps.map((label, i) => {
-          if (!label) return <div key={i} className="w-6 h-0.5 bg-gray-100" />;
-          return (
-            <React.Fragment key={label}>
-              {i > 0 && displaySteps[i - 1] && (
-                <div className={`w-6 h-0.5 ${i < step ? "bg-[var(--color-terracotta)]" : "bg-gray-100"}`} />
-              )}
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                  i < step
-                    ? "bg-[var(--color-terracotta)] text-white"
-                    : i === step
-                      ? "bg-[var(--color-primary-dark)] text-white"
-                      : "bg-gray-100 text-[var(--color-text-light)]"
-                }`}
-              >
-                {i < step ? "✓" : i + 1}
-              </div>
-            </React.Fragment>
-          );
-        })}
+    <div className="max-w-3xl mx-auto">
+      {/* Stepper with labels */}
+      <div className="mb-10">
+        <div className="flex items-center justify-center">
+          {displaySteps.map((label, i) => {
+            if (!label) return <div key={i} className="w-8 h-0.5 bg-gray-100" />;
+            return (
+              <React.Fragment key={label}>
+                {i > 0 && displaySteps[i - 1] && (
+                  <div className={`w-10 h-0.5 ${i <= step ? "bg-[var(--color-terracotta)]" : "bg-gray-100"}`} />
+                )}
+                <div className="flex flex-col items-center gap-1">
+                  <div
+                    className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                      i < step
+                        ? "bg-[var(--color-terracotta)] text-white shadow-sm"
+                        : i === step
+                          ? "bg-white text-[var(--color-terracotta)] border-2 border-[var(--color-terracotta)] shadow-sm"
+                          : "bg-gray-50 text-gray-300 border border-gray-200"
+                    }`}
+                  >
+                    {i < step ? "✓" : i + 1}
+                  </div>
+                  <span className={`text-[10px] font-medium text-center leading-tight max-w-14 ${
+                    i === step ? "text-[var(--color-terracotta)]" : i < step ? "text-gray-500" : "text-gray-300"
+                  }`}>
+                    {label}
+                  </span>
+                </div>
+              </React.Fragment>
+            );
+          })}
+        </div>
       </div>
 
       {step > 0 && step < 5 && (
