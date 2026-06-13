@@ -18,10 +18,11 @@ export async function GET(request: Request) {
           p_from: from,
           p_to: to,
           p_modality: modality || null,
+          p_service_id: serviceId || null,
         });
 
       if (error) {
-        console.error("get_available_dates_v2 error", { from, to, modality, error: error.message });
+        console.error("get_available_dates_v2 error", { from, to, modality, serviceId, error: error.message });
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
 
