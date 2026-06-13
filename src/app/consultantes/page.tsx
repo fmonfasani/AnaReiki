@@ -257,7 +257,7 @@ export default async function MembersDashboard() {
               {locked && (
                 <div className="mt-3 flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg w-fit border border-amber-200">
                   <span className="material-symbols-outlined text-[14px]">lock</span>
-                  SUBIR
+                  Suscribir
                 </div>
               )}
             </div>
