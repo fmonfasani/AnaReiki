@@ -76,10 +76,10 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
         </button>
       </div>
 
-      {/* Two-column layout: Services (3/5) | Promos (2/5) — same card size */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-        {/* LEFT: Individual Services (3/5 width, 3 internal columns) */}
-        <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-200 p-4">
+      {/* Two-column layout: Services (left, wider) | Promos (right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-7 gap-6 items-stretch">
+        {/* LEFT: Individual Services */}
+        <div className="lg:col-span-4 bg-white rounded-2xl border border-gray-200 p-5 min-h-[400px]">
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="material-symbols-outlined text-sm">spa</span>
             Servicios Individuales
@@ -90,7 +90,7 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
               No hay servicios disponibles
             </p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {services.map((service) => {
                 const isSelected = selected?.id === service.id;
                 const hasOnline = service.allowed_modalities?.includes("online") && (service.price_cents_online || 0) > 0;
@@ -101,32 +101,32 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
                   <button
                     key={service.id}
                     onClick={() => onSelect(service)}
-                    className={`text-left p-3 rounded-xl border-2 transition-all duration-200 ${
+                    className={`text-left p-4 rounded-xl border-2 transition-all duration-200 flex flex-col min-h-[180px] ${
                       isSelected
                         ? "border-[var(--color-terracotta)] bg-[var(--color-terracotta)]/5"
-                        : "border-gray-100 bg-white hover:border-[var(--color-terracotta)]/30 hover:bg-gray-50/50"
+                        : "border-gray-100 bg-white hover:border-gray-300"
                     }`}
                   >
-                    <h4 className="font-semibold text-gray-900 text-sm">{service.name}</h4>
+                    <h4 className="font-medium text-gray-900">{service.name}</h4>
 
-                    <div className="flex items-center gap-1 mt-1.5 text-xs text-gray-400">
+                    <div className="flex items-center gap-1 mt-2 text-[13px] text-gray-400">
                       <span className="material-symbols-outlined text-xs">schedule</span>
                       <span>{service.duration_minutes} min</span>
                     </div>
 
-                    <div className="flex flex-wrap gap-1.5 mt-2">
+                    <div className="flex flex-wrap gap-1.5 mt-auto pt-3">
                       {hasOnline && (
-                        <span className="text-xs font-semibold text-[var(--color-terracotta)] bg-[var(--color-terracotta)]/10 px-2 py-0.5 rounded-md">
+                        <span className="text-[13px] font-semibold text-[#185FA5] bg-[#185FA5]/10 px-2 py-0.5 rounded-md">
                           Online {formatPrice(service.price_cents_online!)}
                         </span>
                       )}
                       {hasPresencial && (
-                        <span className="text-xs font-semibold text-[var(--color-terracotta)] bg-[var(--color-terracotta)]/10 px-2 py-0.5 rounded-md">
+                        <span className="text-[13px] font-semibold text-[#D85A30] bg-[#D85A30]/10 px-2 py-0.5 rounded-md">
                           Presencial {formatPrice(service.price_cents_presencial!)}
                         </span>
                       )}
                       {isFree && (
-                        <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded-md">
+                        <span className="text-[13px] font-semibold text-[#3B6D11] bg-[#3B6D11]/10 px-2 py-0.5 rounded-md">
                           Gratuito
                         </span>
                       )}
@@ -144,8 +144,8 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
           )}
         </div>
 
-        {/* RIGHT: Promos (2/5 width, 2 internal columns) */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-4">
+        {/* RIGHT: Promos */}
+        <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-200 p-5 min-h-[400px]">
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="material-symbols-outlined text-sm">local_offer</span>
             Promociones
@@ -156,7 +156,7 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
               No hay promociones activas
             </p>
           ) : (
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {promos.map((promo) => {
                 const childServices = promo.service_ids
                   .map((id) => servicesById.get(id))
@@ -174,24 +174,24 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
                 return (
                   <div
                     key={promo.id}
-                    className="rounded-xl border border-amber-200 bg-white hover:bg-amber-50/30 transition-colors overflow-hidden"
+                    className="rounded-xl border border-amber-200 bg-white hover:border-amber-300 transition-colors overflow-hidden"
                   >
-                    <div className="p-3">
+                    <div className="p-4">
                       <div className="flex items-start gap-2 mb-2">
                         <span className="material-symbols-outlined text-amber-500 text-sm mt-0.5 shrink-0">local_offer</span>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 text-sm">{promo.name}</h4>
+                          <h4 className="font-medium text-gray-900">{promo.name}</h4>
                         </div>
-                        <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-white border shrink-0`}>
+                        <span className="inline-flex items-center gap-1 text-[13px] font-medium px-2 py-0.5 rounded-full bg-white border shrink-0 whitespace-nowrap">
                           <span className={`w-1.5 h-1.5 rounded-full ${ms.dot}`} />
                           {ms.label}
                         </span>
                       </div>
 
-                      <div className="space-y-0.5 mb-2">
+                      <div className="space-y-1 mb-3">
                         {childServices.map((svc) => (
-                          <div key={svc.id} className="flex items-center justify-between text-xs bg-gray-50 rounded px-2 py-1">
-                            <span className="text-gray-600 font-medium truncate">{svc.name}</span>
+                          <div key={svc.id} className="flex items-center justify-between text-[13px] bg-gray-50 rounded px-2 py-1">
+                            <span className="text-gray-600 font-medium">{svc.name}</span>
                           </div>
                         ))}
                       </div>
@@ -200,10 +200,10 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
                         <div>
                           {hasDiscount ? (
                             <div>
-                              <span className="text-xs text-gray-400 line-through">{formatPrice(subtotal)}</span>
+                              <span className="text-[13px] text-gray-400 line-through">{formatPrice(subtotal)}</span>
                               <div className="flex items-center gap-1">
                                 <span className="text-sm font-extrabold text-green-700">{formatPrice(total)}</span>
-                                <span className="text-[10px] font-bold text-green-600 bg-green-100 px-1 py-0.5 rounded-full">
+                                <span className="text-[11px] font-bold text-green-600 bg-green-100 px-1 py-0.5 rounded-full">
                                   {Math.round((1 - df) * 100)}% OFF
                                 </span>
                               </div>
@@ -216,17 +216,17 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
                         <div className="shrink-0 ml-2">
                           {hasPurchase && onReservePromo ? (
                             <button onClick={() => onReservePromo(promo)}
-                              className="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-colors whitespace-nowrap">
+                              className="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white text-[13px] font-bold rounded-lg transition-colors whitespace-nowrap">
                               ({remaining})
                             </button>
                           ) : promo.bundle_price_cents && promo.bundle_price_cents > 0 && onBuyPromo ? (
                             <button onClick={() => onBuyPromo(promo.id)}
-                              className="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-colors whitespace-nowrap">
+                              className="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white text-[13px] font-bold rounded-lg transition-colors whitespace-nowrap">
                               Comprar
                             </button>
                           ) : onReservePromo ? (
                             <button onClick={() => onReservePromo(promo)}
-                              className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors whitespace-nowrap">
+                              className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white text-[13px] font-bold rounded-lg transition-colors whitespace-nowrap">
                               Reservar
                             </button>
                           ) : null}
