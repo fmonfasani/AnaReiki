@@ -146,18 +146,18 @@ export default async function ConsultantesLayout({
 
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 py-2 px-4 flex justify-between items-center z-50 shadow-lg-up safe-area-bottom">
-        {navItems.slice(0, 5).map((item) => (
+        {navItems.slice(0, 8).map((item) => (
           <Link
             key={item.id}
             href={item.href}
             className={`flex flex-col items-center p-2 transition-colors ${
-              item.locked ? "text-gray-300" : "text-gray-400"
+              item.locked ? "text-gray-300" : "text-gray-400 hover:text-pink-600"
             }`}
           >
             <span className="material-symbols-outlined text-2xl mb-0.5">
               {item.locked ? "lock" : item.icon}
             </span>
-            <span className="text-[10px] font-medium">{item.name}</span>
+            <span className="text-[10px] font-medium truncate max-w-12">{item.name}</span>
           </Link>
         ))}
       </nav>
