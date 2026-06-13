@@ -29,6 +29,8 @@ type Promo = {
   id: string;
   name: string;
   modality: string | null;
+  session_type?: string | null;
+  duration_minutes?: number | null;
   service_ids: string[];
 };
 
@@ -61,6 +63,7 @@ export default function RuleManager() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ type: "ok" | "error"; text: string } | null>(null);
   const [mode, setMode] = useState<"weekly" | "specific">("weekly");
+  const [ruleType, setRuleType] = useState<"promo" | "individual">("individual");
 
   const fetchRules = useCallback(async () => {
     const res = await fetch(`/api/admin/availability/rules`);
@@ -83,6 +86,7 @@ export default function RuleManager() {
     setForm({ ...emptyForm });
     setEditingId(null);
     setMode("weekly");
+    setRuleType("individual");
   };
 
   const handleEdit = (rule: Rule) => {
@@ -101,6 +105,7 @@ export default function RuleManager() {
     });
     setEditingId(rule.id);
     setMode(rule.day_of_week !== null ? "weekly" : "specific");
+    setRuleType(rule.promotion_id ? "promo" : "individual");
     setShowForm(true);
   };
 
@@ -188,6 +193,8 @@ export default function RuleManager() {
   const weeklyRules = rules.filter((r) => r.day_of_week !== null);
   const specificRules = rules.filter((r) => r.specific_date !== null);
 
+  const selectedPromo = form.promotion_id ? promos.find((p) => p.id === form.promotion_id) : null;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -214,6 +221,7 @@ export default function RuleManager() {
 
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+          {/* Mode toggle */}
           <div className="flex gap-4">
             <button type="button" onClick={() => setMode("weekly")}
               className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
@@ -225,79 +233,125 @@ export default function RuleManager() {
               }`}>Fecha específica</button>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            {mode === "weekly" ? (
-              <div>
-                <label className="block text-sm text-gray-500 mb-1">Día de la semana</label>
-                <select value={String(form.day_of_week)} onChange={(e) => setForm({ ...form, day_of_week: e.target.value ? Number(e.target.value) : "" })}
-                  className="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
-                  <option value="">Seleccionar día</option>
-                  {DAY_LABELS.map((label, i) => (
-                    <option key={i} value={i}>{label}</option>
+          {/* Day/date */}
+          {mode === "weekly" ? (
+            <div>
+              <label className="block text-sm text-gray-500 mb-1">Día de la semana</label>
+              <select value={String(form.day_of_week)} onChange={(e) => setForm({ ...form, day_of_week: e.target.value ? Number(e.target.value) : "" })}
+                className="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
+                <option value="">Seleccionar día</option>
+                {DAY_LABELS.map((label, i) => (
+                  <option key={i} value={i}>{label}</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm text-gray-500 mb-1">Fecha</label>
+              <input type="date" value={form.specific_date} onChange={(e) => setForm({ ...form, specific_date: e.target.value })}
+                className="w-full p-2.5 rounded-xl border border-gray-200 text-sm" />
+            </div>
+          )}
+
+          {/* Two-column: Promos | Individual Services */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Tipo de regla</label>
+            <div className="grid grid-cols-2 gap-4">
+              {/* Left: Promos */}
+              <div className={`p-3 rounded-xl border-2 transition-colors ${
+                ruleType === "promo" ? "border-purple-300 bg-purple-50/30" : "border-gray-200 bg-white"
+              }`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-semibold text-gray-700">📦 Promos</span>
+                  {ruleType === "promo" && (
+                    <span className="text-[10px] bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full font-medium">Seleccionado</span>
+                  )}
+                </div>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {promos.length === 0 && <p className="text-xs text-gray-400 py-2 text-center">No hay promos activas</p>}
+                  {promos.map((p) => (
+                    <label key={p.id} className={`flex items-center gap-2 text-sm cursor-pointer hover:bg-purple-50 px-1 py-0.5 rounded ${
+                      form.promotion_id === p.id ? "bg-purple-100 font-medium" : ""
+                    }`}>
+                      <input type="radio" name="promotion_id" checked={form.promotion_id === p.id}
+                        onChange={() => {
+                          setForm({
+                            ...form,
+                            promotion_id: p.id,
+                            service_ids: [],
+                            modality: p.modality || "both",
+                            session_type: p.session_type || "individual",
+                            duration_minutes: p.duration_minutes || form.duration_minutes,
+                          });
+                          setRuleType("promo");
+                        }}
+                        className="text-purple-600" />
+                      <span>{p.name}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ml-auto ${
+                        p.modality === "online" ? "bg-blue-50 text-blue-600" :
+                        p.modality === "presencial" ? "bg-amber-50 text-amber-600" :
+                        "bg-gray-100 text-gray-500"
+                      }`}>
+                        {p.modality === "online" ? "Online" : p.modality === "presencial" ? "Presencial" : "Ambos"}
+                      </span>
+                    </label>
                   ))}
-                </select>
-              </div>
-            ) : (
-              <div>
-                <label className="block text-sm text-gray-500 mb-1">Fecha</label>
-                <input type="date" value={form.specific_date} onChange={(e) => setForm({ ...form, specific_date: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-gray-200 text-sm" />
-              </div>
-            )}
-            <div>
-              <label className="block text-sm text-gray-500 mb-1">Servicios (opcional)</label>
-              <div className="space-y-1.5 max-h-48 overflow-y-auto p-2 border border-gray-200 rounded-xl">
-                {services.map((s) => (
-                  <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 px-1 py-0.5 rounded">
-                    <input type="checkbox" checked={form.service_ids.includes(s.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setForm({ ...form, service_ids: [...form.service_ids, s.id], promotion_id: null });
-                        } else {
-                          setForm({ ...form, service_ids: form.service_ids.filter((id) => id !== s.id) });
-                        }
-                      }}
-                      className="rounded border-gray-300 text-pink-600" />
-                    {s.name}
-                  </label>
-                ))}
-                {services.length > 0 && (
-                  <div className="flex gap-2 pt-1 border-t border-gray-100 mt-1">
-                    <button type="button" onClick={() => setForm({ ...form, service_ids: services.map((s) => s.id), promotion_id: null })}
-                      className="text-xs text-pink-600 hover:text-pink-700 font-medium">Seleccionar todos</button>
-                    <button type="button" onClick={() => setForm({ ...form, service_ids: [] })}
-                      className="text-xs text-gray-400 hover:text-gray-600 font-medium">Deseleccionar todos</button>
+                </div>
+                {selectedPromo && (
+                  <div className="mt-2 p-2 bg-purple-100 rounded-lg text-xs text-purple-700 space-y-0.5">
+                    <div>Modalidad: <strong>{selectedPromo.modality === "online" ? "Online" : selectedPromo.modality === "presencial" ? "Presencial" : "Online y Presencial"}</strong></div>
+                    <div>Tipo de sesión: <strong>Por paquete</strong></div>
+                    {selectedPromo.duration_minutes && (
+                      <div>Duración del paquete: <strong>{selectedPromo.duration_minutes} min</strong></div>
+                    )}
                   </div>
                 )}
               </div>
-              {form.service_ids.length === 0 && !form.promotion_id && <p className="text-xs text-gray-400 mt-1">Si no seleccionás ninguno, la regla aplica a todos los servicios.</p>}
-            </div>
-            <div>
-              <label className="block text-sm text-gray-500 mb-1">Promo (opcional)</label>
-              <div className="space-y-1.5 max-h-48 overflow-y-auto p-2 border border-gray-200 rounded-xl">
-                {promos.length === 0 && <p className="text-xs text-gray-400 py-2 text-center">No hay promos activas</p>}
-                {promos.map((p) => (
-                  <label key={p.id} className={`flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 px-1 py-0.5 rounded ${form.promotion_id === p.id ? "bg-purple-50" : ""}`}>
-                    <input type="radio" name="promotion_id" checked={form.promotion_id === p.id}
-                      onChange={() => {
-                        setForm({ ...form, promotion_id: p.id, service_ids: [] });
-                      }}
-                      className="text-purple-600" />
-                    <span className="font-medium">{p.name}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${p.modality === "online" ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"}`}>
-                      {p.modality === "online" ? "Online" : p.modality === "presencial" ? "Presencial" : "Ambos"}
-                    </span>
-                    <span className="text-xs text-gray-400">{p.service_ids.length} servicios</span>
-                  </label>
-                ))}
-                {promos.length > 0 && (
-                  <div className="flex gap-2 pt-1 border-t border-gray-100 mt-1">
-                    <button type="button" onClick={() => setForm({ ...form, promotion_id: null })}
-                      className="text-xs text-gray-400 hover:text-gray-600 font-medium">Quitar promo</button>
-                  </div>
+
+              {/* Right: Individual Services */}
+              <div className={`p-3 rounded-xl border-2 transition-colors ${
+                ruleType === "individual" ? "border-pink-300 bg-pink-50/30" : "border-gray-200 bg-white"
+              }`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-semibold text-gray-700">✨ Servicios Individuales</span>
+                  {ruleType === "individual" && (
+                    <span className="text-[10px] bg-pink-200 text-pink-800 px-2 py-0.5 rounded-full font-medium">Seleccionado</span>
+                  )}
+                </div>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {services.map((s) => (
+                    <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-pink-50 px-1 py-0.5 rounded">
+                      <input type="checkbox" checked={form.service_ids.includes(s.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setForm({ ...form, service_ids: [...form.service_ids, s.id], promotion_id: null });
+                          } else {
+                            setForm({ ...form, service_ids: form.service_ids.filter((id) => id !== s.id) });
+                          }
+                          setRuleType("individual");
+                        }}
+                        className="rounded border-gray-300 text-pink-600" />
+                      {s.name}
+                    </label>
+                  ))}
+                  {services.length > 0 && (
+                    <div className="flex gap-2 pt-1 border-t border-gray-100 mt-1">
+                      <button type="button" onClick={() => { setForm({ ...form, service_ids: services.map((s) => s.id), promotion_id: null }); setRuleType("individual"); }}
+                        className="text-xs text-pink-600 hover:text-pink-700 font-medium">Seleccionar todos</button>
+                      <button type="button" onClick={() => setForm({ ...form, service_ids: [] })}
+                        className="text-xs text-gray-400 hover:text-gray-600 font-medium">Deseleccionar todos</button>
+                    </div>
+                  )}
+                </div>
+                {form.service_ids.length === 0 && ruleType === "individual" && (
+                  <p className="text-xs text-gray-400 mt-1">Si no seleccionás ninguno, la regla aplica a todos los servicios.</p>
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Config fields */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-gray-500 mb-1">Desde</label>
               <input type="time" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })}
@@ -314,24 +368,37 @@ export default function RuleManager() {
                 onChange={(e) => setForm({ ...form, duration_minutes: parseInt(e.target.value) || 60 })}
                 className="w-full p-2.5 rounded-xl border border-gray-200 text-sm" required />
             </div>
-            <div>
-              <label className="block text-sm text-gray-500 mb-1">Modalidad</label>
-              <select value={form.modality} onChange={(e) => setForm({ ...form, modality: e.target.value })}
-                className="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
-                {MODALITIES.map((m) => (
-                  <option key={m} value={m}>{m === "online" ? "Online" : m === "presencial" ? "Presencial" : m === "both" ? "Online y Presencial" : "Mixta"}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-gray-500 mb-1">Tipo de sesión</label>
-              <select value={form.session_type} onChange={(e) => setForm({ ...form, session_type: e.target.value })}
-                className="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
-                {SESSION_TYPES.map((t) => (
-                  <option key={t} value={t}>{t === "individual" ? "Individual" : t === "group" ? "Grupal" : "Ambos"}</option>
-                ))}
-              </select>
-            </div>
+            {ruleType === "individual" ? (
+              <>
+                <div>
+                  <label className="block text-sm text-gray-500 mb-1">Modalidad</label>
+                  <select value={form.modality} onChange={(e) => setForm({ ...form, modality: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
+                    {MODALITIES.map((m) => (
+                      <option key={m} value={m}>{m === "online" ? "Online" : m === "presencial" ? "Presencial" : m === "both" ? "Online y Presencial" : "Mixta"}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-500 mb-1">Tipo de sesión</label>
+                  <select value={form.session_type} onChange={(e) => setForm({ ...form, session_type: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
+                    {SESSION_TYPES.map((t) => (
+                      <option key={t} value={t}>{t === "individual" ? "Individual" : t === "group" ? "Grupal" : "Ambos"}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            ) : (
+              <div className="col-span-1">
+                <label className="block text-sm text-gray-400 mb-1">Modalidad</label>
+                <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-100 text-sm text-gray-500">
+                  {selectedPromo
+                    ? (selectedPromo.modality === "online" ? "Online" : selectedPromo.modality === "presencial" ? "Presencial" : "Online y Presencial")
+                    : "— (viene de la promo)"}
+                </div>
+              </div>
+            )}
             <div>
               <label className="block text-sm text-gray-500 mb-1">Cupo máximo</label>
               <input type="number" min={1} value={form.max_participants}
@@ -347,6 +414,13 @@ export default function RuleManager() {
               </label>
             </div>
           </div>
+
+          {ruleType === "promo" && selectedPromo && (
+            <div className="p-3 bg-purple-50 rounded-xl text-sm text-purple-700 border border-purple-100">
+              Esta regla está vinculada a la promo <strong>{selectedPromo.name}</strong>.
+              La modalidad y tipo de sesión están predefinidos por la promo.{selectedPromo.duration_minutes ? ` La duración sugerida es ${selectedPromo.duration_minutes} min.` : ""}
+            </div>
+          )}
 
           <div className="flex gap-3 pt-2">
             <button type="submit" disabled={saving}
