@@ -156,7 +156,7 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
               No hay promociones activas
             </p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               {promos.map((promo) => {
                 const childServices = promo.service_ids
                   .map((id) => servicesById.get(id))
