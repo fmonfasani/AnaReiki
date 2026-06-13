@@ -131,8 +131,7 @@ export default function ServiciosPage() {
   const isOwner = userRole === "owner";
   const isAdmin = isOwner || userRole === "admin";
 
-  const serviceIdsInPromos = new Set(promos.flatMap((p) => p.service_ids));
-  const standaloneServices = services.filter((s) => !serviceIdsInPromos.has(s.id));
+  const standaloneServices = services;
 
   function ServiceRow({ s, isChild }: { s: Service; isChild?: boolean }) {
     return (
