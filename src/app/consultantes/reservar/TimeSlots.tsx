@@ -22,7 +22,8 @@ export default function TimeSlots({ date, modality, serviceId, selected, onSelec
     const fetchSlots = async () => {
       setLoading(true);
       const dateStr = format(date, "yyyy-MM-dd");
-      const params = new URLSearchParams({ date: dateStr, modality });
+      const params = new URLSearchParams({ date: dateStr });
+      if (modality && modality !== "null") params.set("modality", modality);
       if (serviceId) params.set("service_id", serviceId);
 
       try {

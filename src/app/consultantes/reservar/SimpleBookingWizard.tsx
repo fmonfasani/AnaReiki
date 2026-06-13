@@ -81,7 +81,8 @@ export default function SimpleBookingWizard() {
       setLoadingDates(true);
       const from = format(startOfMonth(month), "yyyy-MM-dd");
       const to = format(endOfMonth(month), "yyyy-MM-dd");
-      const params = new URLSearchParams({ from, to, modality: selectedModality });
+      const params = new URLSearchParams({ from, to });
+      if (selectedModality && selectedModality !== "null") params.set("modality", selectedModality);
       if (selectedService) params.set("service_id", selectedService.id);
       try {
         const res = await fetch(`/api/availability?${params}`);
@@ -102,7 +103,8 @@ export default function SimpleBookingWizard() {
     const fetchSlots = async () => {
       setLoadingSlots(true);
       const dateStr = format(selectedDate, "yyyy-MM-dd");
-      const params = new URLSearchParams({ date: dateStr, modality: selectedModality });
+      const params = new URLSearchParams({ date: dateStr });
+      if (selectedModality && selectedModality !== "null") params.set("modality", selectedModality);
       if (selectedService) params.set("service_id", selectedService.id);
       try {
         const res = await fetch(`/api/availability?${params}`);

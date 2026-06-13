@@ -111,7 +111,7 @@ export default function BookingWizard() {
 
     setSelectedService(firstService);
     setSelectedPromo(promo);
-    setSelectedModality(promo.modality);
+    setSelectedModality(promo.modality || "online");
     setSelectedPromotionId(promo.id);
     setPromoPriceCents(getPromoTotal(promo));
     // Skip modality step (promo has fixed modality) -> go to date

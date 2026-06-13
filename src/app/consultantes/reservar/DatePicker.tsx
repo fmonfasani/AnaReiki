@@ -25,7 +25,8 @@ export default function DatePicker({ modality, serviceId, selected, onSelect }: 
       const from = format(startOfMonth(month), "yyyy-MM-dd");
       const to = format(endOfMonth(month), "yyyy-MM-dd");
 
-      const params = new URLSearchParams({ from, to, modality });
+      const params = new URLSearchParams({ from, to });
+      if (modality && modality !== "null") params.set("modality", modality);
       if (serviceId) params.set("service_id", serviceId);
 
       try {
