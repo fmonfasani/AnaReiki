@@ -77,9 +77,9 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
       </div>
 
       {/* Two-column layout: Services (left, wider) | Promos (right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-7 gap-6 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
         {/* LEFT: Individual Services */}
-        <div className="lg:col-span-4 bg-white rounded-2xl border border-gray-200 p-5 min-h-[400px]">
+        <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-200 p-5 min-h-[400px]">
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="material-symbols-outlined text-sm">spa</span>
             Servicios Individuales
@@ -145,7 +145,7 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
         </div>
 
         {/* RIGHT: Promos */}
-        <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-200 p-5 min-h-[400px]">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-5 min-h-[400px]">
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="material-symbols-outlined text-sm">local_offer</span>
             Promociones
@@ -174,15 +174,15 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
                 return (
                   <div
                     key={promo.id}
-                    className="rounded-xl border border-amber-200 bg-white hover:border-amber-300 transition-colors overflow-hidden"
+                    className="rounded-xl border border-amber-200 bg-white hover:border-amber-300 transition-colors overflow-visible"
                   >
                     <div className="p-4">
-                      <div className="flex items-start gap-2 mb-2">
-                        <span className="material-symbols-outlined text-amber-500 text-sm mt-0.5 shrink-0">local_offer</span>
-                        <div className="flex-1 min-w-0">
+                      <div className="flex flex-col gap-1 mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-amber-500 text-sm shrink-0">local_offer</span>
                           <h4 className="font-medium text-gray-900">{promo.name}</h4>
                         </div>
-                        <span className="inline-flex items-center gap-1 text-[13px] font-medium px-2 py-0.5 rounded-full bg-white border shrink-0 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 text-[12px] font-medium px-2 py-0.5 rounded-full bg-white border self-start">
                           <span className={`w-1.5 h-1.5 rounded-full ${ms.dot}`} />
                           {ms.label}
                         </span>
