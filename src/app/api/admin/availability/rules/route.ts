@@ -82,6 +82,7 @@ export async function POST(request: Request) {
       max_online,
       max_presencial,
       service_ids,
+      promotion_id,
       is_active,
     } = body;
 
@@ -112,6 +113,7 @@ export async function POST(request: Request) {
         max_online: max_online ?? null,
         max_presencial: max_presencial ?? null,
         service_ids: service_ids || [],
+        promotion_id: promotion_id || null,
         is_active: is_active ?? true,
         created_by: user.id,
       })

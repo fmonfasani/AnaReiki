@@ -15,6 +15,7 @@ type Rule = {
   max_online: number | null;
   max_presencial: number | null;
   service_ids: string[];
+  promotion_id: string | null;
   is_active: boolean;
   created_at: string;
 };
@@ -22,6 +23,13 @@ type Rule = {
 type Service = {
   id: string;
   name: string;
+};
+
+type Promo = {
+  id: string;
+  name: string;
+  modality: string | null;
+  service_ids: string[];
 };
 
 const DAY_LABELS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
@@ -38,12 +46,14 @@ const emptyForm = {
   session_type: "individual",
   max_participants: 1,
   service_ids: [] as string[],
+  promotion_id: null as string | null,
   is_active: true,
 };
 
 export default function RuleManager() {
   const [rules, setRules] = useState<Rule[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [promos, setPromos] = useState<Promo[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -62,6 +72,7 @@ export default function RuleManager() {
     const res = await fetch("/api/services");
     const json = await res.json();
     if (json.data) setServices(json.data);
+    if (json.promos) setPromos(json.promos);
   }, []);
 
   useEffect(() => {
@@ -69,7 +80,7 @@ export default function RuleManager() {
   }, [fetchRules, fetchServices]);
 
   const resetForm = () => {
-    setForm(emptyForm);
+    setForm({ ...emptyForm });
     setEditingId(null);
     setMode("weekly");
   };
@@ -85,6 +96,7 @@ export default function RuleManager() {
       session_type: rule.session_type,
       max_participants: rule.max_participants,
       service_ids: rule.service_ids || [],
+      promotion_id: rule.promotion_id || null,
       is_active: rule.is_active,
     });
     setEditingId(rule.id);
@@ -105,6 +117,7 @@ export default function RuleManager() {
       session_type: form.session_type,
       max_participants: form.max_participants || 1,
       service_ids: form.service_ids,
+      promotion_id: form.promotion_id || null,
       is_active: form.is_active,
     };
 
@@ -239,7 +252,7 @@ export default function RuleManager() {
                     <input type="checkbox" checked={form.service_ids.includes(s.id)}
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setForm({ ...form, service_ids: [...form.service_ids, s.id] });
+                          setForm({ ...form, service_ids: [...form.service_ids, s.id], promotion_id: null });
                         } else {
                           setForm({ ...form, service_ids: form.service_ids.filter((id) => id !== s.id) });
                         }
@@ -250,14 +263,40 @@ export default function RuleManager() {
                 ))}
                 {services.length > 0 && (
                   <div className="flex gap-2 pt-1 border-t border-gray-100 mt-1">
-                    <button type="button" onClick={() => setForm({ ...form, service_ids: services.map((s) => s.id) })}
+                    <button type="button" onClick={() => setForm({ ...form, service_ids: services.map((s) => s.id), promotion_id: null })}
                       className="text-xs text-pink-600 hover:text-pink-700 font-medium">Seleccionar todos</button>
                     <button type="button" onClick={() => setForm({ ...form, service_ids: [] })}
                       className="text-xs text-gray-400 hover:text-gray-600 font-medium">Deseleccionar todos</button>
                   </div>
                 )}
               </div>
-              {form.service_ids.length === 0 && <p className="text-xs text-gray-400 mt-1">Si no seleccionás ninguno, la regla aplica a todos los servicios.</p>}
+              {form.service_ids.length === 0 && !form.promotion_id && <p className="text-xs text-gray-400 mt-1">Si no seleccionás ninguno, la regla aplica a todos los servicios.</p>}
+            </div>
+            <div>
+              <label className="block text-sm text-gray-500 mb-1">Promo (opcional)</label>
+              <div className="space-y-1.5 max-h-48 overflow-y-auto p-2 border border-gray-200 rounded-xl">
+                {promos.length === 0 && <p className="text-xs text-gray-400 py-2 text-center">No hay promos activas</p>}
+                {promos.map((p) => (
+                  <label key={p.id} className={`flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 px-1 py-0.5 rounded ${form.promotion_id === p.id ? "bg-purple-50" : ""}`}>
+                    <input type="radio" name="promotion_id" checked={form.promotion_id === p.id}
+                      onChange={() => {
+                        setForm({ ...form, promotion_id: p.id, service_ids: [] });
+                      }}
+                      className="text-purple-600" />
+                    <span className="font-medium">{p.name}</span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${p.modality === "online" ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"}`}>
+                      {p.modality === "online" ? "Online" : p.modality === "presencial" ? "Presencial" : "Ambos"}
+                    </span>
+                    <span className="text-xs text-gray-400">{p.service_ids.length} servicios</span>
+                  </label>
+                ))}
+                {promos.length > 0 && (
+                  <div className="flex gap-2 pt-1 border-t border-gray-100 mt-1">
+                    <button type="button" onClick={() => setForm({ ...form, promotion_id: null })}
+                      className="text-xs text-gray-400 hover:text-gray-600 font-medium">Quitar promo</button>
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-sm text-gray-500 mb-1">Desde</label>
@@ -363,7 +402,16 @@ export default function RuleManager() {
                             <div className="flex flex-wrap gap-1 mb-1">
                               <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px]">{rule.duration_minutes}min</span>
                               <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px]">{rule.modality}</span>
-                              {rule.service_ids && rule.service_ids.length > 0 ? (
+                              {rule.promotion_id ? (
+                                (() => {
+                                  const promo = promos.find((p) => p.id === rule.promotion_id);
+                                  return promo ? (
+                                    <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[10px] font-medium">📦 {promo.name}</span>
+                                  ) : (
+                                    <span className="px-1.5 py-0.5 bg-gray-200 text-gray-500 rounded text-[10px]">Promo {rule.promotion_id.slice(0, 8)}</span>
+                                  );
+                                })()
+                              ) : rule.service_ids && rule.service_ids.length > 0 ? (
                                 rule.service_ids.slice(0, 2).map((sid) => {
                                   const svc = services.find((s) => s.id === sid);
                                   return svc ? (
@@ -411,7 +459,16 @@ export default function RuleManager() {
                         <span className="text-gray-600">{rule.start_time.slice(0, 5)} - {rule.end_time.slice(0, 5)}</span>
                         <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">{rule.duration_minutes}min</span>
                         <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs">{rule.modality}</span>
-                        {rule.service_ids && rule.service_ids.length > 0 ? (
+                        {rule.promotion_id ? (
+                          (() => {
+                            const promo = promos.find((p) => p.id === rule.promotion_id);
+                            return promo ? (
+                              <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">📦 {promo.name}</span>
+                            ) : (
+                              <span className="px-1.5 py-0.5 bg-gray-200 text-gray-500 rounded text-xs">Promo</span>
+                            );
+                          })()
+                        ) : rule.service_ids && rule.service_ids.length > 0 ? (
                           rule.service_ids.map((sid) => {
                             const svc = services.find((s) => s.id === sid);
                             return svc ? (
