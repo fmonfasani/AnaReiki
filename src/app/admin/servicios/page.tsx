@@ -260,7 +260,7 @@ export default function ServiciosPage() {
                         <div>
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <h4 className="font-semibold text-gray-900 text-sm leading-tight">{s.name}</h4>
-                            <div className="flex gap-1 shrink-0">
+                            <div className="flex flex-col gap-1 shrink-0">
                               <button
                                 onClick={() => startEditing(s)}
                                 className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-200 transition-colors"
