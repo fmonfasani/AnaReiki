@@ -255,7 +255,7 @@ export default async function MembersDashboard() {
               <h3 className="font-bold text-gray-900 mb-1">{card.title}</h3>
               <p className="text-sm text-gray-500">{card.desc}</p>
               {locked && (
-                <div className="mt-3 flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg w-fit border border-amber-200">
+                <div className="mt-3 flex items-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-pink-500 to-purple-600 px-3 py-1.5 rounded-full w-fit shadow-sm hover:shadow-md transition-all">
                   <span className="material-symbols-outlined text-[14px]">lock</span>
                   Suscribir
                 </div>

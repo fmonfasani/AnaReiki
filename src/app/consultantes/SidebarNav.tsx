@@ -74,7 +74,7 @@ export default function SidebarNav({ items, planTier, mobile }: SidebarNavProps)
           </span>
           <span className="font-medium text-sm flex-1">{item.name}</span>
           {item.locked && (
-            <span className="text-xs text-gray-400 font-medium">SUBIR</span>
+            <span className="text-xs font-bold text-white bg-gradient-to-r from-pink-500 to-purple-600 px-2 py-1 rounded-full shadow-sm hover:shadow-md transition-all">Suscribir</span>
           )}
         </Link>
       ))}
