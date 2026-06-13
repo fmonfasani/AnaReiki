@@ -76,9 +76,75 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
         </button>
       </div>
 
-      {/* Two-column layout */}
+      {/* Two-column layout: Services (3/5) | Promos (2/5) — same card size */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-        {/* LEFT: Promos (2/5 width) */}
+        {/* LEFT: Individual Services (3/5 width, 3 internal columns) */}
+        <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-200 p-4">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+            <span className="material-symbols-outlined text-sm">spa</span>
+            Servicios Individuales
+          </h3>
+
+          {services.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+              No hay servicios disponibles
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {services.map((service) => {
+                const isSelected = selected?.id === service.id;
+                const hasOnline = service.allowed_modalities?.includes("online") && (service.price_cents_online || 0) > 0;
+                const hasPresencial = service.allowed_modalities?.includes("presencial") && (service.price_cents_presencial || 0) > 0;
+                const isFree = !hasOnline && !hasPresencial;
+
+                return (
+                  <button
+                    key={service.id}
+                    onClick={() => onSelect(service)}
+                    className={`text-left p-3 rounded-xl border-2 transition-all duration-200 ${
+                      isSelected
+                        ? "border-[var(--color-terracotta)] bg-[var(--color-terracotta)]/5"
+                        : "border-gray-100 bg-white hover:border-[var(--color-terracotta)]/30 hover:bg-gray-50/50"
+                    }`}
+                  >
+                    <h4 className="font-semibold text-gray-900 text-sm">{service.name}</h4>
+
+                    <div className="flex items-center gap-1 mt-1.5 text-xs text-gray-400">
+                      <span className="material-symbols-outlined text-xs">schedule</span>
+                      <span>{service.duration_minutes} min</span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {hasOnline && (
+                        <span className="text-xs font-semibold text-[var(--color-terracotta)] bg-[var(--color-terracotta)]/10 px-2 py-0.5 rounded-md">
+                          Online {formatPrice(service.price_cents_online!)}
+                        </span>
+                      )}
+                      {hasPresencial && (
+                        <span className="text-xs font-semibold text-[var(--color-terracotta)] bg-[var(--color-terracotta)]/10 px-2 py-0.5 rounded-md">
+                          Presencial {formatPrice(service.price_cents_presencial!)}
+                        </span>
+                      )}
+                      {isFree && (
+                        <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded-md">
+                          Gratuito
+                        </span>
+                      )}
+                    </div>
+
+                    {isSelected && (
+                      <div className="mt-2 pt-2 border-t border-[var(--color-terracotta)]/20">
+                        <span className="text-xs font-bold text-[var(--color-terracotta)]">Seleccionado ✓</span>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT: Promos (2/5 width, 2 internal columns) */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-4">
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="material-symbols-outlined text-sm">local_offer</span>
@@ -110,67 +176,57 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
                     key={promo.id}
                     className="rounded-xl border border-amber-200 bg-white hover:bg-amber-50/30 transition-colors overflow-hidden"
                   >
-                    <div className="p-3.5">
-                      {/* Header */}
-                      <div className="flex items-start gap-2.5 mb-2.5">
-                        <span className="material-symbols-outlined text-amber-500 text-lg mt-0.5">local_offer</span>
+                    <div className="p-3">
+                      <div className="flex items-start gap-2 mb-2">
+                        <span className="material-symbols-outlined text-amber-500 text-sm mt-0.5 shrink-0">local_offer</span>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-semibold text-gray-900 text-sm">{promo.name}</h4>
-                          {promo.description && (
-                            <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{promo.description}</p>
-                          )}
                         </div>
-                        <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-white border shrink-0`}>
-                          <span className={`w-2 h-2 rounded-full ${ms.dot}`} />
+                        <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-white border shrink-0`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${ms.dot}`} />
                           {ms.label}
                         </span>
                       </div>
 
-                      {/* Services list */}
-                      <div className="space-y-1 mb-3">
+                      <div className="space-y-0.5 mb-2">
                         {childServices.map((svc) => (
-                          <div key={svc.id} className="flex items-center justify-between text-xs bg-gray-50 rounded-lg px-2.5 py-1.5">
+                          <div key={svc.id} className="flex items-center justify-between text-xs bg-gray-50 rounded px-2 py-1">
                             <span className="text-gray-600 font-medium truncate">{svc.name}</span>
-                            <span className="text-gray-400 shrink-0 ml-2">
-                              {(svc as any)[priceField] > 0 ? formatPrice((svc as any)[priceField]) : "—"}
-                            </span>
                           </div>
                         ))}
                       </div>
 
-                      {/* Pricing */}
                       <div className="flex items-center justify-between">
                         <div>
                           {hasDiscount ? (
                             <div>
-                              <span className="text-xs text-gray-400 line-through block">{formatPrice(subtotal)}</span>
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="text-base font-extrabold text-green-700">{formatPrice(total)}</span>
-                                <span className="text-[10px] font-bold text-green-600 bg-green-100 px-1.5 py-0.5 rounded-full">
+                              <span className="text-xs text-gray-400 line-through">{formatPrice(subtotal)}</span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-sm font-extrabold text-green-700">{formatPrice(total)}</span>
+                                <span className="text-[10px] font-bold text-green-600 bg-green-100 px-1 py-0.5 rounded-full">
                                   {Math.round((1 - df) * 100)}% OFF
                                 </span>
                               </div>
                             </div>
                           ) : (
-                            <span className="text-base font-extrabold text-gray-900">{formatPrice(total)}</span>
+                            <span className="text-sm font-extrabold text-gray-900">{formatPrice(total)}</span>
                           )}
                         </div>
 
-                        {/* CTA */}
-                        <div className="shrink-0 ml-3">
+                        <div className="shrink-0 ml-2">
                           {hasPurchase && onReservePromo ? (
                             <button onClick={() => onReservePromo(promo)}
-                              className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-colors whitespace-nowrap">
-                              Reservar ({remaining})
+                              className="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-colors whitespace-nowrap">
+                              ({remaining})
                             </button>
                           ) : promo.bundle_price_cents && promo.bundle_price_cents > 0 && onBuyPromo ? (
                             <button onClick={() => onBuyPromo(promo.id)}
-                              className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-colors whitespace-nowrap">
-                              Comprar · {promo.max_sessions || 1} ses
+                              className="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-colors whitespace-nowrap">
+                              Comprar
                             </button>
                           ) : onReservePromo ? (
                             <button onClick={() => onReservePromo(promo)}
-                              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors whitespace-nowrap">
+                              className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors whitespace-nowrap">
                               Reservar
                             </button>
                           ) : null}
@@ -178,79 +234,6 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT: Individual Services (3/5 width) */}
-        <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-200 p-4">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <span className="material-symbols-outlined text-sm">spa</span>
-            Servicios Individuales
-          </h3>
-
-          {services.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-              No hay servicios disponibles
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {services.map((service) => {
-                const isSelected = selected?.id === service.id;
-                const hasOnline = service.allowed_modalities?.includes("online") && (service.price_cents_online || 0) > 0;
-                const hasPresencial = service.allowed_modalities?.includes("presencial") && (service.price_cents_presencial || 0) > 0;
-                const isFree = !hasOnline && !hasPresencial;
-
-                return (
-                  <button
-                    key={service.id}
-                    onClick={() => onSelect(service)}
-                    className={`text-left p-3.5 rounded-xl border-2 transition-all duration-200 ${
-                      isSelected
-                        ? "border-[var(--color-terracotta)] bg-[var(--color-terracotta)]/5"
-                        : "border-gray-100 bg-white hover:border-[var(--color-terracotta)]/30 hover:bg-gray-50/50"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-gray-900 text-sm">{service.name}</h4>
-                      </div>
-                    </div>
-
-                    {/* Duration */}
-                    <div className="flex items-center gap-1 mt-1.5 text-xs text-gray-400">
-                      <span className="material-symbols-outlined text-xs">schedule</span>
-                      <span>{service.duration_minutes} min</span>
-                    </div>
-
-                    {/* Prices row */}
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {hasOnline && (
-                        <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
-                          Online {formatPrice(service.price_cents_online!)}
-                        </span>
-                      )}
-                      {hasPresencial && (
-                        <span className="text-xs font-semibold text-[var(--color-terracotta)] bg-[var(--color-terracotta)]/10 px-2 py-0.5 rounded-md">
-                          Presencial {formatPrice(service.price_cents_presencial!)}
-                        </span>
-                      )}
-                      {isFree && (
-                        <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded-md">
-                          Gratuito
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Selected indicator */}
-                    {isSelected && (
-                      <div className="mt-2 pt-2 border-t border-[var(--color-terracotta)]/20">
-                        <span className="text-xs font-bold text-[var(--color-terracotta)]">Seleccionado ✓</span>
-                      </div>
-                    )}
-                  </button>
                 );
               })}
             </div>
