@@ -41,6 +41,10 @@ const endLabel = (s: Slot) => {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 };
 
+const slotDurationMinutes = (s: Slot) => {
+  return Math.round((new Date(s.slot_end).getTime() - new Date(s.slot_start).getTime()) / 60000);
+};
+
 const formatPrice = (cents: number) =>
   new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(cents / 100);
 
@@ -130,7 +134,7 @@ export default function BookingConfirm({
         <div className="flex justify-between items-center">
           <span className="text-sm text-[var(--color-text-light)]">Duración</span>
           <span className="font-medium text-[var(--color-text-main)]">
-            {service.duration_minutes} minutos
+            {slotDurationMinutes(slot)} minutos
           </span>
         </div>
 
