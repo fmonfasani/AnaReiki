@@ -34,7 +34,6 @@ export default function ServiciosPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [promos, setPromos] = useState<Promo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<string>("");
   const [savingId, setSavingId] = useState<string | null>(null);
 
   const fetchData = async () => {
@@ -50,16 +49,7 @@ export default function ServiciosPage() {
     setLoading(false);
   };
 
-  const fetchRole = async () => {
-    const res = await fetch("/api/auth/check-role");
-    const json = await res.json();
-    setUserRole(json.role || "");
-  };
-
-  useEffect(() => { fetchData(); fetchRole(); }, []);
-
-  const isOwner = userRole === "owner";
-  const isAdmin = isOwner || userRole === "admin";
+  useEffect(() => { fetchData(); }, []);
 
   const toggleVisibility = async (type: "service" | "promo", id: string, current: boolean) => {
     setSavingId(id);
@@ -103,7 +93,7 @@ export default function ServiciosPage() {
     <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-bold text-gray-900 font-display">Servicios</h1>
-        <p className="text-gray-500 text-sm">Gestioná servicios y promos. Usá "Publicar" para que aparezcan en la reserva del consultante.</p>
+        <p className="text-gray-500 text-sm">Gestioná servicios y promos. El ícono 👁 controla si aparece en la reserva del consultante.</p>
       </header>
 
       {loading ? (
@@ -129,13 +119,12 @@ export default function ServiciosPage() {
                       <button
                         onClick={() => toggleVisibility("service", s.id, s.is_visible)}
                         disabled={savingId === s.id}
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full transition-colors shrink-0 ${
-                          s.is_visible
-                            ? "bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
-                            : "bg-gray-50 text-gray-400 hover:bg-gray-100 border border-gray-200"
+                        className={`text-sm p-0.5 rounded transition-colors shrink-0 ${
+                          s.is_visible ? "text-[var(--color-terracotta)] opacity-100" : "text-gray-300 opacity-50"
                         }`}
+                        title={s.is_visible ? "Visible en reserva" : "Oculto en reserva"}
                       >
-                        {s.is_visible ? "Publicado" : "Publicar"}
+                        👁
                       </button>
                     </div>
 
@@ -153,8 +142,8 @@ export default function ServiciosPage() {
                     </div>
 
                     <div className="space-y-0.5 text-xs mb-2.5">
-                      {s.price_cents_online > 0 && <span className="text-blue-600 font-medium block">Online: {formatPrice(s.price_cents_online)}</span>}
-                      {s.price_cents_presencial > 0 && <span className="text-amber-600 font-medium block">Presencial: {formatPrice(s.price_cents_presencial)}</span>}
+                      {s.price_cents_online > 0 && <span className="text-[var(--color-terracotta)] font-medium block">Online: {formatPrice(s.price_cents_online)}</span>}
+                      {s.price_cents_presencial > 0 && <span className="text-[var(--color-terracotta)] font-medium block">Presencial: {formatPrice(s.price_cents_presencial)}</span>}
                       {s.price_cents_online === 0 && s.price_cents_presencial === 0 && <span className="text-green-600 font-medium">Gratuito</span>}
                     </div>
 
@@ -196,13 +185,12 @@ export default function ServiciosPage() {
                       <button
                         onClick={() => toggleVisibility("promo", p.id, p.is_visible)}
                         disabled={savingId === p.id}
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full transition-colors shrink-0 ${
-                          p.is_visible
-                            ? "bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
-                            : "bg-gray-50 text-gray-400 hover:bg-gray-100 border border-gray-200"
+                        className={`text-sm p-0.5 rounded transition-colors shrink-0 ${
+                          p.is_visible ? "text-[var(--color-terracotta)] opacity-100" : "text-gray-300 opacity-50"
                         }`}
+                        title={p.is_visible ? "Visible en reserva" : "Oculto en reserva"}
                       >
-                        {p.is_visible ? "Publicado" : "Publicar"}
+                        👁
                       </button>
                     </div>
 
@@ -234,7 +222,7 @@ export default function ServiciosPage() {
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
         <p className="font-semibold mb-1">¿Cómo funciona?</p>
-        <p>Usá "Publicar" para que el servicio o promo aparezca en la pantalla de reserva del consultante. Lo que no está publicado no se ve en el selector, pero los turnos ya creados no se ven afectados. "Activar/Desactivar" controla el estado operativo (independiente de la publicación).</p>
+        <p>El ícono 👁 (visible/oculto en reserva) es independiente del botón "Activar/Desactivar" (estado operativo). Un servicio puede estar activo pero oculto para el consultante, o inactivo pero visible (no recomendado). Los turnos ya creados no se ven afectados por estos cambios.</p>
       </div>
     </div>
   );
