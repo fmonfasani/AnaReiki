@@ -103,7 +103,7 @@ export default function ServiciosPage() {
     <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-bold text-gray-900 font-display">Servicios</h1>
-        <p className="text-gray-500 text-sm">Gestioná servicios y promos. Usá el toggle 👁 para mostrar/ocultar en la reserva del consultante.</p>
+        <p className="text-gray-500 text-sm">Gestioná servicios y promos. Usá "Publicar" para que aparezcan en la reserva del consultante.</p>
       </header>
 
       {loading ? (
@@ -126,16 +126,17 @@ export default function ServiciosPage() {
                   <div key={s.id} className={`rounded-xl border-2 p-3 transition-all ${s.is_active ? "border-gray-100 bg-white" : "border-gray-100 bg-gray-50/50 opacity-60"}`}>
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <h4 className="font-semibold text-gray-900 text-sm leading-tight">{s.name}</h4>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          onClick={() => toggleVisibility("service", s.id, s.is_visible)}
-                          disabled={savingId === s.id}
-                          className={`text-sm p-0.5 rounded transition-colors ${s.is_visible ? "text-amber-500 hover:text-amber-600" : "text-gray-300 hover:text-gray-400"}`}
-                          title={s.is_visible ? "Visible para consultantes" : "Oculto para consultantes"}
-                        >
-                          {s.is_visible ? "👁" : "👁‍🗨"}
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => toggleVisibility("service", s.id, s.is_visible)}
+                        disabled={savingId === s.id}
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full transition-colors shrink-0 ${
+                          s.is_visible
+                            ? "bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
+                            : "bg-gray-50 text-gray-400 hover:bg-gray-100 border border-gray-200"
+                        }`}
+                      >
+                        {s.is_visible ? "Publicado" : "Publicar"}
+                      </button>
                     </div>
 
                     <div className="flex items-center gap-1 text-xs text-gray-400 mb-2">
@@ -195,10 +196,13 @@ export default function ServiciosPage() {
                       <button
                         onClick={() => toggleVisibility("promo", p.id, p.is_visible)}
                         disabled={savingId === p.id}
-                        className={`text-sm p-0.5 rounded transition-colors shrink-0 ${p.is_visible ? "text-amber-500 hover:text-amber-600" : "text-gray-300 hover:text-gray-400"}`}
-                        title={p.is_visible ? "Visible para consultantes" : "Oculto para consultantes"}
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full transition-colors shrink-0 ${
+                          p.is_visible
+                            ? "bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
+                            : "bg-gray-50 text-gray-400 hover:bg-gray-100 border border-gray-200"
+                        }`}
                       >
-                        {p.is_visible ? "👁" : "👁‍🗨"}
+                        {p.is_visible ? "Publicado" : "Publicar"}
                       </button>
                     </div>
 
@@ -230,7 +234,7 @@ export default function ServiciosPage() {
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
         <p className="font-semibold mb-1">¿Cómo funciona?</p>
-        <p>Usá el toggle 👁 para controlar qué servicios y promos ve el consultante al reservar. Lo que está oculto no aparece en el selector, pero los turnos ya creados no se ven afectados. El toggle "Activar/Desactivar" controla el estado operativo del servicio (independiente de la visibilidad).</p>
+        <p>Usá "Publicar" para que el servicio o promo aparezca en la pantalla de reserva del consultante. Lo que no está publicado no se ve en el selector, pero los turnos ya creados no se ven afectados. "Activar/Desactivar" controla el estado operativo (independiente de la publicación).</p>
       </div>
     </div>
   );
