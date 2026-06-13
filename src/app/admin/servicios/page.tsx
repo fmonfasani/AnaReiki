@@ -35,6 +35,13 @@ export default function ServiciosPage() {
   const [promos, setPromos] = useState<Promo[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<{
+    duration_minutes: number;
+    allowed_modalities: string[];
+    price_cents_online: number;
+    price_cents_presencial: number;
+  }>({ duration_minutes: 60, allowed_modalities: ["presencial"], price_cents_online: 0, price_cents_presencial: 0 });
 
   const fetchData = async () => {
     setLoading(true);
@@ -89,11 +96,57 @@ export default function ServiciosPage() {
     fetchData();
   };
 
+  const startEditing = (s: Service) => {
+    setEditingId(s.id);
+    setEditForm({
+      duration_minutes: s.duration_minutes,
+      allowed_modalities: [...s.allowed_modalities],
+      price_cents_online: s.price_cents_online,
+      price_cents_presencial: s.price_cents_presencial,
+    });
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+  };
+
+  const saveEditing = async () => {
+    if (!editingId) return;
+    setSavingId(editingId);
+    const modalities = editForm.allowed_modalities.length > 0 ? editForm.allowed_modalities : ["presencial"];
+    await fetch(`/api/admin/services/${editingId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        duration_minutes: editForm.duration_minutes,
+        allowed_modalities: modalities,
+        price_cents_online: modalities.includes("online") ? editForm.price_cents_online : 0,
+        price_cents_presencial: modalities.includes("presencial") ? editForm.price_cents_presencial : 0,
+      }),
+    });
+    setSavingId(null);
+    setEditingId(null);
+    fetchData();
+  };
+
+  const toggleModality = (mod: string) => {
+    setEditForm((prev) => {
+      const current = prev.allowed_modalities;
+      if (current.includes(mod)) {
+        if (current.length === 1) return prev;
+        return { ...prev, allowed_modalities: current.filter((m) => m !== mod) };
+      }
+      return { ...prev, allowed_modalities: [...current, mod] };
+    });
+  };
+
+  const isEditing = (id: string) => editingId === id;
+
   return (
     <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-bold text-gray-900 font-display">Servicios</h1>
-        <p className="text-gray-500 text-sm">Gestioná servicios y promos. Usá "Publicar" para que aparezcan en la reserva del consultante.</p>
+        <p className="text-gray-500 text-sm">Gestioná servicios y promos. Editá precio, duración y modalidad de cada servicio.</p>
       </header>
 
       {loading ? (
@@ -112,54 +165,156 @@ export default function ServiciosPage() {
               <p className="text-sm text-gray-400 text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">No hay servicios</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
-                {services.map((s) => (
-                  <div key={s.id} className={`rounded-xl border-2 p-3 transition-all ${s.is_active ? "border-gray-100 bg-white" : "border-gray-100 bg-gray-50/50 opacity-60"}`}>
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h4 className="font-semibold text-gray-900 text-sm leading-tight">{s.name}</h4>
-                      <button
-                        onClick={() => toggleVisibility("service", s.id, s.is_visible)}
-                        disabled={savingId === s.id}
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full transition-colors shrink-0 ${
-                          s.is_visible
-                            ? "bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
-                            : "bg-gray-50 text-gray-400 hover:bg-gray-100 border border-gray-200"
-                        }`}
-                      >
-                        {s.is_visible ? "Publicado" : "Publicar"}
-                      </button>
-                    </div>
+                {services.map((s) => {
+                  const editing = isEditing(s.id);
+                  return (
+                    <div key={s.id} className={`rounded-xl border-2 p-3 transition-all ${s.is_active ? "border-gray-100 bg-white" : "border-gray-100 bg-gray-50/50 opacity-60"}`}>
+                      {editing ? (
+                        /* --- EDIT MODE --- */
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-gray-900 text-sm">{s.name}</h4>
 
-                    <div className="flex items-center gap-1 text-xs text-gray-400 mb-2">
-                      <span className="material-symbols-outlined text-xs">schedule</span>
-                      <span>{s.duration_minutes} min</span>
-                    </div>
+                          {/* Duración */}
+                          <div>
+                            <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block mb-1">Duración (min)</label>
+                            <input
+                              type="number"
+                              min={5}
+                              step={5}
+                              value={editForm.duration_minutes}
+                              onChange={(e) => setEditForm((f) => ({ ...f, duration_minutes: parseInt(e.target.value) || 60 }))}
+                              className="w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-[var(--color-terracotta)]"
+                            />
+                          </div>
 
-                    <div className="flex flex-wrap gap-1.5 mb-2">
-                      {s.allowed_modalities.map((m) => (
-                        <span key={m} className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
-                          m === "online" ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"
-                        }`}>{m}</span>
-                      ))}
-                    </div>
+                          {/* Modalidad */}
+                          <div>
+                            <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block mb-1">Modalidad</label>
+                            <div className="flex gap-2">
+                              {["online", "presencial"].map((mod) => (
+                                <button
+                                  key={mod}
+                                  onClick={() => toggleModality(mod)}
+                                  className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+                                    editForm.allowed_modalities.includes(mod)
+                                      ? mod === "online"
+                                        ? "bg-blue-50 text-blue-700 border-blue-200"
+                                        : "bg-amber-50 text-amber-700 border-amber-200"
+                                      : "bg-white text-gray-400 border-gray-200"
+                                  }`}
+                                >
+                                  {mod === "online" ? "Online" : "Presencial"}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
 
-                    <div className="space-y-0.5 text-xs mb-2.5">
-                      {s.price_cents_online > 0 && <span className="text-[var(--color-terracotta)] font-medium block">Online: {formatPrice(s.price_cents_online)}</span>}
-                      {s.price_cents_presencial > 0 && <span className="text-[var(--color-terracotta)] font-medium block">Presencial: {formatPrice(s.price_cents_presencial)}</span>}
-                      {s.price_cents_online === 0 && s.price_cents_presencial === 0 && <span className="text-green-600 font-medium">Gratuito</span>}
-                    </div>
+                          {/* Precios */}
+                          {editForm.allowed_modalities.includes("online") && (
+                            <div>
+                              <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block mb-1">Precio Online ($)</label>
+                              <input
+                                type="number"
+                                min={0}
+                                step={100}
+                                value={editForm.price_cents_online / 100}
+                                onChange={(e) => setEditForm((f) => ({ ...f, price_cents_online: (parseInt(e.target.value) || 0) * 100 }))}
+                                className="w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-[var(--color-terracotta)]"
+                              />
+                            </div>
+                          )}
 
-                    <div className="flex items-center justify-between pt-1.5 border-t border-gray-50">
-                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                        s.is_active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-400"
-                      }`}>{s.is_active ? "Activo" : "Inactivo"}</span>
-                      <button
-                        onClick={() => toggleActive("service", s.id, s.is_active)}
-                        className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors ${
-                          s.is_active ? "bg-red-50 text-red-500 hover:bg-red-100" : "bg-green-50 text-green-600 hover:bg-green-100"
-                        }`}>{s.is_active ? "Desactivar" : "Activar"}</button>
+                          {editForm.allowed_modalities.includes("presencial") && (
+                            <div>
+                              <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block mb-1">Precio Presencial ($)</label>
+                              <input
+                                type="number"
+                                min={0}
+                                step={100}
+                                value={editForm.price_cents_presencial / 100}
+                                onChange={(e) => setEditForm((f) => ({ ...f, price_cents_presencial: (parseInt(e.target.value) || 0) * 100 }))}
+                                className="w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-[var(--color-terracotta)]"
+                              />
+                            </div>
+                          )}
+
+                          {/* Actions */}
+                          <div className="flex gap-2 pt-1">
+                            <button
+                              onClick={saveEditing}
+                              disabled={savingId === s.id}
+                              className="flex-1 text-xs font-semibold bg-[var(--color-terracotta)] text-white py-1.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+                            >
+                              {savingId === s.id ? "Guardando..." : "Guardar"}
+                            </button>
+                            <button
+                              onClick={cancelEditing}
+                              className="text-xs font-medium text-gray-500 py-1.5 px-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* --- VIEW MODE --- */
+                        <div>
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <h4 className="font-semibold text-gray-900 text-sm leading-tight">{s.name}</h4>
+                            <div className="flex gap-1 shrink-0">
+                              <button
+                                onClick={() => startEditing(s)}
+                                className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-200 transition-colors"
+                              >
+                                Editar
+                              </button>
+                              <button
+                                onClick={() => toggleVisibility("service", s.id, s.is_visible)}
+                                disabled={savingId === s.id}
+                                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full transition-colors shrink-0 ${
+                                  s.is_visible
+                                    ? "bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
+                                    : "bg-gray-50 text-gray-400 hover:bg-gray-100 border border-gray-200"
+                                }`}
+                              >
+                                {s.is_visible ? "Publicado" : "Publicar"}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 text-xs text-gray-400 mb-2">
+                            <span className="material-symbols-outlined text-xs">schedule</span>
+                            <span>{s.duration_minutes} min</span>
+                          </div>
+
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {s.allowed_modalities.map((m) => (
+                              <span key={m} className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                                m === "online" ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"
+                              }`}>{m}</span>
+                            ))}
+                          </div>
+
+                          <div className="space-y-0.5 text-xs mb-2.5">
+                            {s.price_cents_online > 0 && <span className="text-[#185FA5] font-medium block">Online: {formatPrice(s.price_cents_online)}</span>}
+                            {s.price_cents_presencial > 0 && <span className="text-[#D85A30] font-medium block">Presencial: {formatPrice(s.price_cents_presencial)}</span>}
+                            {s.price_cents_online === 0 && s.price_cents_presencial === 0 && <span className="text-[#3B6D11] font-medium">Gratuito</span>}
+                          </div>
+
+                          <div className="flex items-center justify-between pt-1.5 border-t border-gray-50">
+                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                              s.is_active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-400"
+                            }`}>{s.is_active ? "Activo" : "Inactivo"}</span>
+                            <button
+                              onClick={() => toggleActive("service", s.id, s.is_active)}
+                              className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors ${
+                                s.is_active ? "bg-red-50 text-red-500 hover:bg-red-100" : "bg-green-50 text-green-600 hover:bg-green-100"
+                              }`}>{s.is_active ? "Desactivar" : "Activar"}</button>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -224,7 +379,7 @@ export default function ServiciosPage() {
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
         <p className="font-semibold mb-1">¿Cómo funciona?</p>
-        <p>El botón "Publicar" controla si el servicio/promo aparece en la pantalla de reserva del consultante, independientemente de "Activar/Desactivar" (estado operativo). Un servicio puede estar activo pero sin publicar, o inactivo pero publicado (no recomendado). Los turnos ya creados no se ven afectados.</p>
+        <p>El botón "Publicar" controla si el servicio aparece en la pantalla de reserva del consultante. "Editar" permite cambiar duración, modalidad (online/presencial) y precios. Si no se selecciona ninguna modalidad, se usa presencial por defecto.</p>
       </div>
     </div>
   );
