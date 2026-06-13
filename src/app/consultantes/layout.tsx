@@ -14,14 +14,14 @@ const PLAN_ACCESS: Record<string, string[]> = {
 const NAV_ITEMS = [
   { id: "inicio", name: "Inicio", href: "/consultantes", icon: "home" },
   { id: "suscripciones", name: "Suscripciones", href: "/consultantes/suscripciones", icon: "diamond" },
+  { id: "mis-citas", name: "Mi Agenda", href: "/consultantes/mis-citas", icon: "calendar_month" },
+  { id: "comunidad", name: "Comunidad", href: "/consultantes/comunidad", icon: "forum" },
+  { id: "mensajes", name: "Mensajes", href: "/consultantes/mensajes", icon: "chat" },
   { id: "biblioteca", name: "Biblioteca", href: "/consultantes/biblioteca", icon: "library_books" },
   { id: "clases", name: "Clases", href: "/consultantes/clases", icon: "video_library" },
   { id: "podcast", name: "Podcast", href: "/consultantes/podcast", icon: "podcasts" },
-  { id: "comunidad", name: "Comunidad", href: "/consultantes/comunidad", icon: "forum" },
-  { id: "mensajes", name: "Mensajes", href: "/consultantes/mensajes", icon: "chat" },
   { id: "chat-buda", name: "Chat Buda", href: "/consultantes/chat-buda", icon: "psychiatry" },
   { id: "evolucion", name: "Evolución", href: "/consultantes/evolucion", icon: "spa" },
-  { id: "mis-citas", name: "Mi Agenda", href: "/consultantes/mis-citas", icon: "calendar_month" },
   { id: "perfil", name: "Mi Perfil", href: "/consultantes/perfil", icon: "person" },
 ];
 
