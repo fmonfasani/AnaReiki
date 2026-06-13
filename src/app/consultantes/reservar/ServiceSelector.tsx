@@ -176,7 +176,7 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
                     key={promo.id}
                     className="rounded-xl border border-amber-200 bg-white hover:border-amber-300 transition-colors overflow-visible"
                   >
-                    <div className="p-4">
+                    <div className="p-4 flex flex-col min-h-[180px]">
                       <div className="flex flex-col gap-1 mb-2">
                         <div className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-amber-500 text-sm shrink-0">local_offer</span>
@@ -188,7 +188,7 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
                         </span>
                       </div>
 
-                      <div className="space-y-1 mb-3">
+                      <div className="space-y-1 flex-1">
                         {childServices.map((svc) => (
                           <div key={svc.id} className="flex items-center justify-between text-[13px] bg-gray-50 rounded px-2 py-1">
                             <span className="text-gray-600 font-medium">{svc.name}</span>
@@ -196,7 +196,7 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
                         ))}
                       </div>
 
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between mt-auto pt-3">
                         <div>
                           {hasDiscount ? (
                             <div>
