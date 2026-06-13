@@ -41,6 +41,7 @@ type PromoForm = {
   max_purchases: string;
   is_active: boolean;
   expires_at: string;
+  duration_minutes: string;
 };
 
 const emptyForm: PromoForm = {
@@ -55,6 +56,7 @@ const emptyForm: PromoForm = {
   max_purchases: "",
   is_active: true,
   expires_at: "",
+  duration_minutes: "",
 };
 
 const ALL_TIERS = ["prana", "shakti", "ananda"];
@@ -72,6 +74,10 @@ export default function PromosPage() {
   const [saving, setSaving] = useState(false);
 
   const selectedServices = allServices.filter((s) => form.service_ids.includes(s.id));
+
+  const autoDuration = useMemo(() =>
+    selectedServices.reduce((sum, s) => sum + s.duration_minutes, 0),
+  [selectedServices]);
 
   const subtotal = useMemo(() => {
     const priceField = form.modality === "online" ? "price_cents_online" : "price_cents_presencial";
@@ -135,6 +141,7 @@ export default function PromosPage() {
       max_purchases: p.max_purchases ? String(p.max_purchases) : "",
       is_active: p.is_active,
       expires_at: p.expires_at ? p.expires_at.slice(0, 10) : "",
+      duration_minutes: "",
     });
     setEditingId(p.id);
     setShowForm(true);
@@ -150,8 +157,9 @@ export default function PromosPage() {
     e.preventDefault();
     setSaving(true);
 
-    // Calcular duracion total del paquete (suma de servicios)
-    const totalDuration = selectedServices.reduce((sum, s) => sum + s.duration_minutes, 0);
+    const totalDuration = form.duration_minutes
+      ? parseInt(form.duration_minutes)
+      : selectedServices.reduce((sum, s) => sum + s.duration_minutes, 0);
 
     const body: Record<string, unknown> = {
       name: form.name,
@@ -276,8 +284,13 @@ export default function PromosPage() {
                   onChange={(e) => setForm({ ...form, discount_factor: e.target.value })}
                   className="w-20 border border-gray-300 rounded px-1.5 py-0.5 text-sm text-right" />
               </div>
-              <span className="text-gray-600">Duración total:</span>
-              <span className="font-semibold text-gray-900 text-right">{selectedServices.reduce((s, svc) => s + svc.duration_minutes, 0)} min</span>
+              <span className="text-gray-600">Duración total (min):</span>
+              <div className="text-right">
+                <input type="number" min={15} step={15} value={form.duration_minutes || autoDuration}
+                  onChange={(e) => setForm({ ...form, duration_minutes: e.target.value })}
+                  className="w-24 border border-gray-300 rounded px-1.5 py-0.5 text-sm text-right" />
+                {!form.duration_minutes && <span className="text-xs text-gray-400 ml-1">auto</span>}
+              </div>
               <span className="text-gray-600">Total con descuento:</span>
               <span className={`font-bold text-right ${discount < 1 ? "text-green-700" : "text-gray-900"}`}>
                 {formatPrice(discountedTotal)}
