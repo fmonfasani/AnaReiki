@@ -130,10 +130,12 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
                         {hasDiscount ? (
                           <div className="space-y-0.5">
                             <span className="text-sm text-gray-400 line-through block">{formatPrice(subtotal)}</span>
-                            <span className="text-lg font-extrabold text-green-700">{formatPrice(total)}</span>
-                            <span className="ml-1.5 text-xs font-semibold text-green-600 bg-green-100 px-1.5 py-0.5 rounded-full">
-                              {Math.round((1 - df) * 100)}% OFF
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-lg font-extrabold text-green-700">{formatPrice(total)}</span>
+                              <span className="text-xs font-semibold text-green-600 bg-green-100 px-1.5 py-0.5 rounded-full shrink-0">
+                                {Math.round((1 - df) * 100)}% OFF
+                              </span>
+                            </div>
                           </div>
                         ) : (
                           <span className="text-lg font-extrabold text-gray-900">{formatPrice(total)}</span>

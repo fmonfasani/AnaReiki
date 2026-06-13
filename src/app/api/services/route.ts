@@ -34,9 +34,9 @@ export async function GET() {
 
     const promos = (promosResult.data || []).map(p => ({
       ...p,
-      service_ids: (p.service_ids || []).length > 0
-        ? p.service_ids
-        : (sessionsByPromo[p.id] || []),
+      service_ids: (sessionsByPromo[p.id] && sessionsByPromo[p.id].length > 0)
+        ? sessionsByPromo[p.id]
+        : (p.service_ids || []),
     })).filter(p => p.service_ids.length > 0);
 
     return NextResponse.json({

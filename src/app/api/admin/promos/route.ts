@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Vincular servicios
+  // Vincular servicios y actualizar service_ids en promotions
   if (service_ids && Array.isArray(service_ids) && service_ids.length > 0) {
     const sessions = service_ids.map((sid: string) => ({
       promotion_id: promo.id,
@@ -74,6 +74,9 @@ export async function POST(request: Request) {
     }));
     await svc.from("promotion_sessions").insert(sessions);
   }
+
+  // Sincronizar service_ids en la propia tabla promotions
+  await svc.from("promotions").update({ service_ids: service_ids || [] }).eq("id", promo.id);
 
   return NextResponse.json({ data: { ...promo, service_ids: service_ids || [] } });
 }
@@ -114,6 +117,8 @@ export async function PATCH(request: Request) {
       }));
       await svc.from("promotion_sessions").insert(sessions);
     }
+    // Sincronizar service_ids en la propia tabla promotions
+    await svc.from("promotions").update({ service_ids: service_ids || [] }).eq("id", id);
   }
 
   return NextResponse.json({ success: true });
