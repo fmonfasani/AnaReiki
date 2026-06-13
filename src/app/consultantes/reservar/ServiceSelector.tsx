@@ -49,10 +49,6 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
   const servicesById = new Map(services.map((s) => [s.id, s]));
   const purchasesByPromo = new Map(userPurchases.map((p) => [p.promotion_id, p.sessions_remaining]));
 
-  const standaloneServices = services.filter(
-    (s) => !promos.some((p) => p.service_ids.includes(s.id))
-  );
-
   return (
     <div className="space-y-4">
       <div className="text-center mb-6">
@@ -183,11 +179,11 @@ export default function ServiceSelector({ services, promos, selected, onSelect, 
             Servicios Individuales
           </h3>
           <div className="space-y-3">
-            {standaloneServices.length === 0 ? (
+            {services.length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-8 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                Todos los servicios están incluidos en promociones
+                No hay servicios disponibles
               </p>
-            ) : standaloneServices.map((service) => (
+            ) : services.map((service) => (
               <button
                 key={service.id}
                 onClick={() => onSelect(service)}
