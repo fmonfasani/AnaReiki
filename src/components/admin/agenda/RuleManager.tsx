@@ -554,6 +554,9 @@ export default function RuleManager() {
                         )}
                       </div>
                       <div className="flex items-center gap-2">
+                        <button onClick={() => handleEdit(rule)} className="text-gray-400 hover:text-pink-600 transition-colors">
+                          <span className="material-symbols-outlined text-sm">edit</span>
+                        </button>
                         <button onClick={() => toggleActive(rule)}
                           className={`text-xs px-2 py-1 rounded-lg font-medium transition-colors ${
                             rule.is_active ? "bg-yellow-50 text-yellow-600 hover:bg-yellow-100" : "bg-green-50 text-green-600 hover:bg-green-100"
