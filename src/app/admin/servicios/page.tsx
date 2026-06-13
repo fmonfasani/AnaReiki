@@ -13,6 +13,7 @@ type Service = {
   deposit_percentage: number;
   allowed_modalities: string[];
   is_active: boolean;
+  is_visible: boolean;
   created_at: string;
 };
 
@@ -21,6 +22,7 @@ type Promo = {
   name: string;
   description: string | null;
   is_active: boolean;
+  is_visible: boolean;
   service_ids: string[];
 };
 
@@ -32,17 +34,10 @@ export default function ServiciosPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [promos, setPromos] = useState<Promo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingPrice, setEditingPrice] = useState<string | null>(null);
-  const [editingDuration, setEditingDuration] = useState<string | null>(null);
-  const [editingDeposit, setEditingDeposit] = useState<string | null>(null);
-  const [editOnline, setEditOnline] = useState("");
-  const [editPresencial, setEditPresencial] = useState("");
-  const [editDuration, setEditDuration] = useState("");
-  const [editDeposit, setEditDeposit] = useState("");
-  const [saving, setSaving] = useState(false);
   const [userRole, setUserRole] = useState<string>("");
+  const [savingId, setSavingId] = useState<string | null>(null);
 
-  const fetchServices = async () => {
+  const fetchData = async () => {
     setLoading(true);
     const [svcRes, promosRes] = await Promise.all([
       fetch("/api/admin/services"),
@@ -51,7 +46,7 @@ export default function ServiciosPage() {
     const svcJson = await svcRes.json();
     if (svcJson.data) setServices(svcJson.data);
     const promosJson = await promosRes.json();
-    if (promosJson.data) setPromos(promosJson.data.filter((p: Promo) => p.service_ids?.length > 0));
+    if (promosJson.data) setPromos(promosJson.data);
     setLoading(false);
   };
 
@@ -61,301 +56,181 @@ export default function ServiciosPage() {
     setUserRole(json.role || "");
   };
 
-  useEffect(() => { fetchServices(); fetchRole(); }, []);
-
-  const handleSavePrices = async (id: string) => {
-    setSaving(true);
-    const body: Record<string, number> = {};
-    if (editOnline !== "") body.price_cents_online = Math.round(parseFloat(editOnline) * 100);
-    if (editPresencial !== "") body.price_cents_presencial = Math.round(parseFloat(editPresencial) * 100);
-    const res = await fetch(`/api/admin/services/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    setSaving(false);
-    if (res.ok) {
-      setEditingPrice(null);
-      fetchServices();
-    } else {
-      const err = await res.json();
-      alert("Error: " + (err.error || "desconocido"));
-    }
-  };
-
-  const handleSaveDuration = async (id: string) => {
-    setSaving(true);
-    const durationMinutes = parseInt(editDuration);
-    const res = await fetch(`/api/admin/services/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ duration_minutes: durationMinutes }),
-    });
-    setSaving(false);
-    if (res.ok) {
-      setEditingDuration(null);
-      fetchServices();
-    } else {
-      const err = await res.json();
-      alert("Error: " + (err.error || "desconocido"));
-    }
-  };
-
-  const handleSaveDeposit = async (id: string) => {
-    setSaving(true);
-    const pct = Math.min(100, Math.max(0, parseInt(editDeposit) || 0));
-    const res = await fetch(`/api/admin/services/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ deposit_percentage: pct }),
-    });
-    setSaving(false);
-    if (res.ok) {
-      setEditingDeposit(null);
-      fetchServices();
-    } else {
-      const err = await res.json();
-      alert("Error: " + (err.error || "desconocido"));
-    }
-  };
-
-  const toggleActive = async (id: string, current: boolean) => {
-    const res = await fetch(`/api/admin/services/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ is_active: !current }),
-    });
-    if (res.ok) fetchServices();
-  };
+  useEffect(() => { fetchData(); fetchRole(); }, []);
 
   const isOwner = userRole === "owner";
   const isAdmin = isOwner || userRole === "admin";
 
-  const standaloneServices = services;
+  const toggleVisibility = async (type: "service" | "promo", id: string, current: boolean) => {
+    setSavingId(id);
+    if (type === "service") {
+      await fetch(`/api/admin/services/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_visible: !current }),
+      });
+    } else {
+      await fetch("/api/admin/promos", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, is_visible: !current }),
+      });
+    }
+    setSavingId(null);
+    fetchData();
+  };
 
-  function ServiceRow({ s, isChild }: { s: Service; isChild?: boolean }) {
-    return (
-      <tr className="hover:bg-gray-50/50 transition-colors">
-        <td className={`px-6 py-4 ${isChild ? "pl-12" : ""}`}>
-          <div className="flex items-center gap-2">
-            {isChild && <span className="text-gray-300 material-symbols-outlined text-sm">subdirectory_arrow_right</span>}
-            <div>
-              <p className="font-medium text-gray-900">{s.name}</p>
-              {s.description && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{s.description}</p>}
-            </div>
-          </div>
-        </td>
-        <td className="px-6 py-4 text-sm text-gray-500">
-          {editingDuration === s.id ? (
-            <div className="flex items-center gap-1">
-              <input type="number" min={15} step={15} value={editDuration}
-                onChange={(e) => setEditDuration(e.target.value)}
-                className="w-16 border border-gray-300 rounded px-1 py-0.5 text-sm text-center" autoFocus />
-              <button onClick={() => handleSaveDuration(s.id)} disabled={saving}
-                className="text-xs font-semibold px-1.5 py-0.5 bg-pink-600 text-white rounded hover:bg-pink-700">OK</button>
-              <button onClick={() => setEditingDuration(null)} className="text-xs text-gray-400">&times;</button>
-            </div>
-          ) : (
-            <span className="flex items-center gap-1">
-              {s.duration_minutes} min
-              {isAdmin && (
-                <button onClick={() => { setEditingDuration(s.id); setEditDuration(String(s.duration_minutes)); }}
-                  className="text-gray-300 hover:text-pink-600 transition-colors">
-                  <span className="material-symbols-outlined text-sm">edit</span>
-                </button>
-              )}
-            </span>
-          )}
-        </td>
-        <td className="px-6 py-4">
-          {editingPrice === s.id ? (
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-gray-400">$</span>
-              <input type="number" step="0.01" value={editOnline}
-                onChange={(e) => setEditOnline(e.target.value)}
-                className="w-20 border border-gray-300 rounded px-1 py-0.5 text-sm" />
-            </div>
-          ) : (
-            <span className="text-sm font-semibold text-gray-900">
-              {s.price_cents_online > 0 ? formatPrice(s.price_cents_online) : <span className="text-gray-300 font-normal">&mdash;</span>}
-            </span>
-          )}
-        </td>
-        <td className="px-6 py-4">
-          {editingPrice === s.id ? (
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-gray-400">$</span>
-              <input type="number" step="0.01" value={editPresencial}
-                onChange={(e) => setEditPresencial(e.target.value)}
-                className="w-20 border border-gray-300 rounded px-1 py-0.5 text-sm" />
-              <button onClick={() => handleSavePrices(s.id)} disabled={saving}
-                className="text-xs font-semibold px-2 py-1 bg-pink-600 text-white rounded hover:bg-pink-700 disabled:bg-gray-300">
-                {saving ? "..." : "OK"}
-              </button>
-              <button onClick={() => setEditingPrice(null)}
-                className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
-            </div>
-          ) : (
-            <span className="text-sm font-semibold text-gray-900">
-              {s.price_cents_presencial > 0 ? formatPrice(s.price_cents_presencial) : <span className="text-gray-300 font-normal">&mdash;</span>}
-            </span>
-          )}
-        </td>
-        <td className="px-6 py-4">
-          {editingDeposit === s.id ? (
-            <div className="flex items-center gap-1">
-              <input type="number" min={0} max={100} value={editDeposit}
-                onChange={(e) => setEditDeposit(e.target.value)}
-                className="w-14 border border-gray-300 rounded px-1 py-0.5 text-sm text-center" autoFocus />
-              <span className="text-xs text-gray-400">%</span>
-              <button onClick={() => handleSaveDeposit(s.id)} disabled={saving}
-                className="text-xs font-semibold px-1.5 py-0.5 bg-pink-600 text-white rounded hover:bg-pink-700">OK</button>
-              <button onClick={() => setEditingDeposit(null)} className="text-xs text-gray-400">&times;</button>
-            </div>
-          ) : (
-            <span className="flex items-center gap-1 text-sm text-gray-700">
-              {s.deposit_percentage > 0 ? `${s.deposit_percentage}%` : <span className="text-gray-300 font-normal">&mdash;</span>}
-              {isOwner && (
-                <button onClick={() => { setEditingDeposit(s.id); setEditDeposit(String(s.deposit_percentage)); }}
-                  className="text-gray-300 hover:text-pink-600 transition-colors">
-                  <span className="material-symbols-outlined text-sm">edit</span>
-                </button>
-              )}
-            </span>
-          )}
-        </td>
-        <td className="px-6 py-4">
-          <div className="flex gap-1">
-            {s.allowed_modalities.map((m) => (
-              <span key={m} className="inline-block px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs capitalize">{m}</span>
-            ))}
-          </div>
-        </td>
-        <td className="px-6 py-4">
-          <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-            s.is_active ? "bg-green-50 text-green-700 border-green-100" : "bg-gray-50 text-gray-400 border-gray-200"
-          }`}>
-            {s.is_active ? "Activo" : "Inactivo"}
-          </span>
-        </td>
-        <td className="px-6 py-4 text-right">
-          <div className="flex items-center justify-end gap-2">
-            {isAdmin && (
-              <button
-                onClick={() => {
-                  setEditingPrice(s.id);
-                  setEditOnline((s.price_cents_online / 100).toString());
-                  setEditPresencial((s.price_cents_presencial / 100).toString());
-                }}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-all"
-              >
-                Editar precios
-              </button>
-            )}
-            <button
-              onClick={() => toggleActive(s.id, s.is_active)}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all ${
-                s.is_active ? "border-gray-200 text-gray-500 hover:bg-gray-50" : "border-pink-200 text-pink-600 hover:bg-pink-50"
-              }`}
-            >
-              {s.is_active ? "Desactivar" : "Activar"}
-            </button>
-          </div>
-        </td>
-      </tr>
-    );
-  }
+  const toggleActive = async (type: "service" | "promo", id: string, current: boolean) => {
+    setSavingId(id);
+    if (type === "service") {
+      await fetch(`/api/admin/services/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_active: !current }),
+      });
+    } else {
+      await fetch("/api/admin/promos", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, is_active: !current }),
+      });
+    }
+    setSavingId(null);
+    fetchData();
+  };
 
   return (
     <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-bold text-gray-900 font-display">Servicios</h1>
-        <p className="text-gray-500 text-sm">Gestioná los servicios, duración y precios por modalidad.</p>
+        <p className="text-gray-500 text-sm">Gestioná servicios y promos. Usá el toggle 👁 para mostrar/ocultar en la reserva del consultante.</p>
       </header>
 
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100">
-              <th className="px-6 py-4 font-semibold">Servicio</th>
-              <th className="px-6 py-4 font-semibold">Duración</th>
-              <th className="px-6 py-4 font-semibold">Online</th>
-              <th className="px-6 py-4 font-semibold">Presencial</th>
-              <th className="px-6 py-4 font-semibold">Seña</th>
-              <th className="px-6 py-4 font-semibold">Modalidad</th>
-              <th className="px-6 py-4 font-semibold">Estado</th>
-              <th className="px-6 py-4 font-semibold text-right">Acción</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {loading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="animate-pulse">
-                  <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-40" /></td>
-                  <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-12" /></td>
-                  <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-16" /></td>
-                  <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-16" /></td>
-                  <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-20" /></td>
-                  <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-16" /></td>
-                  <td className="px-6 py-4 text-right"><div className="h-4 bg-gray-100 rounded w-8 inline-block" /></td>
-                </tr>
-              ))
-            ) : services.length === 0 && promos.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="p-12 text-center text-gray-400">
-                  <span className="material-symbols-outlined text-4xl mb-2">spa</span>
-                  <p>No hay servicios todavía.</p>
-                </td>
-              </tr>
+      {loading ? (
+        <div className="text-center py-12 text-gray-400">Cargando...</div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+          {/* LEFT: Services (3/5) */}
+          <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-200 p-4">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-sm">spa</span>
+              Servicios Individuales
+              <span className="text-xs font-normal text-gray-300 ml-1">({services.length})</span>
+            </h3>
+
+            {services.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">No hay servicios</p>
             ) : (
-              <>
-                {promos.map((promo) => {
-                  const promoServiceIds = new Set(promo.service_ids);
-                  const childServices = services.filter((s) => promoServiceIds.has(s.id));
-                  return (
-                    <React.Fragment key={promo.id}>
-                      <tr className="bg-amber-50/80 border-b border-amber-100">
-                        <td colSpan={8} className="px-6 py-3">
-                          <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-amber-500 text-sm">local_offer</span>
-                            <span className="font-semibold text-amber-800 text-sm">{promo.name}</span>
-                            <span className={`text-xs px-2 py-0.5 rounded-full border ${
-                              promo.is_active ? "bg-green-50 text-green-700 border-green-100" : "bg-gray-50 text-gray-400 border-gray-200"
-                            }`}>
-                              {promo.is_active ? "Activa" : "Inactiva"}
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
-                      {childServices.map((s) => (
-                        <ServiceRow key={s.id} s={s} isChild />
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
+                {services.map((s) => (
+                  <div key={s.id} className={`rounded-xl border-2 p-3 transition-all ${s.is_active ? "border-gray-100 bg-white" : "border-gray-100 bg-gray-50/50 opacity-60"}`}>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h4 className="font-semibold text-gray-900 text-sm leading-tight">{s.name}</h4>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => toggleVisibility("service", s.id, s.is_visible)}
+                          disabled={savingId === s.id}
+                          className={`text-sm p-0.5 rounded transition-colors ${s.is_visible ? "text-amber-500 hover:text-amber-600" : "text-gray-300 hover:text-gray-400"}`}
+                          title={s.is_visible ? "Visible para consultantes" : "Oculto para consultantes"}
+                        >
+                          {s.is_visible ? "👁" : "👁‍🗨"}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 text-xs text-gray-400 mb-2">
+                      <span className="material-symbols-outlined text-xs">schedule</span>
+                      <span>{s.duration_minutes} min</span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {s.allowed_modalities.map((m) => (
+                        <span key={m} className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                          m === "online" ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"
+                        }`}>{m}</span>
                       ))}
-                    </React.Fragment>
-                  );
-                })}
-                {standaloneServices.length > 0 && (
-                  <>
-                    {promos.length > 0 && (
-                      <tr className="bg-gray-50 border-b border-gray-100">
-                        <td colSpan={8} className="px-6 py-2">
-                          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Servicios individuales</span>
-                        </td>
-                      </tr>
-                    )}
-                    {standaloneServices.map((s) => (
-                      <ServiceRow key={s.id} s={s} />
-                    ))}
-                  </>
-                )}
-              </>
+                    </div>
+
+                    <div className="space-y-0.5 text-xs mb-2.5">
+                      {s.price_cents_online > 0 && <span className="text-blue-600 font-medium block">Online: {formatPrice(s.price_cents_online)}</span>}
+                      {s.price_cents_presencial > 0 && <span className="text-amber-600 font-medium block">Presencial: {formatPrice(s.price_cents_presencial)}</span>}
+                      {s.price_cents_online === 0 && s.price_cents_presencial === 0 && <span className="text-green-600 font-medium">Gratuito</span>}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1.5 border-t border-gray-50">
+                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                        s.is_active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-400"
+                      }`}>{s.is_active ? "Activo" : "Inactivo"}</span>
+                      <button
+                        onClick={() => toggleActive("service", s.id, s.is_active)}
+                        className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors ${
+                          s.is_active ? "bg-red-50 text-red-500 hover:bg-red-100" : "bg-green-50 text-green-600 hover:bg-green-100"
+                        }`}>{s.is_active ? "Desactivar" : "Activar"}</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
-          </tbody>
-        </table>
-      </div>
+          </div>
+
+          {/* RIGHT: Promos (2/5) */}
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-4">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-sm">local_offer</span>
+              Promociones
+              <span className="text-xs font-normal text-gray-300 ml-1">({promos.length})</span>
+            </h3>
+
+            {promos.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">No hay promos</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {promos.map((p) => (
+                  <div key={p.id} className={`rounded-xl border-2 p-3 transition-all ${p.is_active ? "border-amber-200 bg-amber-50/20" : "border-gray-100 bg-gray-50/50 opacity-60"}`}>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="material-symbols-outlined text-amber-500 text-sm shrink-0">local_offer</span>
+                        <h4 className="font-semibold text-gray-900 text-sm leading-tight truncate">{p.name}</h4>
+                      </div>
+                      <button
+                        onClick={() => toggleVisibility("promo", p.id, p.is_visible)}
+                        disabled={savingId === p.id}
+                        className={`text-sm p-0.5 rounded transition-colors shrink-0 ${p.is_visible ? "text-amber-500 hover:text-amber-600" : "text-gray-300 hover:text-gray-400"}`}
+                        title={p.is_visible ? "Visible para consultantes" : "Oculto para consultantes"}
+                      >
+                        {p.is_visible ? "👁" : "👁‍🗨"}
+                      </button>
+                    </div>
+
+                    {p.description && <p className="text-xs text-gray-400 mb-2 line-clamp-1">{p.description}</p>}
+
+                    <div className="text-xs text-gray-500 mb-2.5">
+                      {p.service_ids.length > 0
+                        ? `${p.service_ids.length} servicio${p.service_ids.length > 1 ? "s" : ""} incluido${p.service_ids.length > 1 ? "s" : ""}`
+                        : <span className="text-gray-300">Sin servicios vinculados</span>}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1.5 border-t border-amber-100/50">
+                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                        p.is_active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-400"
+                      }`}>{p.is_active ? "Activa" : "Inactiva"}</span>
+                      <button
+                        onClick={() => toggleActive("promo", p.id, p.is_active)}
+                        className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors ${
+                          p.is_active ? "bg-red-50 text-red-500 hover:bg-red-100" : "bg-green-50 text-green-600 hover:bg-green-100"
+                        }`}>{p.is_active ? "Desactivar" : "Activar"}</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
-        <p className="font-semibold mb-1">Importante</p>
-        <p>Los precios se muestran al consultante según la modalidad elegida. El pago se procesa a través de Mercado Pago al confirmar la reserva.</p>
+        <p className="font-semibold mb-1">¿Cómo funciona?</p>
+        <p>Usá el toggle 👁 para controlar qué servicios y promos ve el consultante al reservar. Lo que está oculto no aparece en el selector, pero los turnos ya creados no se ven afectados. El toggle "Activar/Desactivar" controla el estado operativo del servicio (independiente de la visibilidad).</p>
       </div>
     </div>
   );

@@ -9,11 +9,13 @@ export async function GET() {
         .from("services")
         .select("id, name, slug, description, duration_minutes, is_active, allowed_modalities, price_cents_online, price_cents_presencial")
         .eq("is_active", true)
+        .eq("is_visible", true)
         .order("name"),
       supabase
         .from("promotions")
         .select("id, name, description, is_active, service_ids, bundle_price_cents, max_sessions, modality, discount_factor, deposit_type, deposit_value, duration_minutes")
-        .eq("is_active", true),
+        .eq("is_active", true)
+        .eq("is_visible", true),
       supabase
         .from("promotion_sessions")
         .select("promotion_id, service_id"),

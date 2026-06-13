@@ -64,6 +64,7 @@ export async function PUT(
     if (body.duration_minutes !== undefined) updates.duration_minutes = body.duration_minutes;
     if (body.allowed_modalities !== undefined) updates.allowed_modalities = body.allowed_modalities;
     if (body.is_active !== undefined) updates.is_active = body.is_active;
+    if (body.is_visible !== undefined) updates.is_visible = body.is_visible;
     if (body.price_cents_online !== undefined) updates.price_cents_online = body.price_cents_online;
     if (body.price_cents_presencial !== undefined) updates.price_cents_presencial = body.price_cents_presencial;
     if (body.deposit_percentage !== undefined) updates.deposit_percentage = body.deposit_percentage;
