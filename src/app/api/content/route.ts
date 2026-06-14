@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { isAdmin } from "@/lib/auth/roles";
 
 export async function POST(request: Request) {
   try {
@@ -10,6 +11,10 @@ export async function POST(request: Request) {
 
     if (!user) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    if (!(await isAdmin(user, supabase))) {
+      return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
 
     const body = await request.json();
@@ -61,6 +66,10 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
+    if (!(await isAdmin(user, supabase))) {
+      return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
+    }
+
     const body = await request.json();
     const { id, title, description, is_premium, category_id } = body;
 
@@ -98,6 +107,10 @@ export async function DELETE(request: Request) {
 
     if (!user) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    if (!(await isAdmin(user, supabase))) {
+      return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
