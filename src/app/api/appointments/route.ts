@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { service_id, modality, slot_start, rule_id, notes, promotion_id, price_cents: clientPriceCents } = body;
+    const { service_id, modality, slot_start, rule_id, notes, promotion_id } = body;
 
     if (!service_id || !modality || !slot_start) {
       return NextResponse.json(
@@ -174,7 +174,7 @@ export async function POST(request: Request) {
       const { data: promoData } = await supabase
         .rpc("get_available_promos", {
           p_service_id: service_id,
-          p_tier: clientPriceCents ? undefined : undefined,
+          p_tier: null,
         });
 
       const matched = (promoData || []).find((p: { id: string }) => p.id === promotion_id);
@@ -185,7 +185,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const priceCents = clientPriceCents !== undefined ? clientPriceCents : finalPriceCents;
+    const priceCents = finalPriceCents;
     const finalDiscount = discountCents;
 
     const appointmentServiceId = promoServiceIds ? (service_id || promoServiceIds[0]) : service_id;
