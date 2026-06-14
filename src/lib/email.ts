@@ -35,17 +35,25 @@ function appointmentTable(data: { serviceName: string; modality: string; date: s
     </div>`;
 }
 
-async function sendEmail(to: string, subject: string, html: string) {
+type EmailResult = { success: boolean; error?: string };
+
+async function sendEmail(to: string, subject: string, html: string): Promise<EmailResult> {
   try {
     const { error } = await getResend().emails.send({ from: RESEND_FROM, to, subject, html });
     if (error) {
-      console.error(`Email error [${subject}]:`, error);
+      const msg = `Email error [${subject}] to=${to}: ${error.message}`;
       if (error.statusCode === 403 && error.message?.includes("1010")) {
-        console.warn("Resend requiere verificar el dominio anamurat.online");
+        console.warn(msg + " — Resend requiere verificar el dominio anamurat.online");
+      } else {
+        console.error(msg, error);
       }
+      return { success: false, error: error.message };
     }
+    return { success: true };
   } catch (err) {
-    console.error("Email send failed:", err);
+    const msg = `Email send failed [${subject}] to=${to}: ${err instanceof Error ? err.message : String(err)}`;
+    console.error(msg);
+    return { success: false, error: msg };
   }
 }
 
@@ -62,7 +70,7 @@ export async function sendAppointmentEmail(
     notes?: string | null;
     appointmentId?: string;
   },
-) {
+): Promise<EmailResult> {
   const subjects: Record<string, string> = {
     confirmacion: "Reserva confirmada — Ana Reiki ✨",
     cancelacion: "Reserva cancelada — Ana Reiki",
@@ -84,7 +92,11 @@ export async function sendAppointmentEmail(
     ${actionNote}
   `);
 
-  await sendEmail(to, subjects[type], html);
+  const result = await sendEmail(to, subjects[type], html);
+  if (!result.success) {
+    console.error(`sendAppointmentEmail failed: type=${type} to=${to} service=${data.serviceName} date=${data.date} ${data.time}`);
+  }
+  return result;
 }
 
 export async function notifyAdminNewAppointment(data: {
@@ -95,7 +107,7 @@ export async function notifyAdminNewAppointment(data: {
   date: string;
   time: string;
   duration: number;
-}) {
+}): Promise<EmailResult> {
   const subject = "Nueva reserva recibida — Ana Reiki ✨";
 
   const html = emailLayout(subject, `
@@ -117,11 +129,20 @@ export async function notifyAdminNewAppointment(data: {
     .in("role", ["admin", "owner"])
     .not("email", "is", null);
 
-  if (admins) {
-    for (const admin of admins) {
-      if (admin.email) {
-        await sendEmail(admin.email, subject, html);
-      }
-    }
+  if (!admins || admins.length === 0) {
+    console.warn("notifyAdminNewAppointment: no admin/owner emails found");
+    return { success: false, error: "No admin emails found" };
   }
+
+  const results = await Promise.allSettled(
+    admins.filter(a => a.email).map(a => sendEmail(a.email!, subject, html)),
+  );
+
+  const failures = results.filter(r => r.status === "rejected");
+  if (failures.length > 0) {
+    console.error(`notifyAdminNewAppointment: ${failures.length}/${results.length} admin notifications failed`);
+    return { success: false, error: `${failures.length} admin notifications failed` };
+  }
+
+  return { success: true };
 }
