@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
     const svc = createServiceClient();
 
-    const slotDate = slot_start.slice(0, 10);
+    const slotDate = new Date(slot_start).toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
     const { data: slotCheck, error: checkError } = await svc
       .rpc("get_available_slots_v2", {
         p_date: slotDate,

@@ -110,8 +110,9 @@ export async function PUT(
         })
         .eq("id", id);
     } else {
+      const slotDate = new Date(new_slot_start).toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
       const { data: slots, error: slotsError } = await serviceSb.rpc("get_available_slots_v2", {
-        p_date: new Date(new_slot_start).toISOString().split("T")[0],
+        p_date: slotDate,
         p_modality: null,
       });
 
@@ -120,8 +121,9 @@ export async function PUT(
         return NextResponse.json({ error: "Error al validar disponibilidad" }, { status: 500 });
       }
 
+      const targetTs = new Date(new_slot_start).getTime();
       const target = slots.find(
-        (s: { slot_start: string }) => s.slot_start === new_slot_start,
+        (s: { slot_start: string }) => new Date(s.slot_start).getTime() === targetTs,
       );
 
       if (!target) {
