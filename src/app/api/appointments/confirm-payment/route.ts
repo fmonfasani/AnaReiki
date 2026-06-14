@@ -1,10 +1,18 @@
+import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getPayment } from "@/lib/mercadopago";
 import { sendAppointmentEmail, notifyAdminNewAppointment } from "@/lib/email";
 import { NextResponse } from "next/server";
+import { isAdmin } from "@/lib/auth/roles";
 
 export async function POST(request: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { payment_id, appointment_id, external_reference } = body;
 
@@ -59,6 +67,11 @@ export async function POST(request: Request) {
 
     if (!appointment) {
       return NextResponse.json({ error: "Turno no encontrado" }, { status: 404 });
+    }
+
+    const isOwnerOrAdmin = await isAdmin(user, supabase);
+    if (appointment.client_id !== user.id && !isOwnerOrAdmin) {
+      return NextResponse.json({ error: "No autorizado para confirmar este pago" }, { status: 403 });
     }
 
     if (appointment.payment_status === "paid" && appointment.status !== "pending_approval") {

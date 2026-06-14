@@ -1,6 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createServiceClient } from "@/lib/supabase/service";
 
+vi.mock("@/lib/supabase/server", () => {
+  const mockUser = { id: "client-123" };
+  return {
+    createClient: vi.fn(() => ({
+      auth: { getUser: vi.fn(() => Promise.resolve({ data: { user: mockUser }, error: null })) },
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            single: vi.fn(() => Promise.resolve({ data: { role: "consultante" }, error: null })),
+          })),
+        })),
+      })),
+    })),
+  };
+});
 vi.mock("@/lib/supabase/service", () => ({ createServiceClient: vi.fn() }));
 const mockGetPayment = vi.fn().mockResolvedValue({ error: "mocked_not_found" });
 vi.mock("@/lib/mercadopago", () => ({ getPayment: mockGetPayment }));
