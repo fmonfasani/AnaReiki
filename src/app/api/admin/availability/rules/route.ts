@@ -10,6 +10,9 @@ export async function GET(request: Request) {
     if (!user) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
+    if (!(await isAdmin(user, supabase))) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+    }
 
     const serviceSb = createServiceClient();
 
