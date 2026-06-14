@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { isAdmin } from "@/lib/auth/roles";
+import { isAdmin, isOwner } from "@/lib/auth/roles";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -37,6 +37,10 @@ export async function PATCH(request: Request) {
 
   if (!id || typeof is_premium !== "boolean") {
     return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
+  }
+
+  if (!(await isOwner(user, supabase))) {
+    return NextResponse.json({ error: "Solo el owner puede modificar el estado premium" }, { status: 403 });
   }
 
   const serviceClient = createServiceClient();

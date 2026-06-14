@@ -17,7 +17,14 @@ vi.mock("@/lib/supabase/server", () => {
   };
 });
 vi.mock("@/lib/supabase/service", () => ({ createServiceClient: vi.fn() }));
-const mockGetPayment = vi.fn().mockResolvedValue({ error: "mocked_not_found" });
+const mockGetPayment = vi.fn().mockResolvedValue({
+  status: "approved",
+  status_detail: "accredited",
+  payer: { email: "test@test.com" },
+  transaction_amount: 50,
+  payment_method_id: "visa",
+  external_reference: null,
+});
 vi.mock("@/lib/mercadopago", () => ({ getPayment: mockGetPayment }));
 vi.mock("@/lib/email", () => ({ sendAppointmentEmail: vi.fn(), notifyAdminNewAppointment: vi.fn() }));
 

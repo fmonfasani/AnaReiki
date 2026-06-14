@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { rateLimit } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 import { sendAppointmentEmail, notifyAdminNewAppointment } from "@/lib/email";
 
@@ -10,6 +11,15 @@ export async function POST(request: Request) {
     if (!user) {
       console.warn("POST /api/appointments – no autorizado (no user)");
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+    const rl = rateLimit(`appt:${user.id}:${ip}`, 10, 60_000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Demasiadas solicitudes. Intentá de nuevo en un minuto." },
+        { status: 429, headers: { "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } },
+      );
     }
 
     const body = await request.json();

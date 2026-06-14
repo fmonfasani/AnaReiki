@@ -31,6 +31,7 @@ function makeChain(returns: Record<string, unknown>) {
     insert: vi.fn(() => chain),
     update: vi.fn(() => chain),
     eq: vi.fn(() => chain),
+    gt: vi.fn(() => chain),
     limit: vi.fn(() => chain),
     order: vi.fn(() => chain),
     single: vi.fn(() => chain),
@@ -86,6 +87,7 @@ describe("POST /api/appointments", () => {
       name: "Reiki",
       duration_minutes: 60,
       allowed_modalities: ["online", "presencial"],
+      price_cents: 5000,
       price_cents_online: 5000,
       price_cents_presencial: 5000,
       deposit_percentage: 0,
@@ -105,7 +107,7 @@ describe("POST /api/appointments", () => {
         if (table === "services") return makeChain({ single: vi.fn().mockResolvedValue(ok(service)) });
         if (table === "profiles") return makeChain({ maybeSingle: vi.fn().mockResolvedValue(ok({ id: "owner-123" })) });
         if (table === "appointments") return makeChain({
-          single: vi.fn().mockResolvedValue(ok({ id: "appt-123", status: "pending_payment" })),
+          single: vi.fn().mockResolvedValue(ok({ id: "appt-123", status: "pending_payment", price_cents: 5000 })),
           eq: vi.fn().mockResolvedValue(ok(null)),
         });
         return makeChain({ single: vi.fn().mockResolvedValue(ok(service)) });
@@ -183,7 +185,7 @@ describe("POST /api/appointments", () => {
   });
 
   it("T2 — servicio free → 201 pending", async () => {
-    setupHappyPath({ price_cents_online: 0, price_cents_presencial: 0 });
+    setupHappyPath({ price_cents: 0, price_cents_online: 0, price_cents_presencial: 0 });
     const res = await callRoute({ service_id: VALID_UUID, modality: "online", slot_start: SLOT_START });
     expect(res.status).toBe(201);
     const body = await res.json();
@@ -208,6 +210,18 @@ describe("POST /api/appointments", () => {
     expect(body.mp_init_point).toBeTruthy();
   });
 
+  it("S1 — ignora price_cents enviado por el cliente (siempre usa el de DB)", async () => {
+    setupHappyPath({ price_cents: 5000 });
+    const res = await callRoute({
+      service_id: VALID_UUID, modality: "online", slot_start: SLOT_START,
+      price_cents: 0, // intento de manipulación
+    });
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.data.price_cents).toBe(5000);
+    expect(body.requires_payment).toBe(true);
+  });
+
   it("T9 — 500 si MP falla", async () => {
     vi.mocked(createServiceClient).mockReturnValue({
       rpc: vi.fn().mockResolvedValue(ok([{
@@ -217,11 +231,11 @@ describe("POST /api/appointments", () => {
       from: vi.fn().mockImplementation((table: string) => {
         if (table === "services") return makeChain({ single: vi.fn().mockResolvedValue(ok({
           name: "Reiki", duration_minutes: 60, allowed_modalities: ["online"],
-          price_cents_online: 5000, price_cents_presencial: 5000, deposit_percentage: 0,
+          price_cents: 5000, price_cents_online: 5000, price_cents_presencial: 5000, deposit_percentage: 0,
         })) });
         if (table === "profiles") return makeChain({ maybeSingle: vi.fn().mockResolvedValue(ok({ id: "owner-123" })) });
         if (table === "appointments") return makeChain({
-          single: vi.fn().mockResolvedValue(ok({ id: "appt-123", status: "pending_payment" })),
+          single: vi.fn().mockResolvedValue(ok({ id: "appt-123", status: "pending_payment", price_cents: 5000 })),
           eq: vi.fn().mockResolvedValue(ok(null)),
         });
         return makeChain();

@@ -48,11 +48,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  const { service_ids, modality, discount_factor, deposit_type, deposit_value, ...promoFields } = await request.json();
+  const body = await request.json();
+  const { service_ids, modality, discount_factor, deposit_type, deposit_value, name, description, allowed_tiers, is_active } = body;
   const svc = createServiceClient();
 
   const { data: promo, error } = await svc.from("promotions").insert({
-    ...promoFields,
+    name: name || null,
+    description: description || null,
+    allowed_tiers: allowed_tiers || ['prana', 'shakti', 'ananda'],
+    is_active: is_active ?? true,
     modality: modality || null,
     discount_factor: discount_factor ?? 1.00,
     deposit_type: deposit_type || 'none',
@@ -89,9 +93,13 @@ export async function PATCH(request: Request) {
   }
 
   const body = await request.json();
-  const { id, service_ids, modality, discount_factor, deposit_type, deposit_value, ...updates } = body;
+  const { id, service_ids, modality, discount_factor, deposit_type, deposit_value, name, description, allowed_tiers, is_active } = body;
 
-  // Tratar campos nuevos explícitamente
+  const updates: Record<string, unknown> = {};
+  if (body.hasOwnProperty('name')) updates.name = name;
+  if (body.hasOwnProperty('description')) updates.description = description;
+  if (body.hasOwnProperty('allowed_tiers')) updates.allowed_tiers = allowed_tiers;
+  if (body.hasOwnProperty('is_active')) updates.is_active = is_active;
   if (body.hasOwnProperty('modality')) updates.modality = modality || null;
   if (body.hasOwnProperty('discount_factor')) updates.discount_factor = discount_factor ?? 1.00;
   if (body.hasOwnProperty('deposit_type')) updates.deposit_type = deposit_type || 'none';

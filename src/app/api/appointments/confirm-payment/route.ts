@@ -78,6 +78,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, status: "already_paid" });
     }
 
+    if (payment_id) {
+      const paymentResult = await getPayment(String(payment_id));
+      if ("error" in paymentResult) {
+        return NextResponse.json({ error: "Error al verificar el pago en Mercado Pago" }, { status: 502 });
+      }
+      if (paymentResult.status !== "approved") {
+        return NextResponse.json({ error: "El pago no ha sido aprobado por Mercado Pago" }, { status: 402 });
+      }
+      if (Math.round(paymentResult.transaction_amount * 100) !== appointment.price_cents) {
+        return NextResponse.json({ error: "El monto del pago no coincide con el servicio" }, { status: 402 });
+      }
+    }
+
     const isBalancePayment = paymentType === "balance";
     let newStatus = appointment.status;
     let newPaymentStatus = "paid";

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -67,7 +68,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: service, error } = await supabase
+    const svc = createServiceClient();
+    const { data: service, error } = await svc
       .from("services")
       .insert({
         name,

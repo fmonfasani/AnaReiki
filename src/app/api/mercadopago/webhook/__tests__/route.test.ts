@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createServiceClient } from "@/lib/supabase/service";
 
 vi.mock("@/lib/supabase/service", () => ({ createServiceClient: vi.fn() }));
+vi.mock("@/lib/mp-webhook", () => ({ verifyMpSignature: vi.fn(() => true) }));
 
 const mockGetPreapproval = vi.fn();
 const mockGetPayment = vi.fn();
@@ -52,7 +53,9 @@ describe("POST /api/mercadopago/webhook", () => {
       update: vi.fn(() => chainable),
       delete: vi.fn(() => chainable),
       eq: vi.fn(() => chainable),
+      gt: vi.fn(() => chainable),
       single: vi.fn(() => ({ data, error })),
+      maybeSingle: vi.fn(() => ({ data, error })),
       order: vi.fn(() => chainable),
       limit: vi.fn(() => chainable),
     };

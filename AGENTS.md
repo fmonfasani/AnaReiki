@@ -13,12 +13,14 @@ Construir y deployar plataforma SaaS completa de Ana Reiki: landing, CRM terapé
 
 ## Progress
 ### Done
+- **Security Phase 1 (crítico)**: `MP_CLIENT_SECRET` eliminado de AGENTS.md; webhook firma HMAC obligatoria (antes opcional); confirm-payment verifica con `getPayment()` de MP antes de marcar `paid` (status + monto); test S1 que verifica que `price_cents` del body es ignorado.
+- **Security Phase 2 (alto)**: Promos POST/PATCH con whitelist de campos (fin del mass assignment); `price_cents` solo owner (no admin); `is_premium` solo owner; services POST/DELETE usan `createServiceClient()` (service_role) en vez de anon key.
+- **Security Phase 3 (medio)**: Rate limiting (10 req/min) en `POST /api/appointments` vía `src/lib/rate-limit.ts` (in-memory, single-container); auditoría RLS appointments completada (políticas OK, todas requieren `auth.uid()`); `get_available_slots_v2` ya filtra por `is_active` (falso positivo); `get_available_promos` ya filtra por `is_active` (sin columna `is_visible`).
 - **Notificaciones email**: `src/lib/email.ts` con templates HTML (confirmación, cancelación, reprogramación, notificación admin). Integrado en POST, cancel y reschedule de appointments. **Pendiente**: verificar dominio Resend (DNS Namecheap) para entrega.
 - **Auth hardening**: `src/lib/supabase/middleware.ts` verifica rol admin/owner en rutas `/admin`.
 - **Reminders automáticos**: `/api/reminders` refactorizado — usa `CRON_SECRET` + service_role + `expire_old_approvals()`. Cron job en VPS activo cada 8 AM.
-- **Tests**: 165 tests, 0 failing.
 - **Deploy en producción**: Código en GitHub → build + deploy automático en VPS. Site live `anamurat.online` (HTTP 200).
-- **MP OAuth configurado**: `MP_CLIENT_ID=8753327212563967` y `MP_CLIENT_SECRET=2ZIeh15jCv05t3X5NlLTPZ3zLU7PDtPz` verificados en container.
+- **MP OAuth configurado**: `MP_CLIENT_ID=8753327212563967` y `MP_CLIENT_SECRET=<rotar desde Dashboard MP>` verificados en container.
 - **Migration 020** (`mp_credentials`): Ejecutada en Supabase Dashboard.
 - **Migration 021** (`pending_approvals` + rol `gerente`): Ejecutada en Supabase Dashboard.
 - **Roles TypeScript**: `isAdmin()` retorna true para admin y owner. Nueva función `isOwner()`. Admin layout bug corregido. check-role route actualizado.
@@ -159,7 +161,7 @@ SUPABASE_SERVICE_ROLE_KEY=<set>
 RESEND_API_KEY=<set>
 MERCADO_PAGO_ACCESS_TOKEN=<set>
 MP_CLIENT_ID=8753327212563967
-MP_CLIENT_SECRET=2ZIeh15jCv05t3X5NlLTPZ3zLU7PDtPz
+MP_CLIENT_SECRET=<rotar desde Dashboard MP>
 OPENAI_API_KEY=<set>
 NEXT_PUBLIC_SITE_URL=https://anamurat.online
 CRON_SECRET=<set>
