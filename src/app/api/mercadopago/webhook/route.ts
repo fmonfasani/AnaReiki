@@ -2,10 +2,68 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getPayment } from "@/lib/mercadopago";
 import { sendAppointmentEmail, notifyAdminNewAppointment } from "@/lib/email";
 import { NextResponse } from "next/server";
+import crypto from "crypto";
+
+function verifyMpSignature(rawBody: string, signatureHeader: string | null): boolean {
+  if (!signatureHeader) return false;
+
+  const parts = signatureHeader.split(",");
+  let ts = "";
+  let receivedSignature = "";
+
+  for (const part of parts) {
+    const idx = part.indexOf("=");
+    if (idx === -1) continue;
+    const key = part.slice(0, idx);
+    const value = part.slice(idx + 1);
+    if (key === "ts") ts = value;
+    if (key === "v1") receivedSignature = value;
+  }
+
+  if (!ts || !receivedSignature) return false;
+
+  let dataId = "";
+  try {
+    const parsed = JSON.parse(rawBody);
+    dataId = parsed.data?.id || parsed.id || "";
+  } catch {
+    return false;
+  }
+
+  if (!dataId) return false;
+
+  const clientSecret = process.env.MP_CLIENT_SECRET;
+  if (!clientSecret) return false;
+
+  const template = `id:${dataId};ts:${ts};`;
+  const dataToSign = template + rawBody;
+
+  const hmac = crypto.createHmac("sha256", clientSecret);
+  hmac.update(dataToSign);
+  const computed = hmac.digest("hex");
+
+  if (computed.length !== receivedSignature.length) return false;
+  let match = 0;
+  for (let i = 0; i < computed.length; i++) {
+    match |= computed.charCodeAt(i) ^ receivedSignature.charCodeAt(i);
+  }
+  return match === 0;
+}
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const rawBody = await request.text();
+    const signatureHeader = request.headers.get("x-signature");
+
+    if (signatureHeader) {
+      const valid = verifyMpSignature(rawBody, signatureHeader);
+      if (!valid) {
+        console.warn("Webhook: invalid signature");
+        return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+      }
+    }
+
+    const body = JSON.parse(rawBody);
     const topic = body.topic || body.type;
     const id = body.data?.id || body.id;
 

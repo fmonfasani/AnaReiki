@@ -4,9 +4,11 @@ import {
   deleteTopic, deleteReply, addComment, deleteComment,
 } from "@/actions/community";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
+vi.mock("@/lib/supabase/service", () => ({ createServiceClient: vi.fn() }));
 
 describe("Community Server Actions", () => {
   const mockSupabase = {
@@ -20,6 +22,7 @@ describe("Community Server Actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+    vi.mocked(createServiceClient).mockReturnValue(mockSupabase as never);
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: userId } } });
 
     const mockTable: Record<string, ReturnType<typeof vi.fn>> = {};

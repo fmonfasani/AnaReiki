@@ -1,6 +1,12 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resendInstance: Resend | null = null;
+function getResend(): Resend {
+  if (!resendInstance) {
+    resendInstance = new Resend(process.env.RESEND_API_KEY || "");
+  }
+  return resendInstance;
+}
 const RESEND_FROM = process.env.RESEND_FROM || "Ana Reiki <reservas@anamurat.online>";
 
 const modalityLabel = (m: string) => m === "online" ? "Online (Zoom/Meet)" : "Presencial";
@@ -31,7 +37,7 @@ function appointmentTable(data: { serviceName: string; modality: string; date: s
 
 async function sendEmail(to: string, subject: string, html: string) {
   try {
-    const { error } = await resend.emails.send({ from: RESEND_FROM, to, subject, html });
+    const { error } = await getResend().emails.send({ from: RESEND_FROM, to, subject, html });
     if (error) {
       console.error(`Email error [${subject}]:`, error);
       if (error.statusCode === 403 && error.message?.includes("1010")) {

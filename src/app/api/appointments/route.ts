@@ -36,8 +36,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: checkError.message }, { status: 500 });
     }
 
+    const slotTs = new Date(slot_start).getTime();
     const slot = (slotCheck || []).find(
-      (s: { slot_start: string }) => s.slot_start === slot_start,
+      (s: { slot_start: string }) => new Date(s.slot_start).getTime() === slotTs,
     );
 
     if (!slot) {

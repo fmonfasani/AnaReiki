@@ -66,7 +66,7 @@ describe("SidebarNav", () => {
       { id: "biblioteca", name: "Biblioteca", href: "/consultantes/biblioteca", icon: "library_books", locked: true },
     ];
     render(<SidebarNav items={items} planTier="prana" />);
-    expect(screen.getByText("SUBIR")).toBeDefined();
+    expect(screen.getByText("Suscribir")).toBeDefined();
   });
 
   it("should show lock toast when clicking a locked item", () => {
