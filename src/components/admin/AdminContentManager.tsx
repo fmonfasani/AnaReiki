@@ -245,10 +245,15 @@ function UploadForm({
                           body: formData,
                         });
                         const data = await res.json();
+                        if (!res.ok) {
+                          setError(data.error || "Error al subir archivo");
+                          return;
+                        }
                         if (data.url) {
                           setExternalId(data.url);
                         }
                       } catch (err) {
+                        setError("Error de conexión al subir archivo");
                         console.error("Upload error:", err);
                       } finally {
                         setUploadingFile(false);

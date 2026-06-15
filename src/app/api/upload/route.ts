@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -19,6 +20,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No se envió ningún archivo" }, { status: 400 });
     }
 
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: `El archivo supera el límite de 50MB (pesa ${(file.size / 1024 / 1024).toFixed(1)}MB)` },
+        { status: 400 }
+      );
+    }
+
     const allowedTypes = ["video/mp4", "video/webm", "video/ogg", "image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json({ error: "Tipo de archivo no permitido" }, { status: 400 });
@@ -31,6 +39,7 @@ export async function POST(req: NextRequest) {
     const ext = file.name.split(".").pop() || "mp4";
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const filePath = path.join(dir, filename);
+
     const buffer = Buffer.from(await file.arrayBuffer());
     await writeFile(filePath, buffer);
 
