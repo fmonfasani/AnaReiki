@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
     const { data: appointment, error: apptError } = await svc
       .from("appointments")
-      .select("id, balance_cents, status, payment_status")
+      .select("id, balance_cents, status, payment_status, client_id, service_id, promotion_id, services(name), promotions(name)")
       .eq("id", appointment_id)
       .single();
 
@@ -33,6 +33,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Este turno no tiene saldo pendiente" }, { status: 400 });
     }
 
+    const paidAmount = appointment.balance_cents;
+
     await svc
       .from("appointments")
       .update({
@@ -40,6 +42,32 @@ export async function POST(request: Request) {
         status: "confirmed",
       })
       .eq("id", appointment.id);
+
+    // Log the offline payment
+    const serviceName = (appointment as any).services?.name || null;
+    const promoName = (appointment as any).promotions?.name || null;
+    const concept = promoName
+      ? `Saldo promo: ${promoName} (${serviceName || "servicio"})`
+      : serviceName
+        ? `Saldo servicio: ${serviceName}`
+        : "Saldo pagado offline";
+
+    await svc.from("mp_payment_logs").insert({
+      mp_payment_id: null,
+      appointment_id: appointment.id,
+      user_id: appointment.client_id,
+      payment_type: "offline_balance",
+      status: "approved",
+      transaction_amount: paidAmount / 100,
+      currency_id: "ARS",
+      net_received_amount: paidAmount / 100,
+      total_paid_amount: paidAmount / 100,
+      fee_details: [],
+      payer_email: null,
+      payment_method_id: "offline",
+      concept,
+      created_at: new Date().toISOString(),
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {

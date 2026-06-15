@@ -29,9 +29,22 @@ export default async function AdminPagosPage() {
 
   const { data: mpPayments } = await supabase
     .from("mp_payment_logs")
-    .select("*, profiles:user_id(full_name, email), services!appointment_id(name)")
+    .select("*, profiles:user_id(full_name, email)")
     .order("created_at", { ascending: false })
     .limit(200);
+
+  // Appointments with services and promos for analytics
+  const { data: appointments } = await supabase
+    .from("appointments")
+    .select(`
+      id, status, start_time, modality, price_cents, deposit_cents, balance_cents,
+      payment_status, attendance_result, promotion_id, created_at,
+      services!service_id(id, name, slug),
+      promotions!promotion_id(id, name),
+      profiles:client_id(full_name, email)
+    `)
+    .order("created_at", { ascending: false })
+    .limit(500);
 
   const totalRevenue =
     payments
@@ -52,6 +65,7 @@ export default async function AdminPagosPage() {
       subscriptions={(subscriptions || []) as any[]}
       plans={(plans || []) as any[]}
       mpPayments={(mpPayments || []) as any[]}
+      appointments={(appointments || []) as any[]}
       totalRevenue={totalRevenue}
       sessionRevenue={sessionRevenue}
       activeSubscriptions={activeSubscriptions}
