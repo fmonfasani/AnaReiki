@@ -100,6 +100,8 @@ export async function POST(request: Request) {
     let promoDuration = service.duration_minutes;
     let basePriceCents = service.price_cents || 0;
     let promoServiceIds: string[] | null = null;
+    let promoDepositType: string | null = null;
+    let promoDepositValue: number = 0;
 
     if (promotion_id) {
       const { data: promo } = await svc
@@ -111,6 +113,8 @@ export async function POST(request: Request) {
       if (promo) {
         const psIds: string[] = promo.service_ids || [];
         promoServiceIds = psIds;
+        promoDepositType = promo.deposit_type;
+        promoDepositValue = Number(promo.deposit_value) || 0;
 
         if (promo.duration_minutes) {
           promoDuration = promo.duration_minutes;
@@ -198,6 +202,19 @@ export async function POST(request: Request) {
     const priceCents = finalPriceCents;
     const finalDiscount = discountCents;
 
+    // Calcular seña (deposit)
+    let depositCents = 0;
+    if (promoDepositType && promoDepositType !== "none" && priceCents > 0) {
+      if (promoDepositType === "percent") {
+        depositCents = Math.round(priceCents * (promoDepositValue / 100));
+      } else if (promoDepositType === "fixed") {
+        depositCents = Math.round(promoDepositValue * 100);
+      }
+    }
+    // Usar seña como mínimo de pago vía MP
+    const mpAmountCents = depositCents > 0 ? depositCents : priceCents;
+    const balanceCents = depositCents > 0 ? priceCents - depositCents : 0;
+
     const appointmentServiceId = promoServiceIds ? (service_id || promoServiceIds[0]) : service_id;
 
     const { data: appointment, error: insertError } = await svc
@@ -210,14 +227,16 @@ export async function POST(request: Request) {
         end_time: endDate.toISOString(),
         modality,
         notes: promoServiceIds ? promoNotes : (notes || null),
-        status: priceCents > 0 ? "pending_payment" : "pending",
+        status: mpAmountCents > 0 ? "pending_payment" : "pending",
         price_cents: priceCents,
-        payment_status: priceCents > 0 ? "pending_payment" : "pending",
+        deposit_cents: depositCents,
+        balance_cents: balanceCents,
+        payment_status: mpAmountCents > 0 ? "pending_payment" : "pending",
         promotion_id: resolvedPromotionId || promotion_id,
         discount_cents: finalDiscount,
         original_price_cents: basePriceCents,
       })
-      .select("id, status, start_time, end_time, modality, price_cents, payment_status, promotion_id, discount_cents, original_price_cents")
+      .select("id, status, start_time, end_time, modality, price_cents, deposit_cents, balance_cents, payment_status, promotion_id, discount_cents, original_price_cents")
       .single();
 
     if (insertError) {
@@ -231,13 +250,13 @@ export async function POST(request: Request) {
 
     let mpInitPoint: string | null = null;
 
-    if (priceCents > 0) {
+    if (mpAmountCents > 0) {
       const { createPaymentPreference } = await import("@/lib/mercadopago");
       const result = await createPaymentPreference({
         items: [{
-          title: service.name,
+          title: depositCents > 0 ? `${service.name} (seña)` : service.name,
           quantity: 1,
-          unit_price: priceCents / 100,
+          unit_price: mpAmountCents / 100,
           currency_id: "ARS",
         }],
         payerEmail: user.email || "",
@@ -256,7 +275,7 @@ export async function POST(request: Request) {
       await svc.from("appointments").update({ mp_preference_id: result.id }).eq("id", appointment.id);
     }
 
-    if (priceCents === 0) {
+    if (mpAmountCents === 0) {
       const dateStr = startDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
       const timeStr = startDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
 
@@ -284,7 +303,9 @@ export async function POST(request: Request) {
     return NextResponse.json({
       data: appointment,
       mp_init_point: mpInitPoint,
-      requires_payment: priceCents > 0,
+      requires_payment: mpAmountCents > 0,
+      deposit_cents: depositCents,
+      balance_cents: balanceCents,
     }, { status: 201 });
   } catch (err) {
     console.error("POST /api/appointments error", err instanceof Error ? { message: err.message, stack: err.stack } : err);

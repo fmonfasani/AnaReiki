@@ -93,7 +93,7 @@ export async function POST(request: Request) {
     if (appointmentId) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, payment_status")
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, payment_status, status")
         .eq("id", appointmentId)
         .single();
       appointment = data;
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
     if (!appointment) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, payment_status")
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, payment_status, status")
         .eq("mp_payment_id", mpPaymentId)
         .maybeSingle();
       appointment = data;
@@ -114,10 +114,12 @@ export async function POST(request: Request) {
     }
 
     if (mpStatus === "approved" && appointment.payment_status !== "paid") {
+      const hasDeposit = appointment.deposit_cents && appointment.deposit_cents > 0;
+      const isFullPayment = !hasDeposit || appointment.balance_cents === 0;
       await svc
         .from("appointments")
         .update({
-          status: "pending",
+          status: isFullPayment ? "confirmed" : "pending",
           payment_status: "paid",
           mp_payment_id: mpPaymentId,
         })

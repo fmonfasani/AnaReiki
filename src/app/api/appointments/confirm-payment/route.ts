@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     if (appointmentId) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, client_id, payment_status, status, mp_payment_id, approval_status")
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, client_id, payment_status, status, mp_payment_id, approval_status")
         .eq("id", appointmentId)
         .single();
       appointment = data;
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     if (!appointment && payment_id) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, client_id, payment_status, status, mp_payment_id, approval_status")
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, client_id, payment_status, status, mp_payment_id, approval_status")
         .eq("mp_payment_id", String(payment_id))
         .maybeSingle();
       appointment = data;
@@ -86,7 +86,11 @@ export async function POST(request: Request) {
       if (paymentResult.status !== "approved") {
         return NextResponse.json({ error: "El pago no ha sido aprobado por Mercado Pago" }, { status: 402 });
       }
-      if (Math.round(paymentResult.transaction_amount * 100) !== appointment.price_cents) {
+      // Verificar monto: si hay seña, comparar contra deposit_cents; sino contra price_cents
+      const expectedAmount = (appointment.deposit_cents && appointment.deposit_cents > 0)
+        ? appointment.deposit_cents
+        : appointment.price_cents;
+      if (Math.round(paymentResult.transaction_amount * 100) !== expectedAmount) {
         return NextResponse.json({ error: "El monto del pago no coincide con el servicio" }, { status: 402 });
       }
     }

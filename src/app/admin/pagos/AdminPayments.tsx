@@ -79,9 +79,7 @@ export default function AdminPayments({
   }, []);
 
   const formatPrice = (cents: number, currency: string) => {
-    const amount = cents / 100;
-    if (currency === "ARS") return `$${amount.toLocaleString("es-AR")}`;
-    return `$${amount.toFixed(2)}`;
+    return new Intl.NumberFormat("es-AR", { style: "currency", currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100);
   };
 
   return (

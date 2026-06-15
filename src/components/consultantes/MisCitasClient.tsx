@@ -8,7 +8,7 @@ import RescheduleModal from "./RescheduleModal";
 import Link from "next/link";
 
 function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(cents / 100);
+  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100);
 }
 
 interface Appointment {
@@ -213,7 +213,7 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
                                                 disabled={loadingId === appt.id}
                                                 className="px-4 py-2 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-all disabled:opacity-50"
                                             >
-                                                {loadingId === appt.id ? "..." : `Pagar ${appt.price_cents ? formatPrice(appt.price_cents) : ""}`}
+                                                {loadingId === appt.id ? "..." : `Pagar ${(appt.deposit_cents && appt.deposit_cents > 0) ? formatPrice(appt.deposit_cents) : (appt.price_cents ? formatPrice(appt.price_cents) : "")}`}
                                             </button>
                                             <button
                                                 onClick={() => handleCancel(appt.id)}

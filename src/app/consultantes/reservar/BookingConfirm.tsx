@@ -17,6 +17,8 @@ type Promo = {
   final_price_cents: number;
   original_price_cents: number;
   expires_at: string | null;
+  deposit_type: string | null;
+  deposit_value: number;
 };
 
 type Props = {
@@ -46,7 +48,7 @@ const slotDurationMinutes = (s: Slot) => {
 };
 
 const formatPrice = (cents: number) =>
-  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(cents / 100);
+  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100);
 
 export default function BookingConfirm({
   service,
@@ -67,6 +69,18 @@ export default function BookingConfirm({
   const selectedPromo = promos.find((p) => p.id === promotionId) || null;
   const effectivePrice = selectedPromo ? selectedPromo.final_price_cents : (service.price_cents || 0);
   const hasDiscount = selectedPromo && effectivePrice < (service.price_cents || 0);
+
+  // Calcular seña de la promo seleccionada
+  let depositCents = 0;
+  if (selectedPromo?.deposit_type && selectedPromo.deposit_type !== "none" && effectivePrice > 0) {
+    if (selectedPromo.deposit_type === "percent") {
+      depositCents = Math.round(effectivePrice * ((selectedPromo.deposit_value || 0) / 100));
+    } else if (selectedPromo.deposit_type === "fixed") {
+      depositCents = Math.round((selectedPromo.deposit_value || 0) * 100);
+    }
+  }
+  const amountToPay = depositCents > 0 ? depositCents : effectivePrice;
+  const balanceCents = depositCents > 0 ? effectivePrice - depositCents : 0;
 
   useEffect(() => {
     if (!hasPrice) return;
@@ -109,6 +123,24 @@ export default function BookingConfirm({
               ) : (
                 formatPrice(service.price_cents!)
               )}
+            </span>
+          </div>
+        )}
+
+        {depositCents > 0 && (
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-[var(--color-text-light)]">Seña a pagar ahora</span>
+            <span className="font-bold text-lg text-green-600">
+              {formatPrice(depositCents)}
+            </span>
+          </div>
+        )}
+
+        {depositCents > 0 && balanceCents > 0 && (
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-[var(--color-text-light)]">Saldo restante</span>
+            <span className="text-sm text-gray-500">
+              {formatPrice(balanceCents)}
             </span>
           </div>
         )}
@@ -220,8 +252,9 @@ export default function BookingConfirm({
 
       {hasPrice && (
         <p className="text-xs text-[var(--color-text-light)] text-center">
-          Al confirmar serás redirigido a Mercado Pago para realizar el pago de forma segura.
-          Tu turno se reservará una vez confirmado el pago.
+          {depositCents > 0
+            ? `Al confirmar pagarás la seña de ${formatPrice(depositCents)} vía Mercado Pago. El saldo restante de ${formatPrice(balanceCents)} se abonará después de la sesión.`
+            : "Al confirmar serás redirigido a Mercado Pago para realizar el pago de forma segura. Tu turno se reservará una vez confirmado el pago."}
         </p>
       )}
 
@@ -234,7 +267,9 @@ export default function BookingConfirm({
           {loading
             ? "Reservando..."
             : hasPrice
-              ? `Pagar y reservar (${formatPrice(effectivePrice)})`
+              ? depositCents > 0
+                ? `Pagar seña y reservar (${formatPrice(depositCents)})`
+                : `Pagar y reservar (${formatPrice(effectivePrice)})`
               : "Confirmar Reserva"}
         </button>
       </div>

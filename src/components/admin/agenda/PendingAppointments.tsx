@@ -11,7 +11,7 @@ interface PendingAppointmentsProps {
 }
 
 function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0 }).format(cents / 100);
+  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100);
 }
 
 export default function PendingAppointments({ appointments: initialAppointments }: PendingAppointmentsProps) {

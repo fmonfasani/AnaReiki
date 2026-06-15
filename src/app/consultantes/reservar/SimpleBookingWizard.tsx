@@ -29,7 +29,7 @@ type Promo = {
 const SIMPLE_STEPS = ["Servicio", "Modalidad", "Fecha", "Horario", "Confirmar"];
 
 const formatPrice = (cents: number) =>
-  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(cents / 100);
+  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100);
 
 export default function SimpleBookingWizard() {
   const [step, setStep] = useState(0);

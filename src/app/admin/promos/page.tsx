@@ -62,7 +62,7 @@ const emptyForm: PromoForm = {
 const ALL_TIERS = ["prana", "shakti", "ananda"];
 
 const formatPrice = (cents: number) =>
-  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(cents / 100);
+  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100);
 
 export default function PromosPage() {
   const [promos, setPromos] = useState<Promotion[]>([]);

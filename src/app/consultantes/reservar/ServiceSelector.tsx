@@ -43,7 +43,7 @@ type Props = {
 };
 
 const formatPrice = (cents: number) =>
-  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(cents / 100);
+  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100);
 
 const MODALITY_STYLES: Record<string, { dot: string; label: string }> = {
   online: { dot: "bg-blue-500", label: "Online" },

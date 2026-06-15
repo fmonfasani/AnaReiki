@@ -40,7 +40,7 @@ export default function MisPromosCard() {
   if (promos.length === 0) return null;
 
   const formatPrice = (cents: number) =>
-    new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(cents / 100);
+    new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100);
 
   return (
     <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">

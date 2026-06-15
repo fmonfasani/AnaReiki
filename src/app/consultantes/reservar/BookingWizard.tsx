@@ -166,9 +166,6 @@ export default function BookingWizard() {
 
       if (selectedPromotionId) {
         body.promotion_id = selectedPromotionId;
-        if (promoPriceCents !== undefined) {
-          body.price_cents = promoPriceCents;
-        }
       }
 
       const res = await fetch("/api/appointments", {
