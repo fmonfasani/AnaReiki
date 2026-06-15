@@ -12,23 +12,15 @@ export async function POST(request: Request) {
     const xRequestId = request.headers.get("x-request-id");
     const contentType = request.headers.get("content-type");
 
-    console.log("Webhook received:", {
-      hasSignature: !!signatureHeader,
-      signatureHeader: signatureHeader?.substring(0, 100),
-      xRequestId,
-      contentType,
-      bodyLength: rawBody.length,
-      bodyPreview: rawBody.substring(0, 300),
-    });
-
-    const valid = verifyMpSignature(rawBody, signatureHeader);
+    const valid = verifyMpSignature(rawBody, signatureHeader, xRequestId);
     if (!valid) {
-      console.warn("Webhook: invalid or missing signature", {
+      console.warn("Webhook: invalid signature", {
         hasSignature: !!signatureHeader,
+        hasRequestId: !!xRequestId,
         bodyPreview: rawBody.substring(0, 200),
         hasSecret: !!process.env.MP_CLIENT_SECRET,
       });
-      return NextResponse.json({ error: "Invalid or missing signature" }, { status: 401 });
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
     const body = JSON.parse(rawBody);

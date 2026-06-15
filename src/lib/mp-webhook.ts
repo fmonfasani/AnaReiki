@@ -1,7 +1,11 @@
 import crypto from "crypto";
 
-export function verifyMpSignature(rawBody: string, signatureHeader: string | null): boolean {
-  if (!signatureHeader) return false;
+export function verifyMpSignature(
+  rawBody: string,
+  signatureHeader: string | null,
+  requestId: string | null,
+): boolean {
+  if (!signatureHeader || !requestId) return false;
 
   const parts = signatureHeader.split(",");
   let ts = "";
@@ -31,11 +35,10 @@ export function verifyMpSignature(rawBody: string, signatureHeader: string | nul
   const clientSecret = process.env.MP_CLIENT_SECRET;
   if (!clientSecret) return false;
 
-  const template = `id:${dataId};ts:${ts};`;
-  const dataToSign = template + rawBody;
+  const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
 
   const hmac = crypto.createHmac("sha256", clientSecret);
-  hmac.update(dataToSign);
+  hmac.update(manifest);
   const computed = hmac.digest("hex");
 
   if (computed.length !== receivedSignature.length) return false;
