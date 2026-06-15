@@ -207,13 +207,22 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
 
                                 <div className="flex gap-2 shrink-0">
                                     {appt.status === "pending_payment" ? (
-                                        <button
-                                            onClick={() => handleRetryPayment(appt.id)}
-                                            disabled={loadingId === appt.id}
-                                            className="px-4 py-2 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-all disabled:opacity-50"
-                                        >
-                                            {loadingId === appt.id ? "..." : `Pagar ${appt.price_cents ? formatPrice(appt.price_cents) : ""}`}
-                                        </button>
+                                        <>
+                                            <button
+                                                onClick={() => handleRetryPayment(appt.id)}
+                                                disabled={loadingId === appt.id}
+                                                className="px-4 py-2 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-all disabled:opacity-50"
+                                            >
+                                                {loadingId === appt.id ? "..." : `Pagar ${appt.price_cents ? formatPrice(appt.price_cents) : ""}`}
+                                            </button>
+                                            <button
+                                                onClick={() => handleCancel(appt.id)}
+                                                disabled={loadingId === appt.id}
+                                                className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-xl border border-transparent hover:border-red-100 transition-all disabled:opacity-50"
+                                            >
+                                                {loadingId === appt.id ? "..." : "Me arrepentí"}
+                                            </button>
+                                        </>
                                     ) : appt.status === "approved" && (appt.balance_cents || 0) > 0 ? (
                                         <button
                                             onClick={() => handlePayBalance(appt.id)}
