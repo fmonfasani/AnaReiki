@@ -2,6 +2,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getPayment } from "@/lib/mercadopago";
 import { sendAppointmentEmail, notifyAdminNewAppointment } from "@/lib/email";
 import { verifyMpSignature } from "@/lib/mp-webhook";
+import { saveMpPaymentLog } from "@/lib/mp-payment-log";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
@@ -80,6 +81,13 @@ export async function POST(request: Request) {
           .eq("status", "pending");
       }
 
+      await saveMpPaymentLog(paymentResult, {
+        mpPaymentId: Number(id),
+        userId: externalData.userId as string,
+        paymentType: "promo_bundle",
+        externalRef: externalData,
+      });
+
       return NextResponse.json({ received: true });
     }
 
@@ -93,7 +101,7 @@ export async function POST(request: Request) {
     if (appointmentId) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, payment_status, status")
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, payment_status, status, client_id")
         .eq("id", appointmentId)
         .single();
       appointment = data;
@@ -102,7 +110,7 @@ export async function POST(request: Request) {
     if (!appointment) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, payment_status, status")
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, payment_status, status, client_id")
         .eq("mp_payment_id", mpPaymentId)
         .maybeSingle();
       appointment = data;
@@ -162,6 +170,14 @@ export async function POST(request: Request) {
         .update({ payment_status: "failed" })
         .eq("id", appointment.id);
     }
+
+    await saveMpPaymentLog(paymentResult, {
+      mpPaymentId: Number(id),
+      appointmentId: appointment.id,
+      userId: externalData?.userId as string || appointment.client_id,
+      paymentType: "session",
+      externalRef: externalData,
+    });
 
     return NextResponse.json({ received: true });
   } catch (err) {

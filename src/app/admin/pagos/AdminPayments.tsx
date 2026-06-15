@@ -37,11 +37,36 @@ type Plan = {
   is_active: boolean;
 };
 
+type MpPaymentLog = {
+  id: string;
+  mp_payment_id: number;
+  payment_type: string;
+  status: string;
+  status_detail: string | null;
+  transaction_amount: number | null;
+  net_received_amount: number | null;
+  currency_id: string | null;
+  payer_email: string | null;
+  payment_method_id: string | null;
+  payment_type_id: string | null;
+  installments: number;
+  statement_descriptor: string | null;
+  card_last_digits: string | null;
+  cardholder_name: string | null;
+  fee_details: Array<{ type: string; amount: number; fee_payer: string }> | null;
+  mp_date_created: string | null;
+  mp_date_approved: string | null;
+  created_at: string;
+  profiles?: { full_name: string | null; email?: string | null } | null;
+};
+
 interface AdminPaymentsProps {
   payments: Payment[];
   subscriptions: Subscription[];
   plans: Plan[];
+  mpPayments: MpPaymentLog[];
   totalRevenue: number;
+  sessionRevenue: number;
   activeSubscriptions: number;
 }
 
@@ -61,10 +86,12 @@ export default function AdminPayments({
   payments,
   subscriptions,
   plans,
+  mpPayments,
   totalRevenue,
+  sessionRevenue,
   activeSubscriptions,
 }: AdminPaymentsProps) {
-  const [tab, setTab] = useState<"overview" | "payments" | "subscriptions">("overview");
+  const [tab, setTab] = useState<"overview" | "payments" | "subscriptions" | "sessions">("overview");
   const [mpConnected, setMpConnected] = useState(false);
   const [mpLoading, setMpLoading] = useState(true);
 
@@ -114,11 +141,17 @@ export default function AdminPayments({
 
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-          <p className="text-xs text-gray-500 uppercase tracking-wider">Ingresos totales</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wider">Ingresos suscripciones</p>
           <p className="text-2xl font-bold text-gray-900">
             {formatPrice(totalRevenue, "ARS")}
+          </p>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+          <p className="text-xs text-gray-500 uppercase tracking-wider">Ingresos sesiones</p>
+          <p className="text-2xl font-bold text-green-600">
+            {formatPrice(sessionRevenue * 100, "ARS")}
           </p>
         </div>
         <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
@@ -126,14 +159,17 @@ export default function AdminPayments({
           <p className="text-2xl font-bold text-gray-900">{activeSubscriptions}</p>
         </div>
         <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-          <p className="text-xs text-gray-500 uppercase tracking-wider">Pagos totales</p>
-          <p className="text-2xl font-bold text-gray-900">{payments.length}</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wider">Pagos sesiones</p>
+          <p className="text-2xl font-bold text-gray-900">
+            {mpPayments.filter(p => p.status === "approved").length}
+          </p>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
         {[
           { key: "overview", label: "Resumen", icon: "dashboard" },
+          { key: "sessions", label: "Sesiones y Promos", icon: "event", count: mpPayments.length },
           { key: "payments", label: "Pagos", icon: "payments", count: payments.length },
           { key: "subscriptions", label: "Suscripciones", icon: "subscriptions", count: subscriptions.length },
         ].map((t) => (
@@ -200,6 +236,82 @@ export default function AdminPayments({
             ) : (
               <p className="text-sm text-gray-400">Sin suscripciones activas.</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {tab === "sessions" && (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Fecha</th>
+                  <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Consultante</th>
+                  <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Tipo</th>
+                  <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Monto</th>
+                  <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Neto</th>
+                  <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Comisión</th>
+                  <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Método</th>
+                  <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Estado</th>
+                  <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">ID MP</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {mpPayments.map((p) => {
+                  const feeTotal = p.fee_details?.reduce((sum, f) => sum + (f.amount || 0), 0) || 0;
+                  return (
+                    <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        {p.mp_date_created
+                          ? format(new Date(p.mp_date_created), "dd/MM/yy HH:mm", { locale: es })
+                          : format(new Date(p.created_at), "dd/MM/yy HH:mm", { locale: es })}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {p.profiles?.full_name || p.payer_email || "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          p.payment_type === "session" ? "bg-blue-100 text-blue-700"
+                            : p.payment_type === "subscription" ? "bg-purple-100 text-purple-700"
+                            : "bg-amber-100 text-amber-700"
+                        }`}>
+                          {p.payment_type === "session" ? "Sesión" : p.payment_type === "subscription" ? "Suscripción" : "Promo Pack"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                        {p.transaction_amount != null ? `$${Number(p.transaction_amount).toFixed(2)}` : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-green-600">
+                        {p.net_received_amount != null ? `$${Number(p.net_received_amount).toFixed(2)}` : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-red-500">
+                        {feeTotal > 0 ? `-$${feeTotal.toFixed(2)}` : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-500">
+                        {p.payment_method_id || "—"}
+                        {p.card_last_digits && ` •••${p.card_last_digits}`}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${STATUS_STYLES[p.status] || "bg-gray-100 text-gray-500"}`}>
+                          {p.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-400 font-mono">
+                        {p.mp_payment_id}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {mpPayments.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="px-6 py-12 text-center text-gray-400">
+                      No hay pagos de sesiones registrados.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

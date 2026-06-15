@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getPayment } from "@/lib/mercadopago";
 import { sendAppointmentEmail, notifyAdminNewAppointment } from "@/lib/email";
+import { saveMpPaymentLog } from "@/lib/mp-payment-log";
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth/roles";
 
@@ -78,6 +79,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, status: "already_paid" });
     }
 
+    let verifiedPayment: Awaited<ReturnType<typeof getPayment>> | null = null;
+
     if (payment_id) {
       const paymentResult = await getPayment(String(payment_id));
       if ("error" in paymentResult) {
@@ -86,13 +89,13 @@ export async function POST(request: Request) {
       if (paymentResult.status !== "approved") {
         return NextResponse.json({ error: "El pago no ha sido aprobado por Mercado Pago" }, { status: 402 });
       }
-      // Verificar monto: si hay seña, comparar contra deposit_cents; sino contra price_cents
       const expectedAmount = (appointment.deposit_cents && appointment.deposit_cents > 0)
         ? appointment.deposit_cents
         : appointment.price_cents;
       if (Math.round(paymentResult.transaction_amount * 100) !== expectedAmount) {
         return NextResponse.json({ error: "El monto del pago no coincide con el servicio" }, { status: 402 });
       }
+      verifiedPayment = paymentResult;
     }
 
     const isBalancePayment = paymentType === "balance";
@@ -156,6 +159,20 @@ export async function POST(request: Request) {
       time: timeStr,
       duration: service?.duration_minutes || 60,
     });
+
+    if (verifiedPayment && !("error" in verifiedPayment)) {
+      let externalData: Record<string, unknown> | null = null;
+      if (verifiedPayment.external_reference) {
+        try { externalData = JSON.parse(verifiedPayment.external_reference); } catch { /* */ }
+      }
+      await saveMpPaymentLog(verifiedPayment, {
+        mpPaymentId: verifiedPayment.id,
+        appointmentId: appointment.id,
+        userId: appointment.client_id,
+        paymentType: isBalancePayment ? "session" : "session",
+        externalRef: externalData,
+      });
+    }
 
     return NextResponse.json({ success: true, newStatus });
   } catch (err) {

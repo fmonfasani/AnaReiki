@@ -276,14 +276,46 @@ export async function cancelPreapproval(
   }
 }
 
-export async function getPayment(paymentId: string): Promise<{
+export type MpPaymentData = {
+  id: number;
   status: string;
   status_detail: string;
-  payer: { email: string };
+  payer: {
+    email: string;
+    id?: number;
+    identification?: { type?: string; number?: string };
+    type?: string;
+  };
   transaction_amount: number;
+  transaction_amount_refunded: number;
+  currency_id: string;
   payment_method_id: string;
+  payment_type_id: string;
   external_reference: string | null;
-} | { error: string }> {
+  date_created: string | null;
+  date_approved: string | null;
+  installments: number;
+  statement_descriptor: string | null;
+  transaction_details: {
+    net_received_amount: number;
+    total_paid_amount: number;
+    overpaid_amount: number;
+    installment_amount: number;
+    financial_institution: string | null;
+    payment_method_reference_id: string | null;
+  } | null;
+  fee_details: Array<{
+    type: string;
+    amount: number;
+    fee_payer: string;
+  }> | null;
+  card: {
+    last_digits: string | null;
+    cardholder: { name: string | null } | null;
+  } | null;
+} | { error: string };
+
+export async function getPayment(paymentId: string): Promise<MpPaymentData> {
   const accessToken = await getAccessToken();
   if (!accessToken) return { error: "No configurado" };
 
@@ -299,12 +331,38 @@ export async function getPayment(paymentId: string): Promise<{
     }
 
     return {
+      id: data.id,
       status: data.status,
       status_detail: data.status_detail,
-      payer: { email: data.payer?.email || "" },
+      payer: {
+        email: data.payer?.email || "",
+        id: data.payer?.id,
+        identification: data.payer?.identification,
+        type: data.payer?.type,
+      },
       transaction_amount: data.transaction_amount,
+      transaction_amount_refunded: data.transaction_amount_refunded || 0,
+      currency_id: data.currency_id,
       payment_method_id: data.payment_method_id,
+      payment_type_id: data.payment_type_id,
       external_reference: data.external_reference || null,
+      date_created: data.date_created || null,
+      date_approved: data.date_approved || null,
+      installments: data.installments || 1,
+      statement_descriptor: data.statement_descriptor || null,
+      transaction_details: data.transaction_details ? {
+        net_received_amount: data.transaction_details.net_received_amount || 0,
+        total_paid_amount: data.transaction_details.total_paid_amount || 0,
+        overpaid_amount: data.transaction_details.overpaid_amount || 0,
+        installment_amount: data.transaction_details.installment_amount || 0,
+        financial_institution: data.transaction_details.financial_institution || null,
+        payment_method_reference_id: data.transaction_details.payment_method_reference_id || null,
+      } : null,
+      fee_details: data.fee_details || null,
+      card: data.card ? {
+        last_digits: data.card.last_digits || null,
+        cardholder: data.card.cardholder ? { name: data.card.cardholder.name || null } : null,
+      } : null,
     };
   } catch (err) {
     return {
