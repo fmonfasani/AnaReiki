@@ -3,7 +3,7 @@ Construir y deployar plataforma SaaS completa de Ana Reiki: landing, CRM terapé
 
 ## Constraints & Preferences
 - UX en español (es-AR).
-- DB migrations numeradas (001→032).
+- DB migrations numeradas (001→051).
 - Sin SDK externo de pagos — MP vía API directa.
 - 3 tiers: Prana (gratis), Shakti ($149/mes), Ananda ($299/mes).
 - Roles: `owner`, `admin`, `gerente`, `consultante`.
@@ -51,6 +51,7 @@ Construir y deployar plataforma SaaS completa de Ana Reiki: landing, CRM terapé
 - **API promos**: `GET /api/promos/available?service_id=X` devuelve promos activas con precio final. Admin API actualizada para vincular servicios a promos.
 - **Promo selector en booking**: BookingConfirm muestra promos disponibles como opciones seleccionables. Al elegir una, se actualiza el precio final.
 - **Badge cambiado**: Items bloqueados muestran "SUBIR" en vez de "PRO".
+- **Reingeniería estados del turno (Migration 051)**: 5 estados simplificados: `pending_payment` → `pending_confirmation` → `confirmed` → `completed`/`cancelled`. Nuevo campo `attendance_result` (attended/no_show/rescheduled) independiente del status. Columnas `original_appointment_id`/`new_appointment_id` para link bidireccional de reprogramación. RPCs: `confirm_appointment`, `complete_appointment`, `reschedule_from_attendance`. Webhook + confirm-payment ahora van a `pending_confirmation` (no confirmed directo). Admin confirma → `confirmed`. Admin marca asistencia con `attendance_result`. Botón "💰 Saldo pagado" para turno offline. Eliminado `pay-balance` route (saldo siempre offline). `appointment_status` enum modificado in-place (valores viejos eliminados). Componentes: MisCitasClient, AppointmentManager, PendingAppointments, AgendaAnalytics, ManageAllSessionsClient, admin/agenda/page todos actualizados.
 
 ### Feature matrix actual:
 | Módulo | Prana (gratis) | Shakti ($149/mes) | Ananda ($299/mes) |
@@ -75,16 +76,19 @@ Construir y deployar plataforma SaaS completa de Ana Reiki: landing, CRM terapé
 - **Strangler fig pattern**: Tablas viejas (`availability_slots`, `availability_rules` v1, `availability_exceptions`, `availability`) siguen funcionando junto a `availability_rules_v2`. Se deprecarán en migration futura.
 - **Permisos en código TypeScript**: `isAdmin()` y `isOwner()` desde `@/lib/auth/roles`.
 - **Promos**: Tablas `promotions` + `promotion_sessions` + `promo_purchases`. Pago único vía MP preference. Filtro por `allowed_tiers`.
+- **Seña pagada → confirmed** (no pending): El turno está confirmado una vez pagada la seña. La "aprobación" solo aplica para paquetes de promo (flujo pend_confirmation).
+- **Saldo siempre offline**: No hay cobro vía MP del saldo restante. El consultante paga en efectivo/transferencia y la owner lo marca manualmente con "💰 Saldo pagado".
 
 ## Next Steps
-1. Separar DM de Comunidad (tablas + API + migración de datos existentes).
-2. Sistema de Foros (categorías, temas, posts, likes, bookmarks).
-3. Sistema de Comentarios polimórfico (biblioteca, podcast, videos, clases).
-4. Sidebar Admin y Consultante reorganizados.
-5. Agenda reingeniería Fase 5: Admin RuleManager UI.
-6. Agenda reingeniería Fase 6: Cleanup tablas viejas.
-7. User: verificar dominio Resend en Namecheap.
-8. User: testear checkout MP con cuenta diferente (producción).
+1. Ejecutar migrations 050 (`mp_payment_logs`) y 051 (`appointment_status_v2`) en Supabase Dashboard.
+2. Separar DM de Comunidad (tablas + API + migración de datos existentes).
+3. Sistema de Foros (categorías, temas, posts, likes, bookmarks).
+4. Sistema de Comentarios polimórfico (biblioteca, podcast, videos, clases).
+5. Sidebar Admin y Consultante reorganizados.
+6. Agenda reingeniería Fase 5: Admin RuleManager UI.
+7. Agenda reingeniería Fase 6: Cleanup tablas viejas.
+8. User: verificar dominio Resend en Namecheap.
+9. User: testear checkout MP con cuenta diferente (producción).
 
 ## Deploy — VPS Hetzner
 

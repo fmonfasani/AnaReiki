@@ -1,56 +1,12 @@
 -- ============================================================
--- MIGRATION 051: Appointment Status V2
+-- MIGRATION 051b: Migrate data + recreate RPCs
 -- ============================================================
--- Modifica enum appointment_status existente (agrega valores nuevos,
--- elimina viejos). Agrega attendance_result, columnas de link.
--- Migra datos. Actualiza RPCs.
+-- Run AFTER 051a (enum values must be committed first).
 -- ============================================================
 
 BEGIN;
 
--- 1. Agregar valores nuevos al enum existente
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'pending_payment' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'appointment_status')) THEN
-    ALTER TYPE public.appointment_status ADD VALUE 'pending_payment' BEFORE 'confirmed';
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'pending_confirmation' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'appointment_status')) THEN
-    ALTER TYPE public.appointment_status ADD VALUE 'pending_confirmation' BEFORE 'confirmed';
-  END IF;
-END $$;
-
--- 2. Crear tipo attendance_result
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'attendance_result_type') THEN
-    CREATE TYPE public.attendance_result_type AS ENUM (
-      'attended',
-      'no_show',
-      'rescheduled'
-    );
-  END IF;
-END $$;
-
--- 3. Agregar columnas nuevas
-ALTER TABLE public.appointments
-  ADD COLUMN IF NOT EXISTS attendance_result public.attendance_result_type DEFAULT NULL;
-
-ALTER TABLE public.appointments
-  ADD COLUMN IF NOT EXISTS original_appointment_id uuid DEFAULT NULL
-    REFERENCES public.appointments(id) ON DELETE SET NULL;
-
-ALTER TABLE public.appointments
-  ADD COLUMN IF NOT EXISTS new_appointment_id uuid DEFAULT NULL
-    REFERENCES public.appointments(id) ON DELETE SET NULL;
-
-ALTER TABLE public.appointments
-  ADD COLUMN IF NOT EXISTS completed_at timestamptz DEFAULT NULL;
-
-ALTER TABLE public.appointments
-  ADD COLUMN IF NOT EXISTS completed_by uuid DEFAULT NULL
-    REFERENCES auth.users(id) ON DELETE SET NULL;
-
--- 4. Migrar datos: mapear estados viejos → nuevos
+-- 1. Migrar datos: mapear estados viejos → nuevos
 UPDATE public.appointments SET status = 'pending_confirmation' WHERE status = 'pending';
 UPDATE public.appointments SET status = 'pending_confirmation' WHERE status = 'pending_approval';
 UPDATE public.appointments SET status = 'confirmed' WHERE status = 'approved';
@@ -60,21 +16,16 @@ UPDATE public.appointments
       completed_at = updated_at
   WHERE status = 'no_show';
 
--- 5. Eliminar valores viejos del enum (primero verificar que no queden filas)
+-- 2. Eliminar valores viejos del enum
 DO $$
 BEGIN
-  -- Eliminar valores viejos si existen
   BEGIN ALTER TYPE public.appointment_status DROP VALUE IF EXISTS 'pending'; EXCEPTION WHEN others THEN NULL; END;
   BEGIN ALTER TYPE public.appointment_status DROP VALUE IF EXISTS 'pending_approval'; EXCEPTION WHEN others THEN NULL; END;
   BEGIN ALTER TYPE public.appointment_status DROP VALUE IF EXISTS 'approved'; EXCEPTION WHEN others THEN NULL; END;
   BEGIN ALTER TYPE public.appointment_status DROP VALUE IF EXISTS 'no_show'; EXCEPTION WHEN others THEN NULL; END;
 END $$;
 
--- 6. Eliminar approval_status default
-ALTER TABLE public.appointments
-  ALTER COLUMN approval_status DROP DEFAULT;
-
--- 7. Actualizar cancel_appointment RPC
+-- 3. Actualizar cancel_appointment RPC
 DROP FUNCTION IF EXISTS public.cancel_appointment(uuid, text, uuid);
 
 CREATE OR REPLACE FUNCTION public.cancel_appointment(
@@ -136,7 +87,7 @@ BEGIN
 END;
 $$;
 
--- 8. RPC: confirm appointment (pending_confirmation → confirmed)
+-- 4. RPC: confirm appointment (pending_confirmation → confirmed)
 CREATE OR REPLACE FUNCTION public.confirm_appointment(
   p_appointment_id uuid,
   p_confirmed_by uuid DEFAULT NULL
@@ -187,7 +138,7 @@ BEGIN
 END;
 $$;
 
--- 9. RPC: complete appointment con attendance_result
+-- 5. RPC: complete appointment con attendance_result
 CREATE OR REPLACE FUNCTION public.complete_appointment(
   p_appointment_id uuid,
   p_attendance_result public.attendance_result_type,
@@ -247,7 +198,7 @@ BEGIN
 END;
 $$;
 
--- 10. RPC: reschedule from attendance
+-- 6. RPC: reschedule from attendance
 CREATE OR REPLACE FUNCTION public.reschedule_from_attendance(
   p_appointment_id uuid,
   p_new_start_time timestamptz,
@@ -312,7 +263,7 @@ BEGIN
 END;
 $$;
 
--- 11. Actualizar get_agenda_stats
+-- 7. Actualizar get_agenda_stats
 DROP FUNCTION IF EXISTS public.get_agenda_stats(uuid, integer);
 
 CREATE OR REPLACE FUNCTION public.get_agenda_stats(
@@ -388,7 +339,7 @@ BEGIN
 END;
 $$;
 
--- 12. Índices
+-- 8. Índices
 CREATE INDEX IF NOT EXISTS idx_appointments_attendance ON public.appointments (attendance_result) WHERE attendance_result IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_appointments_original ON public.appointments (original_appointment_id) WHERE original_appointment_id IS NOT NULL;
 
