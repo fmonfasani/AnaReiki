@@ -34,10 +34,10 @@ UPDATE public.appointments
 -- 2. Eliminar valores viejos del enum
 DO $$
 BEGIN
-  BEGIN ALTER TYPE public.appointment_status DROP VALUE IF EXISTS 'pending'; EXCEPTION WHEN others THEN NULL; END;
-  BEGIN ALTER TYPE public.appointment_status DROP VALUE IF EXISTS 'pending_approval'; EXCEPTION WHEN others THEN NULL; END;
-  BEGIN ALTER TYPE public.appointment_status DROP VALUE IF EXISTS 'approved'; EXCEPTION WHEN others THEN NULL; END;
-  BEGIN ALTER TYPE public.appointment_status DROP VALUE IF EXISTS 'no_show'; EXCEPTION WHEN others THEN NULL; END;
+  BEGIN ALTER TYPE public.appointment_status DROP VALUE 'pending'; EXCEPTION WHEN others THEN NULL; END;
+  BEGIN ALTER TYPE public.appointment_status DROP VALUE 'pending_approval'; EXCEPTION WHEN others THEN NULL; END;
+  BEGIN ALTER TYPE public.appointment_status DROP VALUE 'approved'; EXCEPTION WHEN others THEN NULL; END;
+  BEGIN ALTER TYPE public.appointment_status DROP VALUE 'no_show'; EXCEPTION WHEN others THEN NULL; END;
 END $$;
 
 -- 3. Actualizar cancel_appointment RPC
