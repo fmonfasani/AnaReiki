@@ -31,14 +31,7 @@ UPDATE public.appointments
       completed_at = updated_at
   WHERE status = 'no_show';
 
--- 2. Eliminar valores viejos del enum
-DO $$
-BEGIN
-  BEGIN ALTER TYPE public.appointment_status DROP VALUE 'pending'; EXCEPTION WHEN others THEN NULL; END;
-  BEGIN ALTER TYPE public.appointment_status DROP VALUE 'pending_approval'; EXCEPTION WHEN others THEN NULL; END;
-  BEGIN ALTER TYPE public.appointment_status DROP VALUE 'approved'; EXCEPTION WHEN others THEN NULL; END;
-  BEGIN ALTER TYPE public.appointment_status DROP VALUE 'no_show'; EXCEPTION WHEN others THEN NULL; END;
-END $$;
+-- 2. (No se pueden eliminar valores de enum en PostgreSQL, quedan deprecated)
 
 -- 3. Actualizar cancel_appointment RPC
 DROP FUNCTION IF EXISTS public.cancel_appointment(uuid, text, uuid);
