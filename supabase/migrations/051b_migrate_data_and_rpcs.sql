@@ -1,9 +1,24 @@
 -- ============================================================
 -- MIGRATION 051b: Migrate data + recreate RPCs
 -- ============================================================
--- Run AFTER 051a (enum values must be committed first).
+-- Run AFTER 051a.
+-- Handles case where old enum values were already dropped.
 -- ============================================================
 
+BEGIN;
+
+-- 0. Re-agregar valores viejos si faltan (por si la 051 original los dropeó)
+DO $$
+BEGIN
+  BEGIN ALTER TYPE public.appointment_status ADD VALUE IF NOT EXISTS 'pending'; EXCEPTION WHEN others THEN NULL; END;
+  BEGIN ALTER TYPE public.appointment_status ADD VALUE IF NOT EXISTS 'pending_approval'; EXCEPTION WHEN others THEN NULL; END;
+  BEGIN ALTER TYPE public.appointment_status ADD VALUE IF NOT EXISTS 'approved'; EXCEPTION WHEN others THEN NULL; END;
+  BEGIN ALTER TYPE public.appointment_status ADD VALUE IF NOT EXISTS 'no_show'; EXCEPTION WHEN others THEN NULL; END;
+END $$;
+
+COMMIT;
+
+-- Separar transacción para que los valores viejos estén disponibles
 BEGIN;
 
 -- 1. Migrar datos: mapear estados viejos → nuevos
@@ -87,7 +102,7 @@ BEGIN
 END;
 $$;
 
--- 4. RPC: confirm appointment (pending_confirmation → confirmed)
+-- 4. RPC: confirm appointment
 CREATE OR REPLACE FUNCTION public.confirm_appointment(
   p_appointment_id uuid,
   p_confirmed_by uuid DEFAULT NULL
@@ -124,8 +139,7 @@ BEGIN
   END IF;
 
   UPDATE public.appointments
-  SET status = 'confirmed',
-      updated_at = now()
+  SET status = 'confirmed', updated_at = now()
   WHERE id = p_appointment_id
   RETURNING * INTO v_updated;
 
@@ -322,19 +336,12 @@ BEGIN
     FROM days GROUP BY dow, hr
   )
   SELECT
-    b.total,
-    b.conf,
-    b.canc,
-    b.ns,
-    b.comp,
-    b.pend,
-    b.pend_conf,
+    b.total, b.conf, b.canc, b.ns, b.comp, b.pend, b.pend_conf,
     CASE WHEN b.total > 0 THEN round(b.canc::numeric / b.total * 100, 1) ELSE 0 END,
     CASE WHEN c.unique_clients > 0 THEN round(b.total::numeric / c.unique_clients, 1) ELSE 0 END,
     (SELECT p.dow FROM peak p WHERE p.rn = 1),
     (SELECT p.hr FROM peak p WHERE p.rn = 1),
-    b.att,
-    b.resch
+    b.att, b.resch
   FROM base b, clients c;
 END;
 $$;
