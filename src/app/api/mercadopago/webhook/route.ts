@@ -122,12 +122,10 @@ export async function POST(request: Request) {
     }
 
     if (mpStatus === "approved" && appointment.payment_status !== "paid") {
-      const hasDeposit = appointment.deposit_cents && appointment.deposit_cents > 0;
-      const isFullPayment = !hasDeposit || appointment.balance_cents === 0;
       await svc
         .from("appointments")
         .update({
-          status: isFullPayment ? "confirmed" : "pending",
+          status: "confirmed",
           payment_status: "paid",
           mp_payment_id: mpPaymentId,
         })

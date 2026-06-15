@@ -10,6 +10,10 @@ type Appointment = {
   modality: string;
   status: string;
   notes: string | null;
+  price_cents: number | null;
+  deposit_cents: number | null;
+  balance_cents: number | null;
+  payment_status: string | null;
   created_at: string;
   services: { id: string; name: string; slug: string } | null;
   client: { id: string; email: string; full_name: string | null } | null;
@@ -19,6 +23,7 @@ export default function AppointmentManager() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
+  const [loadingId, setLoadingId] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState<{ type: "ok" | "error"; text: string } | null>(null);
 
   useEffect(() => {
@@ -50,6 +55,30 @@ export default function AppointmentManager() {
     } else {
       setActionMsg({ type: "error", text: json.error || "Error" });
     }
+  };
+
+  const handleMarkBalancePaid = async (id: string) => {
+    if (!confirm("¿Marcar el saldo restante como pagado? (efectivo/transferencia)")) return;
+    setLoadingId(id);
+    try {
+      const res = await fetch("/api/admin/appointments/mark-balance-paid", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ appointment_id: id }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setActionMsg({ type: "ok", text: "Saldo marcado como pagado" });
+        const r = await fetch("/api/admin/appointments");
+        const j = await r.json();
+        setAppointments(j.data || []);
+      } else {
+        setActionMsg({ type: "error", text: json.error || "Error" });
+      }
+    } catch {
+      setActionMsg({ type: "error", text: "Error de conexión" });
+    }
+    setLoadingId(null);
   };
 
   const filtered = filter === "all"
@@ -152,10 +181,26 @@ export default function AppointmentManager() {
                     {apt.client?.full_name || apt.client?.email || "Sin cliente"}
                   </p>
                   {apt.notes && <p className="italic text-xs">{apt.notes}</p>}
+                  {(apt.price_cents || apt.deposit_cents || apt.balance_cents) ? (
+                    <div className="flex gap-3 text-xs text-gray-400 mt-1">
+                      {apt.price_cents ? <span>Total: ${(apt.price_cents / 100).toFixed(2)}</span> : null}
+                      {apt.deposit_cents ? <span>Seña: ${(apt.deposit_cents / 100).toFixed(2)}</span> : null}
+                      {apt.balance_cents ? <span className="text-amber-500 font-medium">Saldo: ${(apt.balance_cents / 100).toFixed(2)}</span> : null}
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-2">
+                {apt.status === "confirmed" && (apt.balance_cents || 0) > 0 && (
+                  <button
+                    onClick={() => handleMarkBalancePaid(apt.id)}
+                    disabled={loadingId === apt.id}
+                    className="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-medium hover:opacity-90 disabled:opacity-50"
+                  >
+                    {loadingId === apt.id ? "..." : "💰 Saldo pagado"}
+                  </button>
+                )}
                 {apt.status === "pending" && (
                   <>
                     <button

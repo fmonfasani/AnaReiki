@@ -90,26 +90,6 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
         setLoadingId(null);
     };
 
-    const handlePayBalance = async (id: string) => {
-        setLoadingId(id);
-        try {
-            const res = await fetch("/api/appointments/pay-balance", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ appointment_id: id }),
-            });
-            const json = await res.json();
-            if (json.mp_init_point) {
-                window.location.href = json.mp_init_point;
-            } else {
-                alert("Error: " + (json.error || "No se pudo iniciar el pago"));
-            }
-        } catch {
-            alert("Error de conexión");
-        }
-        setLoadingId(null);
-    };
-
     const handleCancel = async (id: string) => {
         if (!confirm("¿Estás segura de que deseas cancelar esta cita?")) return;
 
@@ -223,14 +203,10 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
                                                 {loadingId === appt.id ? "..." : "Me arrepentí"}
                                             </button>
                                         </>
-                                    ) : appt.status === "approved" && (appt.balance_cents || 0) > 0 ? (
-                                        <button
-                                            onClick={() => handlePayBalance(appt.id)}
-                                            disabled={loadingId === appt.id}
-                                            className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all disabled:opacity-50"
-                                        >
-                                            {loadingId === appt.id ? "..." : `Pagar saldo ${formatPrice(appt.balance_cents!)}`}
-                                        </button>
+                                    ) : appt.status === "confirmed" && (appt.balance_cents || 0) > 0 && (appt.payment_status === "paid") ? (
+                                        <span className="px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 rounded-xl border border-amber-200">
+                                            Saldo pendiente: {formatPrice(appt.balance_cents!)}
+                                        </span>
                                     ) : filter === "upcoming" ? (
                                         <>
                                             <button
