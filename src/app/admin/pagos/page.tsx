@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/auth/roles";
 import AdminPayments from "./AdminPayments";
@@ -11,30 +12,33 @@ export default async function AdminPagosPage() {
 
   if (!user || !(await isAdmin(user, supabase))) redirect("/login");
 
-  const { data: payments } = await supabase
+  const svc = createServiceClient();
+
+  const { data: payments } = await svc
     .from("payments")
     .select("*, profiles:user_id(full_name, email), pricing_plans!left(name)")
     .order("created_at", { ascending: false })
     .limit(100);
 
-  const { data: subscriptions } = await supabase
+  const { data: subscriptions } = await svc
     .from("subscriptions")
     .select("*, profiles:user_id(full_name, email), pricing_plans!left(name)")
     .order("created_at", { ascending: false });
 
-  const { data: plans } = await supabase
+  const { data: plans } = await svc
     .from("pricing_plans")
     .select("*")
     .order("sort_order");
 
-  const { data: mpPayments } = await supabase
+  const { data: mpPayments, error: mpError } = await svc
     .from("mp_payment_logs")
     .select("*, profiles:user_id(full_name, email)")
     .order("created_at", { ascending: false })
     .limit(200);
 
-  // Appointments with services and promos for analytics
-  const { data: appointments } = await supabase
+  if (mpError) console.error("mp_payment_logs error:", mpError);
+
+  const { data: appointments } = await svc
     .from("appointments")
     .select(`
       id, status, start_time, modality, price_cents, deposit_cents, balance_cents,
