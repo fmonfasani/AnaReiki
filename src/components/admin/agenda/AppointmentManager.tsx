@@ -9,6 +9,7 @@ type Appointment = {
   end_time: string;
   modality: string;
   status: string;
+  attendance_result?: string | null;
   notes: string | null;
   price_cents: number | null;
   deposit_cents: number | null;
@@ -25,14 +26,16 @@ export default function AppointmentManager() {
   const [filter, setFilter] = useState<string>("all");
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState<{ type: "ok" | "error"; text: string } | null>(null);
+  const [completeModal, setCompleteModal] = useState<{ appointmentId: string; clientName: string } | null>(null);
+
+  const fetchAppointments = async () => {
+    const r = await fetch("/api/admin/appointments");
+    const j = await r.json();
+    setAppointments(j.data || []);
+  };
 
   useEffect(() => {
-    fetch("/api/admin/appointments")
-      .then(async (r) => {
-        const j = await r.json();
-        if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
-        setAppointments(j.data || []);
-      })
+    fetchAppointments()
       .catch((err) => {
         console.error("AppointmentManager fetch error:", err);
         setActionMsg({ type: "error", text: "Error al cargar turnos: " + err.message });
@@ -40,18 +43,22 @@ export default function AppointmentManager() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleAction = async (id: string, action: string, reason?: string) => {
-    const res = await fetch(`/api/admin/appointments/${id}`, {
-      method: "PUT",
+  const handleAction = async (id: string, action: string) => {
+    const endpoint = action === "confirm" ? "/api/appointments/approve" : `/api/appointments/${id}/complete`;
+    const body = action === "confirm"
+      ? { appointment_id: id }
+      : { attendance_result: action };
+
+    const res = await fetch(endpoint, {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, reason }),
+      body: JSON.stringify(body),
     });
     const json = await res.json();
     if (res.ok) {
-      setActionMsg({ type: "ok", text: `Turno ${action === "confirm" ? "confirmado" : action === "complete" ? "completado" : action === "cancel" ? "cancelado" : "marcado como no-show"}` });
-      const r = await fetch("/api/admin/appointments");
-      const j = await r.json();
-      setAppointments(j.data || []);
+      const msg = action === "confirm" ? "Turno confirmado" : `Turno completado (${action})`;
+      setActionMsg({ type: "ok", text: msg });
+      await fetchAppointments();
     } else {
       setActionMsg({ type: "error", text: json.error || "Error" });
     }
@@ -69,9 +76,7 @@ export default function AppointmentManager() {
       const json = await res.json();
       if (res.ok) {
         setActionMsg({ type: "ok", text: "Saldo marcado como pagado" });
-        const r = await fetch("/api/admin/appointments");
-        const j = await r.json();
-        setAppointments(j.data || []);
+        await fetchAppointments();
       } else {
         setActionMsg({ type: "error", text: json.error || "Error" });
       }
@@ -86,21 +91,19 @@ export default function AppointmentManager() {
     : appointments.filter((a) => a.status === filter);
 
   const statusColors: Record<string, string> = {
-    pending: "bg-yellow-50 text-yellow-600",
     pending_payment: "bg-amber-50 text-amber-600",
+    pending_confirmation: "bg-purple-50 text-purple-600",
     confirmed: "bg-blue-50 text-blue-600",
     completed: "bg-green-50 text-green-600",
     cancelled: "bg-red-50 text-red-600",
-    no_show: "bg-gray-100 text-gray-600",
   };
 
   const statusLabels: Record<string, string> = {
-    pending: "Pendiente",
     pending_payment: "Pendiente de pago",
+    pending_confirmation: "Pendiente confirmación",
     confirmed: "Confirmado",
     completed: "Completado",
     cancelled: "Cancelado",
-    no_show: "No-show",
   };
 
   if (loading) {
@@ -112,7 +115,7 @@ export default function AppointmentManager() {
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-bold font-display">Gestión de Reservas</h3>
         <div className="flex gap-2">
-          {["all", "pending", "confirmed", "completed", "cancelled", "no_show"].map((s) => (
+          {["all", "pending_confirmation", "confirmed", "completed", "cancelled"].map((s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}
@@ -142,7 +145,7 @@ export default function AppointmentManager() {
       <div className="space-y-3">
         {filtered.length === 0 && (
           <div className="text-center py-8 text-[var(--color-text-light)]">
-            No hay turnos{filter !== "all" ? ` ${statusLabels[filter].toLowerCase()}` : ""}s
+            No hay turnos{filter !== "all" ? ` ${statusLabels[filter]?.toLowerCase() || ""}` : ""}
           </div>
         )}
 
@@ -163,6 +166,16 @@ export default function AppointmentManager() {
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[apt.status] || ""}`}>
                     {statusLabels[apt.status] || apt.status}
                   </span>
+                  {apt.attendance_result && (
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                      apt.attendance_result === "attended" ? "bg-green-100 text-green-700" :
+                      apt.attendance_result === "no_show" ? "bg-red-100 text-red-600" :
+                      "bg-blue-100 text-blue-600"
+                    }`}>
+                      {apt.attendance_result === "attended" ? "Asistió" :
+                       apt.attendance_result === "no_show" ? "No asistió" : "Reprogramado"}
+                    </span>
+                  )}
                 </div>
                 <div className="text-sm text-[var(--color-text-light)] space-y-0.5">
                   <p>
@@ -185,48 +198,64 @@ export default function AppointmentManager() {
                     <div className="flex gap-3 text-xs text-gray-400 mt-1">
                       {apt.price_cents ? <span>Total: ${(apt.price_cents / 100).toFixed(2)}</span> : null}
                       {apt.deposit_cents ? <span>Seña: ${(apt.deposit_cents / 100).toFixed(2)}</span> : null}
-                      {apt.balance_cents ? <span className="text-amber-500 font-medium">Saldo: ${(apt.balance_cents / 100).toFixed(2)}</span> : null}
+                      {apt.balance_cents && apt.balance_cents > 0 ? <span className="text-amber-500 font-medium">Saldo: ${(apt.balance_cents / 100).toFixed(2)}</span> : null}
+                      {apt.balance_cents === 0 && apt.deposit_cents ? <span className="text-green-500 font-medium">Saldado ✓</span> : null}
                     </div>
                   ) : null}
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {apt.status === "confirmed" && (apt.balance_cents || 0) > 0 && (
-                  <button
-                    onClick={() => handleMarkBalancePaid(apt.id)}
-                    disabled={loadingId === apt.id}
-                    className="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-medium hover:opacity-90 disabled:opacity-50"
-                  >
-                    {loadingId === apt.id ? "..." : "💰 Saldo pagado"}
-                  </button>
-                )}
-                {apt.status === "pending" && (
+                {apt.status === "pending_confirmation" && (
                   <>
                     <button
                       onClick={() => handleAction(apt.id, "confirm")}
                       className="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-xs font-medium hover:opacity-90"
                     >
-                      Confirmar
+                      ✓ Confirmar
                     </button>
                     <button
-                      onClick={() => handleAction(apt.id, "cancel", "Cancelado por admin")}
+                      onClick={async () => {
+                        if (!confirm("¿Rechazar este turno?")) return;
+                        const res = await fetch("/api/appointments/reject", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ appointment_id: apt.id, action: "refund" }),
+                        });
+                        const json = await res.json();
+                        if (res.ok) {
+                          setActionMsg({ type: "ok", text: "Turno rechazado" });
+                          await fetchAppointments();
+                        } else {
+                          setActionMsg({ type: "error", text: json.error || "Error" });
+                        }
+                      }}
                       className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-medium hover:opacity-90"
                     >
-                      Cancelar
+                      ✗ Rechazar
                     </button>
                   </>
                 )}
+
                 {apt.status === "confirmed" && (
                   <>
+                    {(apt.balance_cents || 0) > 0 && (
+                      <button
+                        onClick={() => handleMarkBalancePaid(apt.id)}
+                        disabled={loadingId === apt.id}
+                        className="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-medium hover:opacity-90 disabled:opacity-50"
+                      >
+                        {loadingId === apt.id ? "..." : "💰 Saldo pagado"}
+                      </button>
+                    )}
                     <button
-                      onClick={() => handleAction(apt.id, "complete")}
+                      onClick={() => handleAction(apt.id, "attended")}
                       className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-xs font-medium hover:opacity-90"
                     >
-                      Completar
+                      ✓ Asistió
                     </button>
                     <button
-                      onClick={() => handleAction(apt.id, "no-show")}
+                      onClick={() => handleAction(apt.id, "no_show")}
                       className="px-3 py-1.5 bg-gray-500 text-white rounded-lg text-xs font-medium hover:opacity-90"
                     >
                       No-show

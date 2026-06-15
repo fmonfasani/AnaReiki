@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       refund_processed: true,
       payment_status: "refunded",
       updated_at: new Date().toISOString(),
-    }).eq("id", appointment_id).eq("approval_status", "rejected");
+    }).eq("id", appointment_id).eq("status", "cancelled");
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true });

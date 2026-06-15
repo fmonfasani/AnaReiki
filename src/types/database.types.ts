@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type AppointmentStatus = "pending" | "confirmed" | "cancelled" | "completed" | "no_show"
+export type AppointmentStatus = "pending_payment" | "pending_confirmation" | "confirmed" | "cancelled" | "completed"
 
 export interface Database {
   public: {

@@ -227,7 +227,7 @@ export async function POST(request: Request) {
         end_time: endDate.toISOString(),
         modality,
         notes: promoServiceIds ? promoNotes : (notes || null),
-        status: mpAmountCents > 0 ? "pending_payment" : "pending",
+        status: mpAmountCents > 0 ? "pending_payment" : "pending_confirmation",
         price_cents: priceCents,
         deposit_cents: depositCents,
         balance_cents: balanceCents,

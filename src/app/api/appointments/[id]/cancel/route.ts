@@ -31,8 +31,8 @@ export async function PUT(
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
-    if (appointment.status === "cancelled") {
-      return NextResponse.json({ error: "El turno ya está cancelado" }, { status: 409 });
+    if (appointment.status === "cancelled" || appointment.status === "completed") {
+      return NextResponse.json({ error: "El turno ya no está activo" }, { status: 409 });
     }
 
     const { error: cancelError } = await supabase

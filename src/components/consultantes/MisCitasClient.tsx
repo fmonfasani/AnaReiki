@@ -15,13 +15,12 @@ interface Appointment {
     id: string;
     start_time: string;
     end_time: string;
-    status: "pending" | "pending_payment" | "pending_approval" | "approved" | "confirmed" | "cancelled" | "completed" | "no_show";
+    status: "pending_payment" | "pending_confirmation" | "confirmed" | "cancelled" | "completed";
+    attendance_result?: "attended" | "no_show" | "rescheduled" | null;
     payment_status?: string;
     price_cents?: number;
     deposit_cents?: number;
     balance_cents?: number;
-    approval_status?: string;
-    cutoff_at?: string;
     notes: string | null;
     services: {
         name: string;
@@ -34,25 +33,19 @@ interface MisCitasClientProps {
 }
 
 const statusLabel: Record<string, string> = {
-    pending: "Pendiente",
     pending_payment: "Pendiente de pago",
-    pending_approval: "En revisión",
-    approved: "Aprobada",
+    pending_confirmation: "Esperando confirmación",
     confirmed: "Confirmada",
     cancelled: "Cancelada",
     completed: "Completada",
-    no_show: "No asistió",
 };
 
 const statusColor: Record<string, string> = {
-    pending: "bg-orange-100 text-orange-700",
     pending_payment: "bg-amber-100 text-amber-700",
-    pending_approval: "bg-purple-100 text-purple-700",
-    approved: "bg-blue-100 text-blue-700",
+    pending_confirmation: "bg-purple-100 text-purple-700",
     confirmed: "bg-green-100 text-green-700",
     cancelled: "bg-gray-100 text-gray-500",
     completed: "bg-green-100 text-green-700",
-    no_show: "bg-red-50 text-red-600",
 };
 
 export default function MisCitasClient({ initialAppointments }: MisCitasClientProps) {
@@ -154,7 +147,6 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
                     {visible.map((appt) => {
                         const apt = appt as Appointment & { modality?: string };
                         const fecha = parseISO(appt.start_time);
-                        const esPasado = isPast(fecha);
                         return (
                             <div
                                 key={appt.id}
@@ -186,7 +178,7 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
                                 </div>
 
                                 <div className="flex gap-2 shrink-0">
-                                    {appt.status === "pending_payment" ? (
+                                    {appt.status === "pending_payment" && (
                                         <>
                                             <button
                                                 onClick={() => handleRetryPayment(appt.id)}
@@ -203,11 +195,21 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
                                                 {loadingId === appt.id ? "..." : "Me arrepentí"}
                                             </button>
                                         </>
-                                    ) : appt.status === "confirmed" && (appt.balance_cents || 0) > 0 && (appt.payment_status === "paid") ? (
+                                    )}
+
+                                    {appt.status === "pending_confirmation" && (
+                                        <span className="px-4 py-2 text-sm font-medium text-purple-700 bg-purple-50 rounded-xl border border-purple-200">
+                                            Esperando confirmación del admin
+                                        </span>
+                                    )}
+
+                                    {appt.status === "confirmed" && (appt.balance_cents || 0) > 0 && (
                                         <span className="px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 rounded-xl border border-amber-200">
                                             Saldo pendiente: {formatPrice(appt.balance_cents!)}
                                         </span>
-                                    ) : filter === "upcoming" ? (
+                                    )}
+
+                                    {filter === "upcoming" && appt.status !== "pending_payment" && appt.status !== "pending_confirmation" && (
                                         <>
                                             <button
                                                 onClick={() => handleCancel(appt.id)}
@@ -223,7 +225,7 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
                                                 Reprogramar
                                             </button>
                                         </>
-                                    ) : null}
+                                    )}
                                 </div>
                             </div>
                         );
@@ -242,7 +244,7 @@ export default function MisCitasClient({ initialAppointments }: MisCitasClientPr
                         setReschedulingId(null);
                         setAppointments((prev) =>
                             prev.map((a) =>
-                                a.id === reschedulingId ? { ...a, status: "pending" as const } : a
+                                a.id === reschedulingId ? { ...a, status: "confirmed" as const } : a
                             )
                         );
                     }}

@@ -38,7 +38,7 @@ export default function ManageAllSessionsClient({ initialAppointments }: ManageA
             <div className="flex flex-wrap gap-2 p-1 bg-gray-100/50 rounded-2xl w-fit border border-gray-100">
                 {[
                     { id: "all", label: "Todos", icon: "list" },
-                    { id: "pending", label: "Pendientes", icon: "pending" },
+                    { id: "pending_confirmation", label: "Pendientes", icon: "pending" },
                     { id: "confirmed", label: "Confirmados", icon: "check_circle" },
                     { id: "cancelled", label: "Cancelados", icon: "cancel" },
                     { id: "completed", label: "Completados", icon: "task_alt" }
@@ -128,13 +128,6 @@ export default function ManageAllSessionsClient({ initialAppointments }: ManageA
                                         className="flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold bg-red-50 text-red-700 hover:bg-red-600 hover:text-white rounded-xl transition-all disabled:opacity-30"
                                     >
                                         Cancelar
-                                    </button>
-                                    <button
-                                        onClick={() => handleUpdateStatus(appt.id, 'no_show')}
-                                        disabled={loadingId === appt.id || appt.status === 'no_show'}
-                                        className="flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold bg-gray-50 text-gray-700 hover:bg-gray-800 hover:text-white rounded-xl transition-all disabled:opacity-30"
-                                    >
-                                        No asistió
                                     </button>
                                 </div>
                             </div>

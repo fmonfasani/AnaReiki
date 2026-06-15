@@ -201,7 +201,7 @@ describe("POST /api/appointments", () => {
     expect(body.mp_init_point).toBeTruthy();
   });
 
-  it("T4 — con depósito → 201 pending_approval + mp", async () => {
+  it("T4 — con depósito → 201 pending_payment + mp", async () => {
     setupHappyPath({ deposit_percentage: 50 });
     const res = await callRoute({ service_id: VALID_UUID, modality: "online", slot_start: SLOT_START });
     expect(res.status).toBe(201);

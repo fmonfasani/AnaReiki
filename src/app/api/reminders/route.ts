@@ -38,20 +38,18 @@ export async function POST(request: Request) {
       console.log(`Liberados ${expiredPayments.length} appointments pending_payment expirados`);
     }
 
-    // Cancelar approved que pasaron el cutoff (1h antes del turno sin pagar saldo)
+    // Cancelar confirmed con cutoff vencido (saldo no pagado a tiempo)
     const { data: cutoffAppts } = await svc
       .from("appointments")
       .update({
         status: "cancelled",
-        approval_status: "rejected",
-        rejection_action: "refund",
-        payment_status: "failed",
         cancelled_reason: "No pagó el saldo antes del cutoff",
         cancelled_at: now,
         updated_at: now,
       })
-      .eq("approval_status", "approved")
-      .eq("status", "approved")
+      .eq("status", "confirmed")
+      .not("balance_cents", "is", null)
+      .gt("balance_cents", 0)
       .lte("cutoff_at", now)
       .select("id, client_id, deposit_cents");
 

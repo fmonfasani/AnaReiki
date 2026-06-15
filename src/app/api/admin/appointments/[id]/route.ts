@@ -80,9 +80,9 @@ export async function PUT(
     const body = await request.json();
     const { action, reason } = body;
 
-    if (!action || !["confirm", "complete", "cancel", "no-show"].includes(action)) {
+    if (!action || !["confirm", "cancel"].includes(action)) {
       return NextResponse.json(
-        { error: "Acción inválida. Use: confirm, complete, cancel, no-show" },
+        { error: "Acción inválida. Use: confirm, cancel" },
         { status: 400 },
       );
     }
@@ -94,20 +94,12 @@ export async function PUT(
     switch (action) {
       case "confirm":
         updates.status = "confirmed";
-        updates.confirmed_at = now;
-        updates.confirmed_by = user.id;
-        break;
-      case "complete":
-        updates.status = "completed";
         break;
       case "cancel":
         updates.status = "cancelled";
         updates.cancelled_at = now;
         updates.cancelled_by = user.id;
         updates.cancelled_reason = reason || null;
-        break;
-      case "no-show":
-        updates.status = "no_show";
         break;
     }
 

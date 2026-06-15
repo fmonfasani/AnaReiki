@@ -9,10 +9,13 @@ type AgendaStats = {
   no_show: number;
   completed: number;
   pending: number;
+  pending_confirmation: number;
   cancellation_rate: number;
   avg_sessions_per_client: number;
   peak_day: number;
   peak_hour: number;
+  attended: number;
+  rescheduled: number;
 };
 
 export default function AgendaAnalytics() {
@@ -59,7 +62,8 @@ export default function AgendaAnalytics() {
     { label: "Canceladas", value: stats.cancelled, color: "text-red-700", bg: "bg-red-50", icon: "cancel" },
     { label: "No Asistieron", value: stats.no_show, color: "text-orange-700", bg: "bg-orange-50", icon: "block" },
     { label: "Completadas", value: stats.completed, color: "text-blue-700", bg: "bg-blue-50", icon: "task_alt" },
-    { label: "Pendientes", value: stats.pending, color: "text-amber-700", bg: "bg-amber-50", icon: "pending" },
+    { label: "Reprogramados", value: stats.rescheduled || 0, color: "text-purple-700", bg: "bg-purple-50", icon: "schedule" },
+    { label: "Pendientes", value: (stats.pending || 0) + (stats.pending_confirmation || 0), color: "text-amber-700", bg: "bg-amber-50", icon: "pending" },
   ];
 
   return (
@@ -68,7 +72,7 @@ export default function AgendaAnalytics() {
         📊 Analytics de Agenda
       </h3>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4 mb-8">
         {cards.map((card) => (
           <div key={card.label} className={`${card.bg} p-4 rounded-xl border border-gray-100`}>
             <span className="material-symbols-outlined text-gray-400 text-sm block mb-1">{card.icon}</span>

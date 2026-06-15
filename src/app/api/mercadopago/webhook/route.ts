@@ -125,7 +125,7 @@ export async function POST(request: Request) {
       await svc
         .from("appointments")
         .update({
-          status: "confirmed",
+          status: "pending_confirmation",
           payment_status: "paid",
           mp_payment_id: mpPaymentId,
         })

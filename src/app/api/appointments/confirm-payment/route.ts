@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     if (appointmentId) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, client_id, payment_status, status, mp_payment_id, approval_status")
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, client_id, payment_status, status, mp_payment_id")
         .eq("id", appointmentId)
         .single();
       appointment = data;
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     if (!appointment && payment_id) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, client_id, payment_status, status, mp_payment_id, approval_status")
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, client_id, payment_status, status, mp_payment_id")
         .eq("mp_payment_id", String(payment_id))
         .maybeSingle();
       appointment = data;
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No autorizado para confirmar este pago" }, { status: 403 });
     }
 
-    if (appointment.payment_status === "paid" && appointment.status !== "pending_approval") {
+    if (appointment.payment_status === "paid" && appointment.status !== "pending_payment") {
       return NextResponse.json({ success: true, status: "already_paid" });
     }
 
@@ -102,12 +102,8 @@ export async function POST(request: Request) {
     let newStatus = appointment.status;
     let newPaymentStatus = "paid";
 
-    if (isBalancePayment) {
-      newStatus = "confirmed";
-    } else if (appointment.approval_status === "pending_approval") {
-      newStatus = "pending_approval";
-    } else if (appointment.status === "pending_payment") {
-      newStatus = "confirmed";
+    if (appointment.status === "pending_payment") {
+      newStatus = "pending_confirmation";
     }
 
     await svc
@@ -138,17 +134,14 @@ export async function POST(request: Request) {
     const payerEmail = profile?.email || "";
     const payerName = profile?.full_name || payerEmail;
 
-    if (newStatus === "confirmed") {
-      sendAppointmentEmail("confirmacion", payerEmail, payerName, {
-        serviceName: service?.name || "Servicio",
-        modality: appointment.modality,
-        date: dateStr,
-        time: timeStr,
-        duration: service?.duration_minutes || 60,
-        notes: appointment.notes,
-        appointmentId: appointment.id,
-      });
-    }
+    sendAppointmentEmail("confirmacion", payerEmail, payerName, {
+      serviceName: service?.name || "Servicio",
+      modality: appointment.modality,
+      date: dateStr,
+      time: timeStr,
+      duration: service?.duration_minutes || 60,
+      appointmentId: appointment.id,
+    });
 
     notifyAdminNewAppointment({
       clientName: payerName,
