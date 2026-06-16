@@ -290,7 +290,7 @@ export default function AdminSubscriptionsClient({
                           onClick={() => toggleFeature(feat)}
                           className={`text-xs px-3 py-2 rounded-lg font-medium transition-all border ${
                             checked
-                              ? "bg-pink-500 text-white border-pink-500"
+                              ? "bg-pink-200 text-pink-800 border-pink-300"
                               : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
                           }`}
                         >
@@ -325,7 +325,7 @@ export default function AdminSubscriptionsClient({
                           onClick={() => toggleService(svc.slug)}
                           className={`text-xs px-3 py-2 rounded-lg font-medium transition-all border ${
                             checked
-                              ? "bg-pink-500 text-white border-pink-500"
+                              ? "bg-pink-200 text-pink-800 border-pink-300"
                               : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
                           }`}
                         >
