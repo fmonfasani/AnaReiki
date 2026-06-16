@@ -38,17 +38,39 @@ export default async function AdminPagosPage() {
 
   if (mpError) console.error("mp_payment_logs error:", mpError);
 
-  const { data: appointments } = await svc
+  const { data: rawAppointments } = await svc
     .from("appointments")
-    .select(`
-      id, status, start_time, modality, price_cents, deposit_cents, balance_cents,
-      payment_status, attendance_result, promotion_id, created_at,
-      services!service_id(id, name, slug),
-      promotions!promotion_id(id, name),
-      profiles:client_id(full_name, email)
-    `)
+    .select("id, status, start_time, modality, price_cents, deposit_cents, balance_cents, payment_status, attendance_result, promotion_id, service_id, client_id, created_at")
     .order("created_at", { ascending: false })
     .limit(500);
+
+  const appointments = rawAppointments || [];
+
+  const serviceIds = [...new Set(appointments.map(a => a.service_id).filter(Boolean))];
+  const promoIds = [...new Set(appointments.map(a => a.promotion_id).filter(Boolean))];
+  const clientIds = [...new Set(appointments.map(a => a.client_id).filter(Boolean))];
+
+  const [servicesRes, promosRes, profilesRes] = await Promise.all([
+    serviceIds.length > 0
+      ? svc.from("services").select("id, name, slug").in("id", serviceIds)
+      : Promise.resolve({ data: [] }),
+    promoIds.length > 0
+      ? svc.from("promotions").select("id, name").in("id", promoIds)
+      : Promise.resolve({ data: [] }),
+    clientIds.length > 0
+      ? svc.from("profiles").select("id, full_name, email").in("id", clientIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const serviceMap = Object.fromEntries((servicesRes.data || []).map(s => [s.id, s]));
+  const promoMap = Object.fromEntries((promosRes.data || []).map(p => [p.id, p]));
+  const profileMap = Object.fromEntries((profilesRes.data || []).map(p => [p.id, p]));
+
+  for (const a of appointments) {
+    (a as Record<string, unknown>).services = serviceMap[a.service_id] || null;
+    (a as Record<string, unknown>).promotions = promoMap[a.promotion_id] || null;
+    (a as Record<string, unknown>).profiles = profileMap[a.client_id] || null;
+  }
 
   const totalRevenue =
     payments

@@ -15,6 +15,7 @@ type Appointment = {
   payment_status: string | null;
   attendance_result: string | null;
   promotion_id: string | null;
+  service_id: string | null;
   created_at: string;
   services: { id: string; name: string; slug: string } | null;
   promotions: { id: string; name: string } | null;
