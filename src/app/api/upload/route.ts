@@ -4,17 +4,46 @@ import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
+export const runtime = "nodejs";
+
 export async function POST(req: NextRequest) {
+  console.log("[upload] Content-Type:", req.headers.get("content-type"));
+  console.log("[upload] Content-Length:", req.headers.get("content-length"));
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
+    console.log("[upload] No auth");
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
+  console.log("[upload] User:", user.id);
 
   try {
-    const formData = await req.formData();
+    const rawBody = req.body;
+    if (!rawBody) {
+      console.log("[upload] Request body is null/undefined");
+      return NextResponse.json({ error: "Body vacío" }, { status: 400 });
+    }
+
+    let formData: FormData;
+    try {
+      formData = await req.formData();
+    } catch (parseErr) {
+      console.error("[upload] formData parse error:", parseErr);
+      return NextResponse.json(
+        {
+          error: "Failed to parse body as FormData",
+          detail: parseErr instanceof Error ? parseErr.message : String(parseErr),
+          contentType: req.headers.get("content-type"),
+          contentLength: req.headers.get("content-length"),
+        },
+        { status: 400 }
+      );
+    }
+
     const file = formData.get("file") as File | null;
     const type = formData.get("type") as string || "videos";
+    console.log("[upload] File:", file?.name, "size:", file?.size, "type:", file?.type, "uploadType:", type);
 
     if (!file) {
       return NextResponse.json({ error: "No se envió ningún archivo" }, { status: 400 });
@@ -41,7 +70,9 @@ export async function POST(req: NextRequest) {
     const filePath = path.join(dir, filename);
 
     const buffer = Buffer.from(await file.arrayBuffer());
+    console.log("[upload] Buffer size:", buffer.length, "writing to:", filePath);
     await writeFile(filePath, buffer);
+    console.log("[upload] File written OK:", filePath);
 
     const publicUrl = `/api/uploads/${uploadDir}/${filename}`;
 
@@ -52,7 +83,7 @@ export async function POST(req: NextRequest) {
       type: file.type,
     });
   } catch (err) {
-    console.error("Upload error:", err);
+    console.error("[upload] Unexpected error:", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Error al subir archivo" },
       { status: 500 }
