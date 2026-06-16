@@ -17,13 +17,6 @@ const ALL_FEATURES = [
   "Evolución",
 ];
 
-const ALL_SERVICES = [
-  { value: "reiki", label: "Reiki" },
-  { value: "meditacion", label: "Meditación" },
-  { value: "yoga", label: "Yoga" },
-  { value: "clases_grabadas", label: "Clases grabadas" },
-];
-
 type Plan = {
   id: string;
   name: string;
@@ -70,8 +63,10 @@ const fmt = (cents: number) =>
 
 export default function AdminSubscriptionsClient({
   initialPlans,
+  services,
 }: {
   initialPlans: Plan[];
+  services: { id: string; name: string; slug: string }[];
 }) {
   const [plans, setPlans] = useState(initialPlans);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -321,20 +316,20 @@ export default function AdminSubscriptionsClient({
                 <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Servicios incluidos</h4>
                 {isEditing ? (
                   <div className="flex flex-wrap gap-2">
-                    {ALL_SERVICES.map((svc) => {
-                      const checked = editForm.included_services.includes(svc.value);
+                    {services.map((svc) => {
+                      const checked = editForm.included_services.includes(svc.slug);
                       return (
                         <button
-                          key={svc.value}
+                          key={svc.slug}
                           type="button"
-                          onClick={() => toggleService(svc.value)}
+                          onClick={() => toggleService(svc.slug)}
                           className={`text-xs px-3 py-2 rounded-lg font-medium transition-all border ${
                             checked
                               ? "bg-pink-500 text-white border-pink-500"
                               : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
                           }`}
                         >
-                          {checked ? "✓ " : ""}{svc.label}
+                          {checked ? "✓ " : ""}{svc.name}
                         </button>
                       );
                     })}
@@ -342,8 +337,8 @@ export default function AdminSubscriptionsClient({
                 ) : (
                   <div className="flex flex-wrap gap-1.5">
                     {(plan.included_services || []).map((s) => (
-                      <span key={s} className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-lg border border-green-200 capitalize">
-                        {ALL_SERVICES.find((sv) => sv.value === s)?.label || s}
+                      <span key={s} className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-lg border border-green-200">
+                        {services.find((sv) => sv.slug === s)?.name || s}
                       </span>
                     ))}
                     {(!plan.included_services || plan.included_services.length === 0) && (

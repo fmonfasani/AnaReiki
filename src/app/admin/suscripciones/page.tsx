@@ -10,10 +10,10 @@ export default async function AdminSuscripcionesPage() {
   if (!user || !(await isAdmin(user, supabase))) redirect("/login");
 
   const svc = createServiceClient();
-  const { data: plans } = await svc
-    .from("pricing_plans")
-    .select("*, subscription_promotions(*)")
-    .order("sort_order", { ascending: true });
+  const [{ data: plans }, { data: services }] = await Promise.all([
+    svc.from("pricing_plans").select("*, subscription_promotions(*)").order("sort_order", { ascending: true }),
+    svc.from("services").select("id, name, slug").eq("is_active", true).order("name"),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -21,7 +21,7 @@ export default async function AdminSuscripcionesPage() {
         <h1 className="text-3xl font-bold text-gray-900 font-display">Gestión de Suscripciones</h1>
         <p className="text-gray-500">Configurá planes, precios anuales, features y promociones.</p>
       </header>
-      <AdminSubscriptionsClient initialPlans={plans || []} />
+      <AdminSubscriptionsClient initialPlans={plans || []} services={services || []} />
     </div>
   );
 }
