@@ -58,8 +58,11 @@ const TIER_TEXT: Record<string, string> = {
   ananda: "text-purple-700",
 };
 
-  const fmt = (cents: number) =>
-    cents === 0 ? "Gratis" : `${(cents / 100).toLocaleString("es-AR")} ARS`;
+  const fmt = (cents: number) => {
+    if (cents === 0) return "Gratis";
+    const pesos = cents / 100;
+    return `${pesos.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ARS`;
+  };
 
 export default function AdminSubscriptionsClient({
   initialPlans,
