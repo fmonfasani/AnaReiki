@@ -55,9 +55,11 @@ export default function VideoPlayer({
 
   const videoSrc = publicId.startsWith("http")
     ? publicId
-    : publicId.startsWith("/")
+    : publicId.startsWith("/api/uploads")
       ? publicId
-      : `/uploads/videos/${publicId}`;
+      : publicId.startsWith("/uploads")
+        ? `/api${publicId}`
+        : `/api/uploads/videos/${publicId}`;
 
   return (
     <div className="aspect-video w-full rounded-2xl overflow-hidden shadow-2xl bg-black relative group">
