@@ -58,8 +58,8 @@ const TIER_TEXT: Record<string, string> = {
   ananda: "text-purple-700",
 };
 
-const fmt = (cents: number) =>
-  cents === 0 ? "Gratis" : `$${(cents / 100).toLocaleString("es-AR")}`;
+  const fmt = (cents: number) =>
+    cents === 0 ? "Gratis" : `${(cents / 100).toLocaleString("es-AR")} ARS`;
 
 export default function AdminSubscriptionsClient({
   initialPlans,
@@ -244,7 +244,7 @@ export default function AdminSubscriptionsClient({
                   <div className="mt-2 flex items-baseline gap-2">
                     {isEditing ? (
                       <div className="flex items-center gap-1">
-                        <span className="text-sm text-gray-500">$</span>
+                        <span className="text-sm text-gray-500">ARS</span>
                         <input
                           type="number"
                           value={editForm.price_cents}
