@@ -5,7 +5,7 @@ type SavePaymentLogOpts = {
   mpPaymentId: number;
   appointmentId?: string | null;
   userId?: string | null;
-  paymentType: "session" | "subscription" | "promo_bundle";
+  paymentType: "session" | "subscription" | "promo_bundle" | "offline_balance";
   externalRef?: Record<string, unknown> | null;
 };
 

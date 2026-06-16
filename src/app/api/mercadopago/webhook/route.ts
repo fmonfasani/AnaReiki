@@ -109,7 +109,7 @@ export async function POST(request: Request) {
     if (appointmentId) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, payment_status, status, client_id")
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, payment_status, status, client_id, promotion_id")
         .eq("id", appointmentId)
         .single();
       appointment = data;
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
     if (!appointment) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, payment_status, status, client_id")
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, payment_status, status, client_id, promotion_id")
         .eq("mp_payment_id", mpPaymentId)
         .maybeSingle();
       appointment = data;
@@ -177,11 +177,13 @@ export async function POST(request: Request) {
         .eq("id", appointment.id);
     }
 
+    const appointmentPaymentType = appointment.promotion_id ? "promo_bundle" : "session";
+
     await saveMpPaymentLog(paymentResult, {
       mpPaymentId: Number(id),
       appointmentId: appointment.id,
       userId: externalData?.userId as string || appointment.client_id,
-      paymentType: "session",
+      paymentType: appointmentPaymentType as "session" | "promo_bundle",
       externalRef: externalData,
     });
 

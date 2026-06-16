@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     if (appointmentId) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, client_id, payment_status, status, mp_payment_id")
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, client_id, payment_status, status, mp_payment_id, promotion_id")
         .eq("id", appointmentId)
         .single();
       appointment = data;
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     if (!appointment && payment_id) {
       const { data } = await svc
         .from("appointments")
-        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, client_id, payment_status, status, mp_payment_id")
+        .select("id, service_id, start_time, end_time, modality, notes, price_cents, deposit_cents, balance_cents, client_id, payment_status, status, mp_payment_id, promotion_id")
         .eq("mp_payment_id", String(payment_id))
         .maybeSingle();
       appointment = data;
@@ -162,7 +162,7 @@ export async function POST(request: Request) {
         mpPaymentId: verifiedPayment.id,
         appointmentId: appointment.id,
         userId: appointment.client_id,
-        paymentType: isBalancePayment ? "session" : "session",
+        paymentType: appointment.promotion_id ? "promo_bundle" : "session",
         externalRef: externalData,
       });
     }
