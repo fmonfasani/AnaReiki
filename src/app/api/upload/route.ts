@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { writeFile, mkdir } from "fs/promises";
+import { mkdir } from "fs/promises";
+import { createWriteStream } from "fs";
+import { pipeline } from "stream/promises";
 import path from "path";
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
+
+const MAX_FILE_SIZE = 300 * 1024 * 1024;
 
 export const runtime = "nodejs";
 
@@ -51,7 +54,7 @@ export async function POST(req: NextRequest) {
 
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: `El archivo supera el límite de 50MB (pesa ${(file.size / 1024 / 1024).toFixed(1)}MB)` },
+        { error: `El archivo supera el límite de 300MB (pesa ${(file.size / 1024 / 1024).toFixed(1)}MB)` },
         { status: 400 }
       );
     }
@@ -69,10 +72,25 @@ export async function POST(req: NextRequest) {
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const filePath = path.join(dir, filename);
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    console.log("[upload] Buffer size:", buffer.length, "writing to:", filePath);
-    await writeFile(filePath, buffer);
-    console.log("[upload] File written OK:", filePath);
+    const nodeStream = file.stream();
+    const nodeReadable = new ReadableStream({
+      start(controller) {
+        const reader = nodeStream.getReader();
+        (async () => {
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) { controller.close(); break; }
+              controller.enqueue(value);
+            }
+          } catch (e) { controller.error(e); }
+        })();
+      },
+    }) as unknown as NodeJS.ReadableStream;
+
+    const writeStream = createWriteStream(filePath);
+    await pipeline(nodeReadable, writeStream);
+    console.log("[upload] File written OK:", filePath, "size:", file.size);
 
     const publicUrl = `/api/uploads/${uploadDir}/${filename}`;
 
