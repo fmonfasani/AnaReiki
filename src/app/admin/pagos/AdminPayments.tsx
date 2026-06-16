@@ -125,7 +125,7 @@ export default function AdminPayments({
   sessionRevenue,
   activeSubscriptions,
 }: AdminPaymentsProps) {
-  const [tab, setTab] = useState<"overview" | "all" | "services" | "subscriptions">("overview");
+  const [tab, setTab] = useState<"overview" | "all" | "services" | "subscriptions" | "cashflow">("overview");
   const [typeFilter, setTypeFilter] = useState<string>("all");
 
   const formatPrice = (cents: number) => {
@@ -258,6 +258,7 @@ export default function AdminPayments({
           { key: "all", label: "Todos los pagos", icon: "payments", count: mpPayments.length },
           { key: "services", label: "Servicios y Promos", icon: "analytics" },
           { key: "subscriptions", label: "Suscripciones", icon: "subscriptions", count: subscriptions.length },
+          { key: "cashflow", label: "Cash Flow", icon: "account_balance" },
         ].map((t) => (
           <button
             key={t.key}
@@ -625,6 +626,275 @@ export default function AdminPayments({
           </div>
         </div>
       )}
+      {/* Cash Flow Tab */}
+      {tab === "cashflow" && (() => {
+        const MP_FEE_RATE = 0.05;
+        const MP_COLLECTION_DAYS = 18;
+
+        type CashFlowItem = {
+          id: string;
+          date: Date;
+          collectionDate: Date;
+          source: "session" | "subscription" | "promo_bundle" | "offline_balance";
+          label: string;
+          gross: number;
+          fee: number;
+          net: number;
+          isOffline: boolean;
+        };
+
+        const items: CashFlowItem[] = mpPayments
+          .filter((p) => p.status === "approved" && p.transaction_amount)
+          .map((p) => {
+            const gross = Number(p.transaction_amount) || 0;
+            const isOffline = p.payment_type === "offline_balance";
+            const fee = isOffline ? 0 : gross * MP_FEE_RATE;
+            const net = gross - fee;
+            const payDate = new Date(p.mp_date_created || p.created_at);
+            const collectionDate = new Date(payDate);
+            if (!isOffline) {
+              collectionDate.setDate(collectionDate.getDate() + MP_COLLECTION_DAYS);
+            }
+            const typeInfo = TYPE_LABELS[p.payment_type] || { label: p.payment_type };
+            return {
+              id: p.id,
+              date: payDate,
+              collectionDate,
+              source: p.payment_type as CashFlowItem["source"],
+              label: typeInfo.label,
+              gross,
+              fee,
+              net,
+              isOffline,
+            };
+          })
+          .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+        const totalGross = items.reduce((s, i) => s + i.gross, 0);
+        const totalFees = items.reduce((s, i) => s + i.fee, 0);
+        const totalNet = items.reduce((s, i) => s + i.net, 0);
+
+        const totalCollected = items.reduce((s, i) => s + i.net, 0);
+        const pendingCollection = items
+          .filter((i) => !i.isOffline && i.collectionDate > new Date())
+          .reduce((s, i) => s + i.net, 0);
+        const alreadyCollected = totalCollected - pendingCollection;
+
+        const bySource = ["session", "subscription", "promo_bundle", "offline_balance"] as const;
+        const sourceStats = bySource.map((src) => {
+          const srcItems = items.filter((i) => i.source === src);
+          const gross = srcItems.reduce((s, i) => s + i.gross, 0);
+          const fee = srcItems.reduce((s, i) => s + i.fee, 0);
+          const net = srcItems.reduce((s, i) => s + i.net, 0);
+          return { src, label: TYPE_LABELS[src]?.label || src, count: srcItems.length, gross, fee, net };
+        }).filter((s) => s.count > 0);
+
+        const monthlyMap: Record<string, { executed: number; collected: number; fees: number }> = {};
+        items.forEach((i) => {
+          const execKey = `${i.date.getFullYear()}-${String(i.date.getMonth() + 1).padStart(2, "0")}`;
+          const collKey = `${i.collectionDate.getFullYear()}-${String(i.collectionDate.getMonth() + 1).padStart(2, "0")}`;
+          if (!monthlyMap[execKey]) monthlyMap[execKey] = { executed: 0, collected: 0, fees: 0 };
+          monthlyMap[execKey].executed += i.gross;
+          monthlyMap[execKey].fees += i.fee;
+          if (!monthlyMap[collKey]) monthlyMap[collKey] = { executed: 0, collected: 0, fees: 0 };
+          monthlyMap[collKey].collected += i.net;
+        });
+
+        const months = Object.keys(monthlyMap).sort();
+
+        const maxExec = Math.max(...months.map((m) => monthlyMap[m].executed), 1);
+
+        return (
+          <div className="space-y-6">
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <p className="text-xs text-gray-500 uppercase tracking-wider">Bruto total</p>
+                <p className="text-2xl font-bold text-gray-900">{formatPriceRaw(totalGross)}</p>
+              </div>
+              <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <p className="text-xs text-gray-500 uppercase tracking-wider">Comisión MP (~5%)</p>
+                <p className="text-2xl font-bold text-red-500">-{formatPriceRaw(totalFees)}</p>
+              </div>
+              <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <p className="text-xs text-gray-500 uppercase tracking-wider">Neto total</p>
+                <p className="text-2xl font-bold text-green-600">{formatPriceRaw(totalNet)}</p>
+              </div>
+              <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <p className="text-xs text-gray-500 uppercase tracking-wider">Ya cobrado</p>
+                <p className="text-2xl font-bold text-blue-600">{formatPriceRaw(alreadyCollected)}</p>
+              </div>
+            </div>
+
+            {/* Pending collection alert */}
+            {pendingCollection > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
+                <span className="material-symbols-outlined text-amber-600">schedule</span>
+                <div>
+                  <p className="text-sm font-medium text-amber-800">
+                    Pendiente de cobro MP: {formatPriceRaw(pendingCollection)}
+                  </p>
+                  <p className="text-xs text-amber-600">
+                    MP deposita ~{MP_COLLECTION_DAYS} días después de la transacción
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* By Source breakdown */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+              <h3 className="font-bold text-gray-900 mb-4">Ingresos por fuente</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="pb-3 text-xs font-bold text-gray-500 uppercase">Fuente</th>
+                      <th className="pb-3 text-xs font-bold text-gray-500 uppercase text-right">Cant.</th>
+                      <th className="pb-3 text-xs font-bold text-gray-500 uppercase text-right">Bruto</th>
+                      <th className="pb-3 text-xs font-bold text-gray-500 uppercase text-right">Comisión</th>
+                      <th className="pb-3 text-xs font-bold text-gray-500 uppercase text-right">Neto</th>
+                      <th className="pb-3 text-xs font-bold text-gray-500 uppercase text-right">% del total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {sourceStats.map((s) => (
+                      <tr key={s.src}>
+                        <td className="py-3">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${TYPE_LABELS[s.src]?.color || "bg-gray-100"}`}>
+                            {s.label}
+                          </span>
+                        </td>
+                        <td className="py-3 text-sm text-gray-700 text-right">{s.count}</td>
+                        <td className="py-3 text-sm font-medium text-gray-900 text-right">{formatPriceRaw(s.gross)}</td>
+                        <td className="py-3 text-sm text-red-500 text-right">-{formatPriceRaw(s.fee)}</td>
+                        <td className="py-3 text-sm font-bold text-green-600 text-right">{formatPriceRaw(s.net)}</td>
+                        <td className="py-3 text-sm text-gray-500 text-right">
+                          {totalGross > 0 ? `${Math.round((s.gross / totalGross) * 100)}%` : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                    <tr className="font-bold border-t-2 border-gray-200">
+                      <td className="pt-3 text-sm text-gray-900">Total</td>
+                      <td className="pt-3 text-sm text-gray-900 text-right">{items.length}</td>
+                      <td className="pt-3 text-sm text-gray-900 text-right">{formatPriceRaw(totalGross)}</td>
+                      <td className="pt-3 text-sm text-red-500 text-right">-{formatPriceRaw(totalFees)}</td>
+                      <td className="pt-3 text-sm text-green-600 text-right">{formatPriceRaw(totalNet)}</td>
+                      <td className="pt-3 text-sm text-gray-900 text-right">100%</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Monthly Cash Flow */}
+            {months.length > 0 && (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                <h3 className="font-bold text-gray-900 mb-2">Flujo mensual</h3>
+                <p className="text-xs text-gray-400 mb-4">Ejecutado = cuando se pagó | Cobrado = cuando MP deposita (+{MP_COLLECTION_DAYS} días)</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-gray-100">
+                        <th className="pb-3 text-xs font-bold text-gray-500 uppercase">Mes</th>
+                        <th className="pb-3 text-xs font-bold text-gray-500 uppercase text-right">Ejecutado (bruto)</th>
+                        <th className="pb-3 text-xs font-bold text-gray-500 uppercase text-right">Comisión MP</th>
+                        <th className="pb-3 text-xs font-bold text-gray-500 uppercase text-right">Cobrado (neto)</th>
+                        <th className="pb-3 text-xs font-bold text-gray-500 uppercase">Visual</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {months.map((m) => {
+                        const d = monthlyMap[m];
+                        const barWidth = maxExec > 0 ? (d.executed / maxExec) * 100 : 0;
+                        return (
+                          <tr key={m}>
+                            <td className="py-3 text-sm font-medium text-gray-900">
+                              {format(new Date(m + "-01"), "MMMM yyyy", { locale: es })}
+                            </td>
+                            <td className="py-3 text-sm font-medium text-gray-900 text-right">{formatPriceRaw(d.executed)}</td>
+                            <td className="py-3 text-sm text-red-500 text-right">-{formatPriceRaw(d.fees)}</td>
+                            <td className="py-3 text-sm font-bold text-green-600 text-right">{formatPriceRaw(d.collected)}</td>
+                            <td className="py-3 w-48">
+                              <div className="h-4 bg-gray-100 rounded-full overflow-hidden relative">
+                                <div
+                                  className="h-full bg-blue-400 rounded-full"
+                                  style={{ width: `${barWidth}%` }}
+                                />
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Detailed timeline */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+              <h3 className="font-bold text-gray-900 mb-4">Detalle de cobros</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="pb-3 text-xs font-bold text-gray-500 uppercase">Pago</th>
+                      <th className="pb-3 text-xs font-bold text-gray-500 uppercase">Fecha pago</th>
+                      <th className="pb-3 text-xs font-bold text-gray-500 uppercase">Fecha cobro</th>
+                      <th className="pb-3 text-xs font-bold text-gray-500 uppercase text-right">Bruto</th>
+                      <th className="pb-3 text-xs font-bold text-gray-500 uppercase text-right">Comisión</th>
+                      <th className="pb-3 text-xs font-bold text-gray-500 uppercase text-right">Neto</th>
+                      <th className="pb-3 text-xs font-bold text-gray-500 uppercase">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {items.map((i) => {
+                      const now = new Date();
+                      const collected = i.isOffline || i.collectionDate <= now;
+                      return (
+                        <tr key={i.id} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="py-3">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${TYPE_LABELS[i.source]?.color || "bg-gray-100"}`}>
+                              {i.label}
+                            </span>
+                          </td>
+                          <td className="py-3 text-sm text-gray-700">
+                            {format(i.date, "dd/MM/yy")}
+                          </td>
+                          <td className="py-3 text-sm text-gray-700">
+                            {i.isOffline ? "Inmediato" : format(i.collectionDate, "dd/MM/yy")}
+                          </td>
+                          <td className="py-3 text-sm font-medium text-gray-900 text-right">{formatPriceRaw(i.gross)}</td>
+                          <td className="py-3 text-sm text-red-500 text-right">
+                            {i.fee > 0 ? `-${formatPriceRaw(i.fee)}` : "—"}
+                          </td>
+                          <td className="py-3 text-sm font-bold text-green-600 text-right">{formatPriceRaw(i.net)}</td>
+                          <td className="py-3">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              collected
+                                ? "bg-green-100 text-green-700"
+                                : "bg-amber-100 text-amber-700"
+                            }`}>
+                              {collected ? "Cobrado" : "Pendiente"}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {items.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="py-12 text-center text-gray-400 text-sm">
+                          Sin pagos aprobados.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
