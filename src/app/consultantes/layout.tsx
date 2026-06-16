@@ -6,14 +6,15 @@ import { isAdmin } from "@/lib/auth/roles";
 import SidebarNav from "./SidebarNav";
 
 const PLAN_ACCESS: Record<string, string[]> = {
-  prana: ["inicio", "suscripciones", "mis-citas", "comunidad", "mensajes", "perfil"],
-  shakti: ["inicio", "suscripciones", "biblioteca", "podcast", "comunidad", "evolucion", "mis-citas", "mensajes", "perfil"],
-  ananda: ["inicio", "suscripciones", "biblioteca", "clases", "podcast", "comunidad", "mensajes", "chat-buda", "evolucion", "mis-citas", "perfil"],
+  prana: ["inicio", "suscripciones", "cursos", "mis-citas", "comunidad", "mensajes", "perfil"],
+  shakti: ["inicio", "suscripciones", "cursos", "biblioteca", "podcast", "comunidad", "evolucion", "mis-citas", "mensajes", "perfil"],
+  ananda: ["inicio", "suscripciones", "cursos", "biblioteca", "clases", "podcast", "comunidad", "mensajes", "chat-buda", "evolucion", "mis-citas", "perfil"],
 };
 
 const NAV_ITEMS = [
   { id: "inicio", name: "Inicio", href: "/consultantes", icon: "home" },
   { id: "suscripciones", name: "Suscripciones", href: "/consultantes/suscripciones", icon: "diamond" },
+  { id: "cursos", name: "Mis Cursos", href: "/consultantes/cursos", icon: "school" },
   { id: "mis-citas", name: "Mi Agenda", href: "/consultantes/mis-citas", icon: "calendar_month" },
   { id: "comunidad", name: "Comunidad", href: "/consultantes/comunidad", icon: "forum" },
   { id: "mensajes", name: "Mensajes", href: "/consultantes/mensajes", icon: "chat" },

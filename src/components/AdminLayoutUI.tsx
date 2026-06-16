@@ -25,6 +25,8 @@ export default function AdminLayoutUI({
     { name: "Consultantes", href: "/admin/consultantes", icon: "groups" },
     { name: "Agenda", href: "/admin/agenda", icon: "calendar_month" },
     { name: "Contenido", href: "/admin/contenido", icon: "video_library" },
+    { name: "Cursos", href: "/admin/cursos", icon: "school" },
+    { name: "Aprobaciones", href: "/admin/aprobaciones", icon: "fact_check" },
     { name: "Servicios", href: "/admin/servicios", icon: "spa" },
     { name: "Comunidad", href: "/admin/comunidad", icon: "forum" },
     { name: "Pagos", href: "/admin/pagos", icon: "payments" },
