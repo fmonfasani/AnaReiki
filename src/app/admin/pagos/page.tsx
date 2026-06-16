@@ -32,7 +32,7 @@ export default async function AdminPagosPage() {
 
   const { data: mpPayments, error: mpError } = await svc
     .from("mp_payment_logs")
-    .select("*, profiles:user_id(full_name, email)")
+    .select("*")
     .order("created_at", { ascending: false })
     .limit(200);
 

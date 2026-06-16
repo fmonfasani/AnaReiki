@@ -4,6 +4,7 @@ export function verifyMpSignature(
   rawBody: string,
   signatureHeader: string | null,
   requestId: string | null,
+  dataIdFromQuery: string | null,
 ): boolean {
   if (!signatureHeader || !requestId) return false;
 
@@ -22,22 +23,15 @@ export function verifyMpSignature(
 
   if (!ts || !receivedSignature) return false;
 
-  let dataId = "";
-  try {
-    const parsed = JSON.parse(rawBody);
-    dataId = parsed.data?.id || parsed.id || "";
-  } catch {
-    return false;
-  }
-
+  const dataId = dataIdFromQuery || "";
   if (!dataId) return false;
 
-  const clientSecret = process.env.MP_CLIENT_SECRET;
-  if (!clientSecret) return false;
+  const secret = process.env.MP_WEBHOOK_SECRET;
+  if (!secret) return false;
 
   const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
 
-  const hmac = crypto.createHmac("sha256", clientSecret);
+  const hmac = crypto.createHmac("sha256", secret);
   hmac.update(manifest);
   const computed = hmac.digest("hex");
 
