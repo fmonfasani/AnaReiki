@@ -19,6 +19,9 @@ export const metadata: Metadata = {
   title: "Ana Murat Reiki | Bienestar Holístico",
   description:
     "Un viaje transformador de bioenergía, movimiento consciente y visión espiritual.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

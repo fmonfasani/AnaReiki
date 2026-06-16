@@ -295,7 +295,7 @@ export default function AdminSubscriptionsClient({
                           onClick={() => toggleFeature(feat)}
                           className={`text-xs px-3 py-2 rounded-lg font-medium transition-all border ${
                             checked
-                              ? "bg-green-500 text-white border-green-500"
+                              ? "bg-pink-500 text-white border-pink-500"
                               : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
                           }`}
                         >
