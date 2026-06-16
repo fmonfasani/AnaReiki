@@ -13,7 +13,7 @@ export default async function AdminSuscripcionesPage() {
   const { data: plans } = await svc
     .from("pricing_plans")
     .select("*, subscription_promotions(*)")
-    .order("sort_order");
+    .order("sort_order", { ascending: true });
 
   return (
     <div className="space-y-8">
